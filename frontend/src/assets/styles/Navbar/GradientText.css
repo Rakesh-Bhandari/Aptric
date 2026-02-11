@@ -1,0 +1,33 @@
+/* GradientText.css */
+.animated-gradient-text {
+  /* The magic for text gradients */
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  
+  /* Make the background larger than the text so we can scroll it */
+  background-size: 300% 100%;
+  
+  /* Optional: keeps the text layout stable */
+  display: inline-block;
+}
+
+/* The Border Effect (Optional per your prop) */
+.animated-gradient-text.with-border {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  /* Use a separate background trick for border gradients if needed, 
+     but for text-focus we usually keep borders simple or omit them */
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

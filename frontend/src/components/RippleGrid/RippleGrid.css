@@ -1,0 +1,12 @@
+/* src/components/RippleGrid/RippleGrid.css */
+.ripple-grid-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Sits behind the content */
+    pointer-events: auto; /* Allows mouse ripples to work on empty spaces */
+    overflow: hidden;
+    background: transparent;
+}

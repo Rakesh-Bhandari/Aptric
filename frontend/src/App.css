@@ -1,0 +1,16 @@
+/* App.css */
+#root {
+  width: 100%;
+  margin: 0 auto;
+  /* Removed text-align: center to allow component-level alignment */
+}
+
+/* Base fade-in animation for page transitions */
+.page-enter {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

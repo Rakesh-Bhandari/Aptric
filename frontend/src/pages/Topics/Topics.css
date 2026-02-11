@@ -1,0 +1,351 @@
+/* Topics.css */
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Michroma&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+:root {
+    --bg-dark: #050505;
+    --glass-panel: rgba(22, 27, 34, 0.6);
+    --glass-border: rgba(63, 185, 80, 0.3);
+    
+    --text-primary: #e6edf3;
+    --text-secondary: #7d8590;
+    
+    --accent-green: #2ea043;
+    --accent-hover: #3fb950;
+    --accent-glow: rgba(46, 160, 67, 0.4);
+    
+    --gold: #d29922; 
+    --danger: #f85149;
+    --code-bg: rgba(0, 0, 0, 0.3);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    /* Cyberpunk Grid Background */
+    background-image: 
+        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
+        linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+.topics-container {
+    max-width: 1200px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+}
+
+/* --- HEADER SECTION --- */
+.topics-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.glitch-title {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 3rem;
+    color: white;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(46, 160, 67, 0.6);
+    letter-spacing: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.system-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: rgba(46, 160, 67, 0.1);
+    border: 1px solid var(--accent-green);
+    border-radius: 99px;
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.75rem;
+    color: var(--accent-green);
+    letter-spacing: 1px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent-green);
+    animation: pulse 2s infinite;
+}
+
+/* --- GRID LAYOUT --- */
+.topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* --- CONSOLE CARD --- */
+.console-card {
+    background: var(--glass-panel);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.console-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-green);
+    box-shadow: 0 10px 30px -5px rgba(46, 160, 67, 0.15);
+}
+
+.card-label {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.6rem;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    display: block;
+    opacity: 0.8;
+}
+
+.topic-title {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 1.4rem;
+    color: white;
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+}
+
+/* Progress Section */
+.topic-stats {
+    margin-bottom: 1.5rem;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--accent-green);
+    box-shadow: 0 0 10px var(--accent-green);
+    transition: width 0.5s ease;
+}
+
+.progress-fill.completed {
+    background: var(--gold);
+    box-shadow: 0 0 10px var(--gold);
+}
+
+/* Button */
+.cmd-btn {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-primary);
+    padding: 1rem;
+    border-radius: 6px;
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: auto;
+}
+
+.cmd-btn:hover {
+    background: rgba(46, 160, 67, 0.1);
+    border-color: var(--accent-green);
+    color: white;
+}
+
+.cmd-btn.review-mode {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+.cmd-btn.review-mode:hover {
+    background: rgba(210, 153, 34, 0.1);
+}
+
+/* --- QUESTION LIST VIEW (Add to bottom of Topics.css) --- */
+
+.q-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.back-btn {
+    background: transparent;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+.back-btn:hover {
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+    box-shadow: 0 0 10px rgba(46, 160, 67, 0.2);
+}
+
+.module-title {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 1.5rem;
+    color: white;
+    text-transform: uppercase;
+}
+
+/* Question Grid */
+.q-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+/* Individual Question Card */
+.q-card {
+    background: var(--glass-panel);
+    border: 1px solid var(--glass-border);
+    border-left: 3px solid rgba(255,255,255,0.1);
+    padding: 1.5rem;
+    border-radius: 12px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.q-card:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-left-color: var(--accent-green);
+    transform: translateX(5px);
+}
+
+.q-card.solved {
+    border-left-color: var(--accent-green);
+    background: rgba(46, 160, 67, 0.05);
+}
+
+.q-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+}
+.status-badge.complete { color: var(--accent-green); background: rgba(46, 160, 67, 0.15); border: 1px solid var(--accent-green); }
+
+.q-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+/* Option Previews */
+.opt-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.opt-pill {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border: 1px solid rgba(255,255,255,0.05);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.solve-btn {
+    width: 100%;
+    background: rgba(46, 160, 67, 0.1);
+    border: 1px solid var(--accent-green);
+    color: var(--accent-green);
+    padding: 0.8rem;
+    font-family: 'Audiowide', sans-serif;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.solve-btn:hover {
+    background: var(--accent-green);
+    color: black;
+    box-shadow: 0 0 15px var(--accent-green);
+}
+
+.solve-btn.replay {
+    background: transparent;
+    border-color: var(--text-secondary);
+    color: var(--text-secondary);
+}
+.solve-btn.replay:hover {
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .opt-preview { grid-template-columns: 1fr; }
+}
+
+/* Animations */
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+@media (max-width: 768px) {
+    .glitch-title { font-size: 2rem; }
+    .topics-grid { grid-template-columns: 1fr; }
+}

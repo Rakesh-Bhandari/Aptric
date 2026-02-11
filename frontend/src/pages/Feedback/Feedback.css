@@ -1,0 +1,355 @@
+/* Feedback.css */
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Michroma&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+:root {
+    --bg-dark: #050505;
+    --glass-panel: rgba(22, 27, 34, 0.6);
+    --glass-border: rgba(63, 185, 80, 0.3);
+    --accent-green: #2ea043;
+    --text-primary: #e6edf3;
+    --text-secondary: #7d8590;
+    --code-bg: rgba(0, 0, 0, 0.3);
+    --danger: #f85149;
+    --gold: #d29922;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    /* Cyberpunk Grid Background matching About Page */
+    background-image: 
+        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
+        linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+.feedback-container {
+    max-width: 1200px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+}
+
+/* --- HEADER SECTION --- */
+.feedback-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.glitch-title {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 3rem;
+    color: white;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(46, 160, 67, 0.6);
+    letter-spacing: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.system-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: rgba(46, 160, 67, 0.1);
+    border: 1px solid var(--accent-green);
+    border-radius: 99px;
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.75rem;
+    color: var(--accent-green);
+    letter-spacing: 1px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent-green);
+    animation: pulse 2s infinite;
+}
+
+/* --- BENTO GRID LAYOUT --- */
+.feedback-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr; /* Left: Form, Right: Feed */
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* Generic Glass Card */
+.console-card {
+    background: var(--glass-panel);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-label {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.7rem;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1.5rem;
+    display: block;
+    opacity: 0.8;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 10px;
+}
+
+/* --- INPUT TERMINAL (LEFT) --- */
+.terminal-input-group {
+    margin-bottom: 1.5rem;
+}
+
+.terminal-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.terminal-input, .terminal-textarea {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    padding: 1rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.terminal-input:focus, .terminal-textarea:focus {
+    outline: none;
+    border-color: var(--accent-green);
+    box-shadow: 0 0 15px rgba(46, 160, 67, 0.1);
+}
+
+.terminal-textarea { min-height: 150px; resize: vertical; }
+
+/* Interactive Stars */
+.star-rating-terminal {
+    display: flex;
+    gap: 5px;
+    background: #0d1117;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    width: fit-content;
+}
+
+.star-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #333;
+    transition: transform 0.1s;
+}
+.star-btn:hover { transform: scale(1.2); }
+.star-btn.active { color: var(--gold); text-shadow: 0 0 8px rgba(210, 153, 34, 0.4); }
+
+.submit-btn {
+    width: 100%;
+    background: rgba(46, 160, 67, 0.1);
+    border: 1px solid var(--accent-green);
+    color: var(--accent-green);
+    font-family: 'Audiowide', sans-serif;
+    padding: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.submit-btn:hover {
+    background: var(--accent-green);
+    color: #000;
+    box-shadow: 0 0 20px rgba(46, 160, 67, 0.4);
+}
+
+/* --- FEED STREAM (RIGHT) --- */
+.feed-stream {
+    max-height: 80vh;
+    overflow-y: auto;
+    padding-right: 5px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-green) transparent;
+}
+
+.log-entry {
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.log-entry:hover {
+    background: rgba(46, 160, 67, 0.05);
+    border-left-color: var(--accent-green);
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.log-user { color: var(--accent-green); font-weight: bold; }
+.log-time { opacity: 0.7; }
+
+.log-content {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.log-rating {
+    color: var(--gold);
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Menu Button in Log (FIXED SMALL SIZE) */
+.cmd-btn_fb {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.cmd-btn_fb:hover { 
+    color: white; 
+    background: rgba(255,255,255,0.1);
+}
+
+.cmd-menu {
+    position: absolute;
+    right: 10px;
+    top: 30px;
+    background: #0d1117;
+    border: 1px solid var(--accent-green);
+    z-index: 10;
+    padding: 5px;
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.cmd-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--accent-green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 8px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.cmd-option:hover { background: rgba(46, 160, 67, 0.2); }
+.cmd-option.danger { color: var(--danger); }
+.cmd-option.danger:hover { background: rgba(248, 81, 73, 0.1); }
+
+/* --- EDIT MODE STYLES --- */
+.log-entry.editing {
+    border-left-color: var(--gold);
+    background: rgba(210, 153, 34, 0.05);
+}
+
+.edit-mode-container {
+    margin-top: 10px;
+}
+
+.edit-stars {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 4px;
+}
+
+.star-btn.small {
+    font-size: 1.2rem;
+}
+
+.terminal-textarea.small {
+    min-height: 80px;
+    font-size: 0.85rem;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.edit-btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.edit-btn.save {
+    background: rgba(46, 160, 67, 0.2);
+    color: var(--accent-green);
+    border: 1px solid var(--accent-green);
+}
+.edit-btn.save:hover { background: var(--accent-green); color: black; }
+
+.edit-btn.cancel {
+    background: rgba(248, 81, 73, 0.1);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+.edit-btn.cancel:hover { background: var(--danger); color: white; }
+
+/* Placeholder styling for empty feedback */
+.log-content.placeholder {
+    color: var(--text-secondary);
+    font-style: italic;
+    opacity: 0.5;
+    font-size: 0.8rem;
+}
+
+/* Animation */
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+/* Mobile */
+@media (max-width: 900px) {
+    .feedback-grid { grid-template-columns: 1fr; }
+    .glitch-title { font-size: 2rem; }
+}

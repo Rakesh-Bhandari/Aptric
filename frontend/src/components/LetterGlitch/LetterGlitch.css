@@ -1,0 +1,21 @@
+/* LetterGlitch.css */
+
+.letter-glitch-bg {
+    /* Override inline styles to make it a background layer */
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    
+    /* Ensure it sits behind your text (which is z-index 10) */
+    z-index: 0; 
+    
+    /* Optional: Match your theme instead of pure black */
+    background-color: #090a0a !important; 
+    
+    /* Ensure it respects the parent's rounded corners */
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.4; /* Adjust opacity as needed */
+}

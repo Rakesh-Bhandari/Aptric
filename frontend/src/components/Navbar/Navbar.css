@@ -1,0 +1,296 @@
+/* Navbar.css */
+@import url('https://fonts.googleapis.com/css2?family=Michroma&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+
+/* 1. Define Theme-Aware Variables */
+:root {
+    /* DEFAULT (Dark Mode) */
+    --nav-glass-start: rgba(13, 17, 23, 0.85);
+    --nav-glass-end: rgba(18, 51, 31, 0.8);
+    --nav-text-color: #e6edf3;
+    --nav-border: rgba(63, 185, 80, 0.3);
+    --nav-smoke-opacity: 1;
+    --nav-item-hover: rgba(46, 160, 67, 0.15);
+    --hamburger-color: #e6edf3;
+    --danger: #f85149;
+    --accent-color: #2ea043;
+}
+
+/* LIGHT MODE OVERRIDES */
+[data-theme="light"] {
+    --nav-glass-start: rgba(255, 255, 255, 0.85); /* White Glass */
+    --nav-glass-end: rgba(240, 253, 244, 0.9);    /* Very subtle green tint */
+    --nav-text-color: #0f172a;                    /* Dark Slate Text */
+    --nav-border: #cbd5e1;                        /* Light Gray Border */
+    --nav-smoke-opacity: 0.15;                    /* Very subtle smoke in light mode */
+    --nav-item-hover: rgba(76, 175, 80, 0.1);
+    --hamburger-color: #0f172a;
+}
+
+/* --- Main Navbar Frame --- */
+.main-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem; 
+    height: 60px; 
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* --- The Isolated Background Wrapper --- */
+.nav-background-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; 
+    overflow: hidden; 
+    
+    /* Dynamic Glass Background */
+    background: linear-gradient(
+        135deg, 
+        var(--nav-glass-start) 0%, 
+        var(--nav-glass-end) 100%
+    );
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--nav-border);
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* --- The Liquid Smoke Blob --- */
+.nav-smoke-blob {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 600px; 
+    height: 600px;
+    transform: translate(calc(var(--smoke-x, -1000px) - 50%), calc(var(--smoke-y, -1000px) - 50%));
+    
+    /* Smoke Color */
+    background: radial-gradient(
+        circle closest-side,
+        rgba(46, 160, 67, 0.35), 
+        transparent 80%
+    );
+    
+    filter: blur(40px);
+    mix-blend-mode: screen; /* Works best in dark mode */
+    pointer-events: none;
+    will-change: transform; 
+    
+    /* Reduce opacity in light mode so it doesn't look like a stain */
+    opacity: var(--nav-smoke-opacity);
+    transition: opacity 0.3s ease;
+}
+
+/* Light mode tweak for smoke blending */
+[data-theme="light"] .nav-smoke-blob {
+    mix-blend-mode: normal; /* Screen doesn't work well on white */
+}
+
+/* --- Content Styling --- */
+.nav-brand,
+.hamburger {
+    z-index: 2; 
+    position: relative;
+}
+
+.nav-brand a {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px; 
+}
+
+.brand-logo-symbol {
+    height: 45px; 
+    width: auto;
+    object-fit: contain;
+}
+
+.brand-text {
+    font-family: "Audiowide", sans-serif;
+    font-size: 2.9rem; 
+    font-weight: 700; 
+    line-height: 1;
+    letter-spacing: 1px;
+    margin-top: 4px; 
+}
+
+/* --- Hamburger --- */
+.hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px; 
+    cursor: pointer;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid var(--nav-border); 
+    border-radius: 6px; 
+    transition: all 0.2s ease;
+    width: 36px;
+    height: 36px;
+}
+
+.hamburger:hover {
+    background: var(--nav-item-hover);
+    border-color: var(--accent-color);
+}
+
+.hamburger .bar {
+    width: 20px; 
+    height: 2px; 
+    background-color: var(--hamburger-color); /* Theme-aware color */
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.hamburger.active {
+    border-color: var(--accent-color);
+    background: rgba(46, 160, 67, 0.15);
+}
+
+.hamburger.active .bar:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+    background-color: var(--accent-color);
+}
+.hamburger.active .bar:nth-child(2) { opacity: 0; }
+.hamburger.active .bar:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+    background-color: var(--accent-color);
+}
+
+/* --- The Dropdown Menu --- */
+.nav-links {
+    position: absolute;
+    top: 70px; 
+    right: 1.5rem;
+    z-index: 1005;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 4px; 
+    padding: 8px;
+    
+    /* Dynamic Menu Background */
+    background: linear-gradient(
+        160deg, 
+        var(--nav-glass-start) 0%, 
+        var(--nav-glass-end) 100%
+    );
+    backdrop-filter: blur(20px);
+    
+    border: 1px solid var(--nav-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); 
+    
+    transform-origin: top right;
+    transform: scale(0.95) translateY(-10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+    
+    width: 220px; 
+}
+
+.nav-links.active {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--nav-text-color); /* Theme-aware Text */
+    font-size: 0.9rem; 
+    font-weight: 500;
+    padding: 10px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.nav-links a:hover {
+    color: var(--accent-color); /* Green text on hover */
+    background-color: var(--nav-item-hover);
+}
+
+/* --- Auth Section --- */
+.menu-auth-container {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--nav-border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.login-btn {
+    width: 100%;
+    background: transparent;
+    color: var(--nav-text-color);
+    padding: 8px 12px;
+    border: 1px solid var(--nav-border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.login-btn:hover {
+    border-color: var(--accent-color);
+    background: var(--nav-item-hover);
+    color: var(--accent-color);
+}
+
+.login-btn.primary {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+.login-btn.primary:hover {
+    background: #238636; 
+    color: white;
+}
+
+.logout-btn {
+    color: var(--danger);
+    border-color: transparent;
+}
+.logout-btn:hover {
+    background: rgba(248, 81, 73, 0.1);
+    color: var(--danger);
+    border-color: rgba(248, 81, 73, 0.3);
+}
+
+/* --- Mobile Specific Overrides --- */
+@media (max-width: 768px) {
+    .nav-links {
+        position: fixed; 
+        top: 60px;
+        right: 0;
+        left: 0;
+        width: 100%;
+        height: auto;
+        border-radius: 0 0 12px 12px; 
+        border-left: none;
+        border-right: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        padding: 1rem;
+        /* Mobile background matches variables */
+        background: linear-gradient(
+            180deg, 
+            var(--nav-glass-start) 0%, 
+            var(--nav-glass-end) 100%
+        );
+    }
+}

@@ -1,0 +1,587 @@
+/* Admin.css */
+
+/* --- 1. Main Layout Structure --- */
+.admin-container {
+    display: grid;
+    /* Sidebar fixed width (260px), Content takes remaining space */
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 1fr; 
+    grid-template-areas: "sidebar content";
+    
+    /* FIX: Force container to fill exactly the remaining screen height */
+    /* Assuming Navbar is approx 70px-80px. Adjust if needed. */
+    height: calc(100vh - 75px); 
+    width: 100%;
+    
+    /* Remove all gaps and scrolling from the main container */
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; 
+    background-color: var(--bg);
+}
+
+/* --- 2. Sidebar (Left Panel) --- */
+.admin-sidebar {
+    grid-area: sidebar;
+    background-color: var(--card-bg);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem;
+    
+    /* Flex layout to push Logout to bottom */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    
+    /* Independent scrolling for sidebar if menu is long */
+    overflow-y: auto; 
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 1; /* Pushes logout button down */
+}
+
+/* Sidebar Links */
+.admin-tab-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.admin-tab-link:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    transform: translateX(3px);
+}
+
+.admin-tab-link.active {
+    background-color: rgba(59, 130, 246, 0.1); /* Primary color low opacity */
+    color: var(--primary);
+    border-color: rgba(59, 130, 246, 0.2);
+    font-weight: 600;
+}
+
+/* Sidebar Badges */
+.admin-pill {
+    background-color: var(--error);
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+/* --- 3. Main Content (Right Panel) --- */
+.admin-content {
+    grid-area: content;
+    padding: 2rem;
+    
+    /* Independent scrolling for content */
+    overflow-y: auto; 
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* Content Headings */
+.admin-content h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    color: var(--text);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
+}
+
+/* --- 4. Dashboard Stats Grid --- */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.admin-stat-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+}
+
+.admin-stat-card.danger {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.stat-value {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1.2;
+}
+
+.admin-stat-card.danger .stat-value {
+    color: var(--error);
+}
+
+.stat-label {
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- 5. Data Tables --- */
+.admin-table-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden; /* Clips corners */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+.admin-table th {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--primary);
+    text-align: left;
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.admin-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* --- 6. Forms & Inputs --- */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 1rem;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+select.form-input {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 0.8rem;
+    appearance: none;
+}
+
+/* --- 7. Buttons --- */
+.auth-button {
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.auth-button:hover {
+    background-color: var(--primary-dark);
+}
+
+.auth-button.danger {
+    background-color: var(--error);
+}
+
+.auth-button.danger:hover {
+    background-color: #dc2626;
+}
+
+.admin-logout-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 0.8rem;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: auto; 
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.admin-logout-btn:hover {
+    border-color: var(--error);
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+/* Action Buttons (Table) */
+.admin-action-btn {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: opacity 0.2s;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    margin-right: 5px;
+}
+
+.admin-action-btn:hover {
+    opacity: 0.8;
+}
+
+.admin-action-btn.view {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+}
+
+.admin-action-btn.delete {
+    color: var(--error);
+    border-color: var(--error);
+}
+
+.admin-action-btn.delete:hover {
+    background-color: var(--error);
+    color: white;
+}
+
+/* --- 8. Tags & Badges --- */
+.level-tag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    background: #334155;
+    color: #e2e8f0;
+    text-transform: capitalize;
+}
+
+.status-tag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.status-tag.active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.status-tag.banned { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+
+/* --- 9. Login Overlay --- */
+.admin-login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.admin-login-box {
+    background-color: var(--card-bg);
+    padding: 3rem;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+.form-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+/* --- 10. Responsive Design --- */
+@media (max-width: 900px) {
+    .admin-container {
+        /* On mobile, stack vertically */
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr; 
+        grid-template-areas: 
+            "sidebar"
+            "content";
+        height: auto; /* Allow auto height on mobile to scroll page */
+        min-height: calc(100vh - 75px);
+    }
+
+    .admin-sidebar {
+        flex-direction: row;
+        overflow-x: auto; /* Horizontal scroll for tabs */
+        align-items: center;
+        padding: 1rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        height: auto;
+        white-space: nowrap;
+    }
+    
+    .sidebar-menu {
+        flex-direction: row;
+        gap: 1rem;
+    }
+
+    .admin-logout-btn {
+        width: auto;
+        margin-left: 1rem;
+        margin-top: 0;
+        padding: 0.5rem 1rem;
+    }
+    
+    .admin-content {
+        padding: 1rem;
+    }
+}
+
+/* --- Admin.css: Improved Modal & Matrix Styles --- */
+
+/* 1. Modal Overlay (Centers the box) */
+.admin-login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* 2. Modern Wide Modal Box */
+.admin-login-box.modal-wide {
+    max-width: 800px;
+    width: 90%;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh; /* Fixed max height to ensure it fits */
+    padding: 0; /* Reset padding, we handle it in children */
+    text-align: left; /* RESET: Stop everything from centering */
+    overflow: hidden; /* Clip rounded corners */
+}
+
+/* 3. Modal Header (Pinned Top) */
+.modal-header {
+    padding: 1.5rem 2rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--card-bg);
+    position: relative;
+    text-align: center; /* Center title specifically */
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.75rem;
+    color: var(--text-main);
+}
+
+.modal-header p {
+    margin: 0.5rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.close-modal-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.close-modal-btn:hover { color: var(--error); }
+
+/* 4. Scrollable Body Area */
+.modal-body {
+    padding: 1.5rem 2rem;
+    overflow-y: auto; /* Enable Vertical Scrollbar */
+    flex: 1; /* Takes remaining height */
+    
+    /* Custom Scrollbar for Body */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--bg);
+}
+
+.modal-body::-webkit-scrollbar { width: 8px; }
+.modal-body::-webkit-scrollbar-track { background: var(--bg); }
+.modal-body::-webkit-scrollbar-thumb { 
+    background-color: var(--border); 
+    border-radius: 4px; 
+}
+
+/* 5. Matrix Table Styling */
+.matrix-scroll-container {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden; /* Round corners */
+    margin-top: 1rem;
+}
+
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.matrix-table thead th {
+    background-color: var(--bg); /* Darker header */
+    color: var(--text-muted);
+    padding: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.matrix-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    background: var(--card-bg);
+}
+.matrix-table tbody tr:last-child { border-bottom: none; }
+
+.matrix-table td {
+    padding: 0.75rem;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.matrix-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-main);
+    padding-left: 1.5rem;
+}
+
+/* 6. Input Styling within Matrix */
+.matrix-input {
+    width: 100%;
+    max-width: 60px;
+    padding: 0.4rem;
+    border: 1px solid var(--border);
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 700;
+    transition: all 0.2s;
+    margin: 0 auto;
+    display: block;
+}
+
+.matrix-input:focus {
+    border-color: var(--primary);
+    background-color: rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Remove Arrows from Number Input */
+.matrix-input::-webkit-outer-spin-button,
+.matrix-input::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+}
+.matrix-input[type=number] { -moz-appearance: textfield; }
+
+/* 7. Footer Actions */
+.modal-footer {
+    padding: 1rem 2rem 1.5rem;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Loader Animation */
+.loader-spin {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ffffff;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    animation: rotation 1s linear infinite;
+}
+@keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

@@ -1,0 +1,346 @@
+/* Leaderboard.css - Bento UI Overhaul */
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Michroma&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap');
+
+:root {
+    --bg-dark: #020408;
+    --bento-bg: rgba(22, 27, 34, 0.4);
+    --bento-border: rgba(63, 185, 80, 0.2);
+    --accent-green: #2ea043;
+    --text-primary: #e6edf3;
+    --text-secondary: #7d8590;
+    --gold: #d29922;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    background-image: radial-gradient(circle at 50% 50%, rgba(46, 160, 67, 0.05) 0%, transparent 80%);
+}
+
+.leaderboard-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+/* --- HEADER --- */
+.leaderboard-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2.5rem;
+    padding: 0 1rem;
+}
+
+.glitch-title {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: -1px;
+    margin: 0;
+}
+
+/* --- BENTO GRID SYSTEM --- */
+.bento-leaderboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.2rem;
+}
+
+.bento-item {
+    background: var(--bento-bg);
+    border: 1px solid var(--bento-border);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.bento-item:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: var(--accent-green);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.bento-item.is-me {
+    background: linear-gradient(145deg, rgba(46, 160, 67, 0.1), rgba(22, 27, 34, 0.4));
+    border-color: var(--accent-green);
+}
+
+/* Item Layout */
+.bento-rank {
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    font-family: 'Audiowide', sans-serif;
+    font-size: 4rem;
+    opacity: 0.05;
+    pointer-events: none;
+}
+
+.bento-user-core {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.bento-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    border: 2px solid var(--bento-border);
+    object-fit: cover;
+}
+
+.bento-name {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.9rem;
+    display: block;
+}
+
+.bento-clearance {
+    font-size: 0.65rem;
+    color: var(--accent-green);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Stats Row */
+.bento-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.mini-stat {
+    background: rgba(255,255,255,0.03);
+    padding: 0.8rem;
+    border-radius: 16px;
+}
+
+.mini-label {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.mini-val {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 1.1rem;
+}
+
+/* --- PREMIER BENTO MODAL 3.0 --- */
+
+.modal-glass-panel {
+    background: #080a0c;
+    width: 80%;
+    max-width: 1100px;
+    max-height: 100vh;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    padding: 0;
+    box-shadow: 0 50px 100px rgba(0, 0, 0, 0.8);
+}
+
+.bento-modal-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr; /* Elegant asymmetrical split */
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+/* Left Column: Operative Identity */
+.bento-column-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.card-identity-main {
+    background: linear-gradient(145deg, #0d1117, #080a0c);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 28px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+.modal-avatar-premium {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%; /* Circular for a cleaner look */
+    border: 4px solid var(--accent-green);
+    padding: 5px;
+    background: #080a0c;
+    margin-bottom: 1.5rem;
+    object-fit: cover;
+}
+
+/* Right Column: Data Visualization */
+.bento-column-right {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: 1.2rem;
+}
+
+.card-bento-stat {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.card-bento-stat:hover {
+    background: rgba(46, 160, 67, 0.05);
+    border-color: var(--accent-green);
+}
+
+.card-bento-wide {
+    grid-column: span 2;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 220px;
+}
+
+/* Typography Refinement */
+.premium-label {
+    font-family: 'Michroma';
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.premium-value {
+    font-family: 'Audiowide';
+    font-size: 1.5rem;
+    color: #fff;
+}
+
+.premium-bio {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-top: 1rem;
+    padding: 0 1rem;
+}
+
+/* Add these to Leaderboard.css to support the new Wheel features */
+
+.skill-wheel-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+    width: 100%;
+}
+
+.wheel-wrapper {
+    position: relative;
+    width: 280px;
+    height: 280px;
+}
+
+.wheel-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.wheel-segment {
+    transform-origin: center; /* Crucial for the 96 radius pop-out */
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Floating Stat Popup */
+.stat-popup {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 180px;
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.popup-right { left: 100%; margin-left: 10px; }
+.popup-left { right: 100%; margin-right: 10px; }
+
+.popup-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    margin-top: 5px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Legend Pills */
+.skill-legend-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.mini-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid transparent;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.mini-legend-item.active {
+    background: rgba(255,255,255,0.1);
+}
+
+.dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* Close Button - Discrete */
+.btn-close-minimal {
+    position: absolute;
+    top:5px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-close-minimal:hover { color: #bb2f2f;}
+
+@media (max-width: 900px) {
+    .bento-modal-wrapper { grid-template-columns: 1fr; }
+}

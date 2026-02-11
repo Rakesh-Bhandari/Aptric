@@ -1,0 +1,249 @@
+/* About.css */
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Michroma&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+:root {
+    --bg-dark: #050505;
+    --glass-panel: rgba(22, 27, 34, 0.6);
+    --glass-border: rgba(63, 185, 80, 0.3);
+    --accent-green: #2ea043;
+    --text-primary: #e6edf3;
+    --text-secondary: #7d8590;
+    --code-bg: rgba(0, 0, 0, 0.5);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    /* Cyberpunk Grid Background */
+    background-image: 
+        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
+        linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+.about-container {
+    max-width: 1200px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+}
+
+/* --- HERO SECTION --- */
+.about-header {
+    text-align: center;
+    margin-bottom: 4rem;
+    position: relative;
+}
+
+.glitch-title {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 3.5rem;
+    color: white;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(46, 160, 67, 0.6);
+    letter-spacing: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.system-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: rgba(46, 160, 67, 0.1);
+    border: 1px solid var(--accent-green);
+    border-radius: 99px;
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.75rem;
+    color: var(--accent-green);
+    letter-spacing: 1px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent-green);
+    animation: pulse 2s infinite;
+}
+
+/* --- BENTO GRID LAYOUT --- */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto;
+    gap: 1.5rem;
+}
+
+/* Cards Generic Style */
+.info-card {
+    background: var(--glass-panel);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px -10px rgba(46, 160, 67, 0.2);
+    border-color: var(--accent-green);
+}
+
+/* --- SPECIFIC CARD SIZES --- */
+/* Mission: Wide card spanning 2 columns */
+.card-mission {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Stats: Tall card for side */
+.card-stats {
+    grid-column: span 1;
+    grid-row: span 2;
+    background: linear-gradient(180deg, rgba(22, 27, 34, 0.8) 0%, rgba(46, 160, 67, 0.1) 100%);
+}
+
+/* Features: 3 small cards at bottom */
+.card-feature {
+    grid-column: span 1;
+    min-height: 200px;
+}
+
+/* --- TYPOGRAPHY --- */
+.card-label {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.7rem;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    display: block;
+    opacity: 0.8;
+}
+
+.card-title {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.card-text {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* --- TERMINAL EFFECT (For Mission) --- */
+.terminal-window {
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: #a5d6ff;
+    position: relative;
+    margin-top: 1rem;
+}
+.cmd-prompt { color: var(--accent-green); margin-right: 10px; }
+.cursor { animation: blink 1s step-end infinite; }
+
+/* --- STATS LIST --- */
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.stat-name { color: var(--text-secondary); font-size: 0.9rem; }
+.stat-val { font-family: 'Audiowide', sans-serif; color: white; font-size: 1.2rem; }
+
+/* --- ICONS --- */
+.icon-box {
+    width: 45px;
+    height: 45px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-green);
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* New Card: Spans 2 columns at the bottom */
+.card-tech {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Dependencies Grid inside the Tech Card */
+.tech-stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.tech-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.8rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.tech-item:hover {
+    border-color: var(--accent-green);
+    background: rgba(46, 160, 67, 0.1);
+    transform: translateX(5px);
+}
+
+.tech-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+}
+
+.tech-item:hover .tech-dot {
+    background: var(--accent-green);
+    box-shadow: 0 0 5px var(--accent-green);
+}
+
+/* Mobile fix */
+@media (max-width: 900px) {
+    .card-tech { grid-column: span 1; }
+}
+
+/* ANIMATIONS */
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .bento-grid { grid-template-columns: 1fr; }
+    .card-mission, .card-stats, .card-feature { grid-column: span 1; }
+    .glitch-title { font-size: 2.5rem; }
+}

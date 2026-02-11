@@ -1,0 +1,163 @@
+/* ActivateAccount.css - Final Version with All States */
+
+.activation-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.terminal-status-box {
+    width: 100%;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 1rem;
+    position: relative;
+}
+
+.status-text {
+    font-size: 1rem;
+    letter-spacing: 1px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-text.error {
+    color: var(--danger, #f85149);
+    text-shadow: 0 0 10px rgba(248, 81, 73, 0.3);
+}
+
+.status-text.success,
+.status-text.complete {
+    color: var(--accent-green, #00ff88);
+    text-shadow: 0 0 10px var(--accent-glow, rgba(0, 255, 136, 0.5));
+}
+
+.status-text.processing,
+.status-text.verifying,
+.status-text.generating {
+    color: var(--text-primary, #e6e6e6);
+}
+
+.status-text.warning {
+    color: #f59e0b;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+/* Animated dot for loading states */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--accent-green, #00ff88);
+    border-radius: 50%;
+    margin-right: 12px;
+    animation: dotPulse 1.5s infinite;
+}
+
+@keyframes dotPulse {
+    0%, 100% { 
+        opacity: 0.3; 
+        transform: scale(0.8); 
+    }
+    50% { 
+        opacity: 1; 
+        transform: scale(1); 
+    }
+}
+
+/* Progress Bar Styling */
+.activation-loader {
+    margin-top: 1.5rem;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.activation-loader .bar {
+    height: 100%;
+    background: linear-gradient(90deg, 
+        var(--accent-green, #00ff88) 0%, 
+        #00ddff 50%, 
+        var(--accent-green, #00ff88) 100%
+    );
+    background-size: 200% 100%;
+    box-shadow: 0 0 15px var(--accent-green, #00ff88);
+    transition: width 0.5s ease-out;
+    animation: shimmer 2s infinite linear;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Progress text below bar */
+.progress-text {
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--accent-green, #00ff88);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+/* Success checkmark */
+.success-icon {
+    font-size: 4rem;
+    color: var(--accent-green, #00ff88);
+    text-align: center;
+    margin-top: 1rem;
+    animation: successPop 0.6s ease-out;
+    text-shadow: 0 0 20px var(--accent-green, #00ff88);
+}
+
+@keyframes successPop {
+    0% { 
+        transform: scale(0) rotate(-180deg); 
+        opacity: 0; 
+    }
+    50% { 
+        transform: scale(1.3) rotate(0deg); 
+    }
+    100% { 
+        transform: scale(1) rotate(0deg); 
+        opacity: 1; 
+    }
+}
+
+/* Support section */
+.support-section {
+    margin-top: 2rem;
+    width: 100%;
+}
+
+.helper-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a0a0a0);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.return-btn {
+    text-decoration: none;
+    display: block;
+}
+
+/* Fallback for CSS variables if not defined globally */
+:root {
+    --accent-green: #00ff88;
+    --accent-glow: rgba(0, 255, 136, 0.5);
+    --danger: #f85149;
+    --text-primary: #e6e6e6;
+    --text-secondary: #a0a0a0;
+    --glass-border: rgba(255, 255, 255, 0.1);
+}

@@ -1,0 +1,177 @@
+/* Home.css */
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Michroma&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --bg-dark: #050505;
+    --text-primary: #e6edf3;
+    --text-secondary: #7d8590;
+    --accent-green: #2ea043;
+    --accent-glow: rgba(46, 160, 67, 0.4);
+    --glass-panel: rgba(22, 27, 34, 0.6);
+    --glass-border: rgba(63, 185, 80, 0.3);
+}
+
+.hero-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 20px;
+    min-height: 100vh;
+    background-color: var(--bg-dark);
+    position: relative;
+    overflow: hidden;
+    
+    /* Cyberpunk Grid Background matching other pages */
+    background-image: 
+        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
+        linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+/* Green Spotlight */
+.hero-section::after {
+    content: "";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60vw; height: 60vw;
+    background: radial-gradient(circle, rgba(46, 160, 67, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+    max-width: 800px;
+    width: 100%;
+}
+
+/* --- SYSTEM BADGE --- */
+.system-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: rgba(46, 160, 67, 0.1);
+    border: 1px solid var(--accent-green);
+    border-radius: 99px;
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.7rem;
+    color: var(--accent-green);
+    letter-spacing: 1px;
+    margin-bottom: 2rem;
+    box-shadow: 0 0 20px rgba(46, 160, 67, 0.2);
+}
+
+.status-dot {
+    width: 8px; height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent-green);
+    animation: pulse 2s infinite;
+}
+
+/* --- TITLE --- */
+.hero-title {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 4.5rem;
+    color: white;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(46, 160, 67, 0.4);
+    letter-spacing: 2px;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.1;
+}
+
+.hero-title span {
+    color: var(--accent-green);
+}
+
+/* --- DESCRIPTION (Typing Effect Container) --- */
+.hero-description {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 3rem;
+    line-height: 1.6;
+    height: 3.2em; /* Reserve height for 2 lines */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.typing-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 1.2em;
+    background-color: var(--accent-green);
+    margin-left: 5px;
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+}
+
+/* --- BUTTONS --- */
+.cta-buttons {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.hero-btn {
+    padding: 1rem 2.5rem;
+    border-radius: 6px;
+    font-family: 'Audiowide', sans-serif;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Primary (Start) */
+.hero-btn.primary {
+    background: rgba(46, 160, 67, 0.15);
+    border: 1px solid var(--accent-green);
+    color: var(--accent-green);
+    box-shadow: 0 0 15px rgba(46, 160, 67, 0.1);
+}
+
+.hero-btn.primary:hover {
+    background: var(--accent-green);
+    color: black;
+    box-shadow: 0 0 30px rgba(46, 160, 67, 0.4);
+    transform: translateY(-3px);
+}
+
+/* Secondary (Learn More) */
+.hero-btn.secondary {
+    background: transparent;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+}
+
+.hero-btn.secondary:hover {
+    border-color: white;
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* --- ANIMATIONS --- */
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Mobile */
+@media (max-width: 768px) {
+    .hero-title { font-size: 2.5rem; }
+    .cta-buttons { flex-direction: column; width: 100%; max-width: 300px; }
+    .hero-btn { width: 100%; }
+    .hero-description { font-size: 0.9rem; height: auto; min-height: 4em; }
+}
