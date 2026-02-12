@@ -8,6 +8,8 @@ import { PreferencesProvider, usePreferences } from './context/PreferencesContex
 
 // ... imports for components (Navbar, Auth, etc.) ...
 import Navbar from './components/Navbar/Navbar';
+import Dock from './components/Dock/Dock';
+import { useLocation } from 'react-router-dom';
 import Auth from './components/Auth/Auth';
 import Admin from './pages/Admin/Admin';
 import Home from './pages/Home/Home';
@@ -28,6 +30,7 @@ import './App.css';
 
 // Create an inner component to consume the Context
 const AppContent = () => {
+  const location = useLocation();
   useTheme();
   useClickSpark();
 
@@ -161,7 +164,7 @@ const AppContent = () => {
   if (loading) return null;
 
   return (
-    <Router>
+    <>
       <Navbar isAuthenticated={isAuthenticated} onAuthClick={handleAuthTrigger} setIsAuthenticated={setIsAuthenticated} />
       <main className={reduceMotion ? '' : 'page-enter'}>
         <Routes>
@@ -184,8 +187,16 @@ const AppContent = () => {
           />
         </Routes>
       </main>
+      {/* Conditionally render the Dock: 
+          It will only appear if the current path is NOT the home page ('/') 
+      */}
+      {/* {
+        location.pathname !== '/' && (
+          <Dock isAuthenticated={isAuthenticated} />
+        )
+      } */}
       <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setIsAuthenticated={setIsAuthenticated} />
-    </Router>
+    </>
   );
 };
 
@@ -193,7 +204,9 @@ const AppContent = () => {
 function App() {
   return (
     <PreferencesProvider>
-      <AppContent />
+      <Router>
+        <AppContent />
+      </Router>
     </PreferencesProvider>
   );
 }

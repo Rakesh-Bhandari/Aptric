@@ -1,0 +1,99 @@
+/* Dock.css */
+
+/* The Safe Zone prevents the dock from blocking clicks when not hovering */
+.bento-dock-safe-zone {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    padding: 15px;
+    pointer-events: none; 
+}
+
+.bento-dock-bar {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    /* GHOST STATE: Almost invisible to show content behind */
+    background: rgba(13, 17, 23, 0.2); 
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    transition: all 0.5s cubic-bezier(0.2, 1, 0.2, 1);
+}
+
+/* ACTIVE HOVER: Becomes a solid Bento element */
+.bento-dock-safe-zone:hover .bento-dock-bar {
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--nav-border); /* Uses your existing green border variable */
+    gap: 12px;
+    padding: 10px 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    transform: translateY(-5px);
+}
+
+.bento-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    text-decoration: none;
+    color: var(--text-muted);
+    padding: 10px;
+    border-radius: 14px;
+    transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+    max-width: 44px; /* Icon width only initially */
+    overflow: hidden;
+}
+
+/* On hover, the link expands to show the text label */
+.bento-dock-safe-zone:hover .bento-nav-link:hover {
+    max-width: 140px; 
+    background: rgba(46, 160, 67, 0.15);
+    color: var(--accent-color);
+    padding-right: 16px;
+}
+
+.icon-unit {
+    min-width: 24px;
+    display: flex;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.label-unit {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+}
+
+.bento-nav-link:hover .label-unit {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* ACTIVE STATE: Subtle green glow */
+.bento-nav-link.active {
+    color: var(--accent-color);
+}
+
+.bento-nav-link.active .icon-unit {
+    filter: drop-shadow(0 0 5px var(--accent-color));
+}
+
+/* Mobile: Stack slightly tighter */
+@media (max-width: 768px) {
+    .bento-dock-bar {
+        gap: 4px;
+    }
+    .bento-nav-link:hover {
+        max-width: 44px; /* Disable expansion on mobile for space */
+        padding-right: 10px;
+    }
+}
