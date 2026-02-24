@@ -188,7 +188,7 @@ const Practice = () => {
     try { options = typeof currentQ?.options === 'string' ? JSON.parse(currentQ.options) : (currentQ?.options || []); } catch (e) { }
 
     return (
-        <div className="practice-container">
+        <div className="practice-container" >
             {/* 1. Header (Redesigned with Flexbox) */}
             <div className="practice-header">
 
@@ -198,12 +198,7 @@ const Practice = () => {
                         <span className="rank-label">CURRENT CLEARANCE</span>
                         <span className="rank-number">{userStats.level || 'RECRUIT'}</span>
                     </div>
-
-                    <div className="system-status">
-                        <div className="status-dot"></div> DAILY_PROTOCOL_ACTIVE
-                    </div>
                 </div>
-
                 {/* Bottom Row: Title (Centered) */}
                 <div className="header-main-title">
                     <h1 className="glitch-title">TRAINING_MODULE</h1>
@@ -221,7 +216,8 @@ const Practice = () => {
                     {/* Fixed > with &gt; */}
                     <span className="card-label">&gt;&gt; SYSTEM_METRICS</span>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+
+                    <div className="stats-wrapper">
                         <div className="stat-tile">
                             <span className="stat-val">{userStats.score?.toLocaleString() || 0}</span>
                             <span className="stat-desc">SCORE</span>
@@ -230,9 +226,7 @@ const Practice = () => {
                             <span className="stat-val" style={{ color: 'var(--gold)' }}>🔥 {userStats.streak || 0}</span>
                             <span className="stat-desc">STREAK</span>
                         </div>
-                    </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
                         <div className="stat-tile">
                             <span className="stat-val" style={{ fontSize: '1.4rem' }}>{userStats.accuracy || 0}%</span>
                             <span className="stat-desc">ACCURACY</span>
@@ -240,8 +234,10 @@ const Practice = () => {
                         <div className="stat-tile">
                             <span className="stat-val" style={{ fontSize: '1.4rem' }}>{avgTimeDisplay}</span>
                             <span className="stat-desc">AVG_TIME</span>
+
                         </div>
                     </div>
+
 
                     <div style={{ marginTop: '1.5rem' }}>
                         <span className="card-label">&gt;&gt; QUESTION_MATRIX</span>
@@ -355,16 +351,15 @@ const Practice = () => {
                         </>
                         // Change the "NO_DATA" fallback in Practice.jsx to a loading terminal
                     ) : (
-                        <div className="terminal-loader-container" style={{ textAlign: 'center', padding: '3rem' }}>
+                        <div className="terminal-loader-container">
                             <div className="status-dot"></div>
-                            <p className="glitch-text" style={{ fontFamily: 'JetBrains Mono', color: 'var(--accent-green)' }}>
-            // INITIALIZING_AI_GENERATION_PROTOCOL...
+                            <p className="glitch-text">
+        // INITIALIZING_AI_GENERATION_PROTOCOL...
                             </p>
-                            <p className="helper-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            <p className="helper-text">
                                 Please stand by while our AI compiles your custom training data packets.
                             </p>
-                            {/* Simple refresh button if generation takes unusually long */}
-                            <button onClick={() => window.location.reload()} className="cmd-btn" style={{ marginTop: '20px' }}>
+                            <button onClick={() => window.location.reload()} className="cmd-btn">
                                 RETRY_SYNC
                             </button>
                         </div>

@@ -19,13 +19,15 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 100px 20px;
-    min-height: 100vh;
+    padding: 20px;
+    /* Uses svh to avoid the address bar push-down on mobile */
+    height: 100vh; 
+    height: 100svh; 
     background-color: var(--bg-dark);
     position: relative;
+    /* Strictly disable scrolling */
     overflow: hidden;
     
-    /* Cyberpunk Grid Background matching other pages */
     background-image: 
         linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
         linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
@@ -52,7 +54,11 @@
 }
 
 /* --- SYSTEM BADGE --- */
+/* --- SYSTEM BADGE (Repositioned) --- */
 .system-status-badge {
+    position: absolute; 
+    bottom: 30px;       /* Distance from bottom edge */
+    right: 30px;        /* Changed from left to right */
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -64,8 +70,8 @@
     font-size: 0.7rem;
     color: var(--accent-green);
     letter-spacing: 1px;
-    margin-bottom: 2rem;
     box-shadow: 0 0 20px rgba(46, 160, 67, 0.2);
+    z-index: 20; 
 }
 
 .status-dot {
@@ -79,7 +85,7 @@
 /* --- TITLE --- */
 .hero-title {
     font-family: 'Audiowide', sans-serif;
-    font-size: 4.5rem;
+    font-size: clamp(2.5rem, 8vw, 4.5rem); /* Dynamically scales between 2.5rem and 4.5rem */
     color: white;
     text-transform: uppercase;
     text-shadow: 0 0 30px rgba(46, 160, 67, 0.4);
@@ -99,10 +105,11 @@
     color: var(--text-secondary);
     margin-bottom: 3rem;
     line-height: 1.6;
-    height: 3.2em; /* Reserve height for 2 lines */
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    min-height: 4.8em; 
+    display: block;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .typing-cursor {
@@ -168,10 +175,56 @@
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-/* Mobile */
+/* --- MOBILE SPECIFIC FIXES --- */
 @media (max-width: 768px) {
-    .hero-title { font-size: 2.5rem; }
-    .cta-buttons { flex-direction: column; width: 100%; max-width: 300px; }
-    .hero-btn { width: 100%; }
-    .hero-description { font-size: 0.9rem; height: auto; min-height: 4em; }
+    .hero-content {
+        /* Ensure content doesn't stretch beyond viewport */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+        margin-top: -40px;
+    }
+
+    .hero-title {
+        /* Tighter font for small screens to prevent line-wrapping */
+        font-size: 1.8rem; 
+        margin-bottom: 0.8rem;
+    }
+
+    .hero-description {
+        font-size: 0.85rem;
+        /* Constrain the height so it doesn't push buttons off-screen */
+        min-height: 5em; 
+        margin-bottom: 1.5rem;
+        padding: 0 10px;
+    }
+
+    .system-status-badge {
+        bottom: 15px; /* Tighter spacing for mobile */
+        left: 15px;
+        font-size: 0.55rem;
+        padding: 4px 12px;
+    }
+
+    .cta-buttons {
+        flex-direction: column; 
+        width: 100%;
+        max-width: 240px;
+        margin: 0 auto;
+        gap: 0.8rem;
+    }
+
+    .hero-btn {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Landscape Mode Fix (for very short phones) */
+@media (max-height: 500px) {
+    .hero-title { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .hero-description { display: none; } /* Hide text in short landscape to keep buttons visible */
+    .system-status-badge { display: none; }
 }

@@ -3,6 +3,7 @@ import session from 'express-session';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import mysql from 'mysql2/promise';
+import dbPool from '../db.js';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
@@ -49,15 +50,15 @@ const POINTS_WRONG = -20;
 const STREAK_LOSS = -50;
 
 // --- DATABASE CONNECTION ---
-const dbPool = mysql.createPool({
-    host: VITE_DB_HOST,
-    user: VITE_DB_USER,
-    password: VITE_DB_PASSWORD,
-    database: VITE_DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-});
+// const dbPool = mysql.createPool({
+//     host: VITE_DB_HOST,
+//     user: VITE_DB_USER,
+//     password: VITE_DB_PASSWORD,
+//     database: VITE_DB_NAME,
+//     waitForConnections: true,
+//     connectionLimit: 10,
+//     queueLimit: 0,
+// });
 
 // --- INITIALIZE APP (MOVED UP) ---
 const app = express();

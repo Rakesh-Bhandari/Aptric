@@ -120,8 +120,8 @@ const SolveQuestion = () => {
     try { options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options; } catch(e){}
 
     return (
-        <div className="practice-container" style={{maxWidth: '800px'}}>
-             <button className="cmd-btn" style={{width:'fit-content', marginBottom:'1rem'}} onClick={() => navigate('/topics')}>
+        <div className="practice-container" style={{maxWidth: '100%', width: '100%'}}>
+             <button className="cmd-btn" style={{width: '100%', maxWidth: '200px', marginBottom:'1rem'}} onClick={() => navigate('/topics')}>
                 <Icons.Back /> RETURN_TO_ROOT
             </button>
             
