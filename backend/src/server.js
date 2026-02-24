@@ -1741,5 +1741,12 @@ app.get('/api/cron/streak-check', async (req, res) => {
     }
 });
 
+app.get('/',(req, res) => {
+    res.send({
+        activationStatus: 'Server is active and running smoothly!',
+    })
+
+})
+
 const port = VITE_PORT || 5000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
