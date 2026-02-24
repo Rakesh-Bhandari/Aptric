@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './Leaderboard.css';
 
+// FIX: Point directly to Backend Port 5000
 const API_BASE_URL = 'http://localhost:5000';
 
-/* --- SVG MATH HELPERS (Keep these for SkillWheel) --- */
+/* --- SVG MATH HELPERS (Required for SkillWheel) --- */
 const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
     const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
     return {
@@ -30,13 +31,11 @@ const describeDonutSegment = (x, y, radius, innerRadius, startAngle, endAngle) =
 
 /* --- DYNAMIC WEIGHTED SKILL WHEEL --- */
 const SkillWheel = ({ topics }) => {
-    // Ensure all 6 categories are represented even if data is missing
     const allCategories = [
         'Quantitative Aptitude', 'Logical Reasoning', 'Verbal Ability', 
         'Data Interpretation', 'Puzzles', 'Technical Aptitude'
     ];
 
-    // Map the incoming topic data to the full list of 6
     const safeTopics = allCategories.map(cat => {
         const existing = (topics || []).find(t => t.name === cat);
         return existing || { name: cat, progress: 0, total: 0, correct: 0 };
@@ -49,16 +48,12 @@ const SkillWheel = ({ topics }) => {
     });
     
     const colors = ['#2ea043', '#3b82f6', '#a855f7', '#d29922', '#f85149', '#06b6d4'];
-
-    // DYNAMIC SIZING: Calculate weights based on total attempts
     const grandTotal = safeTopics.reduce((acc, t) => acc + (t.total || 0), 0);
     
     let currentAngle = 0;
     const slices = safeTopics.map((topic, i) => {
-        // If user has 0 total questions, give each slice an equal 1/6th of the wheel
         const weight = grandTotal > 0 ? (topic.total || 0) / grandTotal : 1 / 6;
         const angleSize = weight * 360;
-        
         const slice = {
             ...topic,
             color: colors[i % colors.length],
@@ -77,19 +72,11 @@ const SkillWheel = ({ topics }) => {
         <div className="skill-wheel-container">
             <div className="wheel-wrapper">
                 <svg viewBox="0 0 200 200" className="skill-svg">
-                    {/* Background track */}
                     <circle cx="100" cy="100" r="90" fill="transparent" stroke="rgba(255,255,255,0.03)" strokeWidth="15" />
-                    
                     {slices.map((slice, i) => (
                         <path
                             key={i}
-                            d={describeDonutSegment(
-                                100, 100, 
-                                activeIndex === i ? 96 : 90, // Pop out active slice
-                                60, 
-                                slice.startAngle + 1.5, // 1.5deg gap
-                                slice.endAngle - 1.5
-                            )}
+                            d={describeDonutSegment(100, 100, activeIndex === i ? 96 : 90, 60, slice.startAngle + 1.5, slice.endAngle - 1.5)}
                             fill={slice.color}
                             onMouseEnter={() => setActiveIndex(i)}
                             className="wheel-segment"
@@ -101,17 +88,12 @@ const SkillWheel = ({ topics }) => {
                         />
                     ))}
                 </svg>
-                
                 <div className="wheel-center">
                     <div className="center-stats">
-                        <div style={{ color: activeItem?.color, fontSize: '1.5rem', fontWeight: 'bold' }}>
-                            {activeItem?.progress || 0}%
-                        </div>
+                        <div style={{ color: activeItem?.color, fontSize: '1.5rem', fontWeight: 'bold' }}>{activeItem?.progress || 0}%</div>
                         <div style={{ fontSize: '0.6rem', color: '#7d8590', textTransform: 'uppercase' }}>Mastery</div>
                     </div>
                 </div>
-
-                {/* BENTO POPUP */}
                 {activeItem && (
                     <div className={`stat-popup ${isRightSide ? 'popup-right' : 'popup-left'}`}>
                         <div className="popup-header" style={{ color: activeItem.color }}>{activeItem.name}</div>
@@ -123,18 +105,10 @@ const SkillWheel = ({ topics }) => {
                     </div>
                 )}
             </div>
-
-            {/* BENTO LEGEND PILLS */}
             <div className="skill-legend-bottom">
                 {slices.map((slice, i) => (
-                    <div 
-                        key={i} 
-                        className={`mini-legend-item ${activeIndex === i ? 'active' : ''}`}
-                        style={{ borderColor: activeIndex === i ? slice.color : 'rgba(255,255,255,0.05)' }}
-                        onMouseEnter={() => setActiveIndex(i)}
-                    >
+                    <div key={i} className={`mini-legend-item ${activeIndex === i ? 'active' : ''}`} style={{ borderColor: activeIndex === i ? slice.color : 'rgba(255,255,255,0.05)' }} onMouseEnter={() => setActiveIndex(i)}>
                         <span className="dot" style={{ background: slice.color }}></span>
-                        {/* Show short name (first word) */}
                         {slice.name.split(' ')[0]}
                     </div>
                 ))}
@@ -155,26 +129,40 @@ const Leaderboard = () => {
             try {
                 const lbRes = await fetch(`${API_BASE_URL}/api/leaderboard`);
                 const lbData = await lbRes.json();
-                setLeaders(lbData);
+                setLeaders(Array.isArray(lbData) ? lbData : []);
+                
                 const userRes = await fetch(`${API_BASE_URL}/api/user`, { credentials: 'include' });
                 if (userRes.ok) {
                     const userData = await userRes.json();
                     setCurrentUser(userData.user);
                 }
-            } catch (error) { console.error(error); } finally { setLoading(false); }
+            } catch (error) { console.error("Leaderboard Fetch Error:", error); } 
+            finally { setLoading(false); }
         };
         fetchData();
     }, []);
 
     const handleUserClick = async (userId) => {
         setProfileLoading(true);
+        setSelectedProfile(null); // Clear previous
         try {
             const res = await fetch(`${API_BASE_URL}/api/users/${userId}/public`);
-            if (res.ok) setSelectedProfile(await res.json());
-        } catch (err) { console.error(err); } finally { setProfileLoading(false); }
+            if (res.ok) {
+                const data = await res.json();
+                setSelectedProfile(data);
+            }
+        } catch (err) { console.error("Public Profile Fetch Error:", err); } 
+        finally { setProfileLoading(false); }
     };
 
-    if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2ea043' }}>INITIALIZING_RANKING_DATA...</div>;
+    // Helper to get safe Avatar URL
+    const getAvatarUrl = (path, name) => {
+        if (path && path.startsWith('http')) return path;
+        if (path) return `${API_BASE_URL}${path}`;
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=2ea043&color=fff&size=128`;
+    };
+
+    if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2ea043', fontFamily: 'JetBrains Mono' }}>INITIALIZING_RANKING_DATA...</div>;
 
     return (
         <div className="leaderboard-container">
@@ -191,32 +179,21 @@ const Leaderboard = () => {
 
             <div className="bento-leaderboard-grid">
                 {leaders.map((player) => {
-                    const isMe = currentUser && player.user === currentUser.name;
-                    const avatarUrl = player.profilePic ? `${API_BASE_URL}${player.profilePic}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(player.user)}&background=2ea043&color=fff&size=128`;
-
+                    const isMe = currentUser && player.userId === currentUser.id;
                     return (
                         <div key={player.rank} className={`bento-item ${isMe ? 'is-me' : ''}`} onClick={() => handleUserClick(player.userId)}>
                             <div className="bento-rank">#{player.rank}</div>
-
                             <div className="bento-user-core">
-                                <img src={avatarUrl} alt="Avatar" className="bento-avatar" />
+                                <img src={getAvatarUrl(player.profilePic, player.user)} alt="Avatar" className="bento-avatar" />
                                 <div>
                                     <span className="bento-name">{player.user} {isMe && <span style={{ color: 'var(--accent-green)', fontSize: '0.6rem' }}>(YOU)</span>}</span>
                                     <span className="bento-clearance">LEVEL_{player.level.toUpperCase()}</span>
                                 </div>
                             </div>
-
                             <div className="bento-stats-row">
-                                <div className="mini-stat">
-                                    <span className="mini-label">SCORE</span>
-                                    <span className="mini-val" style={{ color: 'var(--accent-green)' }}>{player.score.toLocaleString()}</span>
-                                </div>
-                                <div className="mini-stat">
-                                    <span className="mini-label">ACCURACY</span>
-                                    <span className="mini-val">{player.accuracy}%</span>
-                                </div>
+                                <div className="mini-stat"><span className="mini-label">SCORE</span><span className="mini-val" style={{ color: 'var(--accent-green)' }}>{player.score.toLocaleString()}</span></div>
+                                <div className="mini-stat"><span className="mini-label">ACCURACY</span><span className="mini-val">{player.accuracy}%</span></div>
                             </div>
-
                             <div style={{ marginTop: '1rem', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                                 <div style={{ width: `${player.accuracy}%`, height: '100%', background: 'var(--accent-green)', boxShadow: '0 0 10px var(--accent-green)' }}></div>
                             </div>
@@ -225,65 +202,38 @@ const Leaderboard = () => {
                 })}
             </div>
 
-            {/* --- PREMIER BENTO MODAL 3.0 --- */}
             {(selectedProfile || profileLoading) && (
                 <div className="modal-backdrop" onClick={() => setSelectedProfile(null)}>
                     <div className="modal-glass-panel" onClick={e => e.stopPropagation()}>
                         <button className="btn-close-minimal" onClick={() => setSelectedProfile(null)}>✕</button>
-
                         {profileLoading ? (
-                            <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'JetBrains Mono', color: 'var(--accent-green)' }}>
-                    // SYNCHRONIZING_DATA...
-                            </div>
-                        ) : (
+                            <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'JetBrains Mono', color: 'var(--accent-green)' }}>// SYNCHRONIZING_DATA...</div>
+                        ) : selectedProfile && (
                             <div className="bento-modal-wrapper">
-
-                                {/* LEFT: IDENTITY COLUMN */}
                                 <div className="bento-column-left">
                                     <div className="card-identity-main">
-                                        <img
-                                            src={selectedProfile.profilePic ? `${API_BASE_URL}${selectedProfile.profilePic}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedProfile.name)}&background=2ea043&color=fff&size=256`}
-                                            className="modal-avatar-premium"
-                                            alt="Avatar"
-                                        />
+                                        <img src={getAvatarUrl(selectedProfile.profilePic, selectedProfile.name)} className="modal-avatar-premium" alt="Avatar" />
                                         <h2 style={{ fontFamily: 'Audiowide', fontSize: '1.5rem', marginBottom: '4px' }}>{selectedProfile.name}</h2>
-                                        <div className="premium-label" style={{ color: 'var(--accent-green)' }}>{selectedProfile.stats.level} Operative</div>
-
-                                        <p className="premium-bio">
-                                            {selectedProfile.bio || "No tactical biography provided for this operative."}
-                                        </p>
+                                        <div className="premium-label" style={{ color: 'var(--accent-green)' }}>{selectedProfile.stats?.level} Operative</div>
+                                        <p className="premium-bio">{selectedProfile.bio || "No tactical biography provided for this operative."}</p>
                                     </div>
-
                                     <div className="card-bento-stat" style={{ textAlign: 'center' }}>
                                         <span className="premium-label">Active_Streak</span>
-                                        <span className="premium-value" style={{ color: 'var(--gold)' }}>🔥 {selectedProfile.stats.streak} Days</span>
+                                        <span className="premium-value" style={{ color: 'var(--gold)' }}>🔥 {selectedProfile.stats?.streak} Days</span>
                                     </div>
-
                                     <div className="card-bento-stat" style={{ gridColumn: 'span 2', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span className="premium-label" style={{ margin: 0 }}>Network_Joined</span>
-                                        <span style={{ fontFamily: 'JetBrains Mono', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                            {new Date(selectedProfile.stats.joined).toLocaleDateString()}
-                                        </span>
+                                        <span style={{ fontFamily: 'JetBrains Mono', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(selectedProfile.stats?.joined).toLocaleDateString()}</span>
                                     </div>
                                 </div>
-
-                                {/* RIGHT: ANALYTICS GRID */}
                                 <div className="bento-column-right">
-                                    <div className="card-bento-stat">
-                                        <span className="premium-label">Global_Score</span>
-                                        <span className="premium-value">{selectedProfile.stats.score.toLocaleString()}</span>
-                                    </div>
-                                    <div className="card-bento-stat">
-                                        <span className="premium-label">Avg_Accuracy</span>
-                                        <span className="premium-value">{selectedProfile.stats.accuracy}%</span>
-                                    </div>
-
+                                    <div className="card-bento-stat"><span className="premium-label">Global_Score</span><span className="premium-value">{selectedProfile.stats?.score.toLocaleString()}</span></div>
+                                    <div className="card-bento-stat"><span className="premium-label">Avg_Accuracy</span><span className="premium-value">{selectedProfile.stats?.accuracy}%</span></div>
                                     <div className="card-bento-wide">
                                         <span className="premium-label" style={{ alignSelf: 'flex-start', marginBottom: '1.5rem' }}>Skill_Matrix_Analysis</span>
                                         <SkillWheel topics={selectedProfile.topics} />
                                     </div>
                                 </div>
-
                             </div>
                         )}
                     </div>

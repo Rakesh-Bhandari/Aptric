@@ -13,8 +13,8 @@ const Icons = {
     Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
     Edit: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
     Shield: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>,
-    Target: () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>,
-    Crosshair: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+    Target: () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" /><path d="M2 12h20" /><path d="M12 2v20" /></svg>,
+    Crosshair: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="22" y1="12" x2="18" y2="12" /><line x1="6" y1="12" x2="2" y2="12" /><line x1="12" y1="6" x2="12" y2="2" /><line x1="12" y1="22" x2="12" y2="18" /></svg>
 };
 
 // --- SVG MATH HELPERS ---
@@ -54,23 +54,23 @@ const SkillWheel = ({ topics }) => {
     // Initialize with the index of the highest progress
     const [activeIndex, setActiveIndex] = useState(() => {
         if (safeTopics.length === 0) return null;
-        return safeTopics.reduce((maxIdx, current, idx, arr) => 
+        return safeTopics.reduce((maxIdx, current, idx, arr) =>
             (Number(current.progress) || 0) > (Number(arr[maxIdx].progress) || 0) ? idx : maxIdx, 0
         );
     });
-    
+
     // Tech Palette
     const colors = ['#2ea043', '#3b82f6', '#a855f7', '#d29922', '#f85149', '#06b6d4', '#eab308', '#ec4899'];
 
     // 1. Calculate Total Questions
     const grandTotal = safeTopics.reduce((acc, t) => acc + (t.total || 0), 0);
-    
+
     // 2. Map topics to angles
     let currentAngle = 0;
     const slices = safeTopics.map((topic, i) => {
         const weight = grandTotal > 0 ? (topic.total || 0) / grandTotal : 1 / (safeTopics.length || 1);
         const angleSize = weight * 360;
-        
+
         const slice = {
             ...topic,
             color: colors[i % colors.length],
@@ -85,33 +85,33 @@ const SkillWheel = ({ topics }) => {
     const activeItem = activeIndex !== null ? slices[activeIndex] : null;
     const activeColor = activeItem ? activeItem.color : 'var(--text-secondary)';
     const isRightSide = activeItem ? (activeItem.midAngle >= 0 && activeItem.midAngle < 180) : true;
-    
+
     return (
         <div className="skill-wheel-container">
             <div className="wheel-wrapper">
                 <svg viewBox="0 0 200 200" className="skill-svg">
                     {/* Background Ring - Thinner for Bento */}
                     <circle cx="100" cy="100" r="90" fill="transparent" stroke="rgba(255,255,255,0.03)" strokeWidth="15" />
-                    
+
                     {slices.map((slice, i) => {
                         const isActive = activeIndex === i;
                         const pathData = describeDonutSegment(
-                            100, 100, 
+                            100, 100,
                             isActive ? 96 : 90, // Pop out
-                            60, 
+                            60,
                             slice.startAngle + 1.5, // slightly larger gap for Bento look
                             slice.endAngle - 1.5
                         );
 
                         return (
-                            <g key={i} 
-                               onClick={() => setActiveIndex(i)}
-                               onMouseEnter={() => setActiveIndex(i)}
-                               className="wheel-segment"
-                               style={{ cursor: 'pointer' }}
+                            <g key={i}
+                                onClick={() => setActiveIndex(i)}
+                                onMouseEnter={() => setActiveIndex(i)}
+                                className="wheel-segment"
+                                style={{ cursor: 'pointer' }}
                             >
-                                <path 
-                                    d={pathData} 
+                                <path
+                                    d={pathData}
                                     fill={slice.color}
                                     className="segment-fill"
                                     style={{
@@ -128,11 +128,11 @@ const SkillWheel = ({ topics }) => {
                 <div className="wheel-center">
                     {activeItem ? (
                         <div className="center-stats">
-                            <span style={{color: activeColor, fontSize:'1.6rem', fontWeight:'700', fontFamily:'Inter, sans-serif'}}>{activeItem.progress}%</span>
-                            <span style={{fontSize:'0.65rem', color:'#8b949e', textTransform:'uppercase', letterSpacing:'1px'}}>Mastery</span>
+                            <span style={{ color: activeColor, fontSize: '1.6rem', fontWeight: '700', fontFamily: 'Inter, sans-serif' }}>{activeItem.progress}%</span>
+                            <span style={{ fontSize: '0.65rem', color: '#8b949e', textTransform: 'uppercase', letterSpacing: '1px' }}>Mastery</span>
                         </div>
                     ) : (
-                        <div className="center-icon" style={{color: 'var(--text-secondary)'}}>
+                        <div className="center-icon" style={{ color: 'var(--text-secondary)' }}>
                             <Icons.Target />
                         </div>
                     )}
@@ -165,17 +165,17 @@ const SkillWheel = ({ topics }) => {
             {/* BENTO LEGEND PILLS */}
             <div className="skill-legend-bottom">
                 {slices.map((slice, i) => (
-                    <div 
-                        key={i} 
+                    <div
+                        key={i}
                         className={`mini-legend-item ${activeIndex === i ? 'active' : ''}`}
-                        style={{ 
+                        style={{
                             color: activeIndex === i ? 'white' : '#8b949e',
                             borderColor: activeIndex === i ? slice.color : 'rgba(255,255,255,0.05)'
-                        }} 
+                        }}
                         onMouseEnter={() => setActiveIndex(i)}
                         onClick={() => setActiveIndex(i)}
                     >
-                        <span className="dot" style={{background: slice.color}}></span>
+                        <span className="dot" style={{ background: slice.color }}></span>
                         {slice.name.split(' ')[0]}
                     </div>
                 ))}
@@ -188,11 +188,11 @@ const SkillWheel = ({ topics }) => {
 const StreakCalendar = ({ data }) => {
     const years = Array.from(new Set([new Date().getFullYear(), ...Object.keys(data).map(d => new Date(d).getFullYear())])).sort((a, b) => b - a);
     const [selectedYear, setSelectedYear] = useState(years[0] || new Date().getFullYear());
-    
+
     const isLeapYear = (year) => (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
     const days = isLeapYear(selectedYear) ? 366 : 365;
     const startDay = new Date(selectedYear, 0, 1).getDay();
-    
+
     const grid = [];
     for (let i = 0; i < startDay; i++) grid.push(null);
     for (let i = 0; i < days; i++) {
@@ -225,7 +225,7 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const { theme, toggleTheme, reduceMotion, toggleMotion } = usePreferences();
-    
+
     const [formData, setFormData] = useState({ user_name: '', bio: '' });
     const [saveStatus, setSaveStatus] = useState('');
     const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -284,12 +284,19 @@ const Profile = () => {
         } catch (err) { alert('Upload failed'); } finally { setUploading(false); }
     };
 
-    if (loading) return <div className="loading-spinner"></div>;
-    if (!data) return <div className="profile-container" style={{ color: 'white', textAlign:'center', marginTop:'20%' }}>DATA_LINK_FAILURE: RETRYING...</div>;
-
-    const { stats, topics, rank, profile, activity } = data;
-    const avatarUrl = profile.profile_pic ? `${API_BASE_URL}${profile.profile_pic}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=2ea043&color=fff&size=256`;
-
+    if (loading) return <div className="loading-spinner">SHIELD_LINK_ESTABLISHING...</div>;
+    if (!data || !data.profile) {
+        return (
+            <div className="profile-container" style={{ color: 'white', textAlign: 'center', marginTop: '20%' }}>
+                DATA_LINK_FAILURE: UNAUTHORIZED_OR_OFFLINE
+            </div>
+        );
+    }
+    const { profile, stats, rank, topics, activity } = data;
+    const avatarUrl = profile.profile_pic && profile.profile_pic.startsWith('http')
+        ? profile.profile_pic
+        : (profile.profile_pic ? `${API_BASE_URL}${profile.profile_pic}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=2ea043&color=fff&size=256`);
+        
     return (
         <div className="profile-container">
             {/* 1. IDENTITY HEADER */}

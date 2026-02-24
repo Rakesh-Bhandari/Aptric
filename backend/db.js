@@ -19,7 +19,7 @@ const dbPool = mysql.createPool({
     port: 4000, 
     ssl: {
         // Path adjusted to look for certs/ folder inside /backend/
-        ca: fs.readFileSync(path.join(__dirname, 'certs', 'isrgrootx1.pem')),
+        ca: fs.readFileSync(path.resolve(__dirname, 'certs', 'isrgrootx1.pem')),
         rejectUnauthorized: true
     },
     waitForConnections: true,

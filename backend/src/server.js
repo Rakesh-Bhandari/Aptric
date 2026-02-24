@@ -13,6 +13,8 @@ import cron from 'node-cron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import fs from 'fs';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
@@ -25,6 +27,13 @@ const __dirname = path.dirname(__filename);
 
 // Load .env from two levels up
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
 
 const {
     VITE_GOOGLE_CLIENT_ID,
@@ -74,33 +83,16 @@ if (!fs.existsSync(uploadDir)) {
 // 2. Serve the uploads folder publicly
 app.use('/uploads', express.static(uploadDir));
 
-// --- MULTER CONFIGURATION (Fixed) ---
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        // FIX: Use the absolute path variable 'uploadDir'
-        // This prevents "ENOENT" errors regardless of where you run the script from
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        // Safety check for user ID
-        const userId = req.user ? req.user.user_id : 'unknown';
-        cb(null, `avatar-${userId}-${uniqueSuffix}${ext}`);
-    }
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'avatars',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }] // Auto-resize
+  }
 });
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only images are allowed'));
-        }
-    }
-});
+const upload = multer({ storage: storage });
 
 const transporter = nodemailer.createTransport({
     service: 'gmail', // or your provider
@@ -663,36 +655,20 @@ app.get('/api/activation-status', isLoggedIn, async (req, res) => {
 
 // --- NEW ROUTE: Upload Avatar ---
 app.post('/api/user/avatar', isLoggedIn, upload.single('avatar'), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-    }
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-    try {
-        const userId = req.user.user_id;
-        const fileUrl = `/uploads/${req.file.filename}`;
+  try {
+    const userId = req.user.user_id;
+    const fileUrl = req.file.path; // Cloudinary returns the full URL in .path
 
-        const conn = await dbPool.getConnection();
+    // Update DB with the cloud URL
+    await dbPool.query('UPDATE users SET profile_pic = ? WHERE user_id = ?', [fileUrl, userId]);
 
-        // Optional: Delete old avatar file to save disk space
-        const [[oldUser]] = await conn.query('SELECT profile_pic FROM users WHERE user_id = ?', [userId]);
-        if (oldUser && oldUser.profile_pic) {
-            // Remove leading slash for filesystem path
-            const relativePath = oldUser.profile_pic.startsWith('/') ? oldUser.profile_pic.substring(1) : oldUser.profile_pic;
-            const oldPath = path.join(__dirname, relativePath);
-            if (fs.existsSync(oldPath)) {
-                fs.unlinkSync(oldPath);
-            }
-        }
-
-        // Update DB
-        await conn.query('UPDATE users SET profile_pic = ? WHERE user_id = ?', [fileUrl, userId]);
-        conn.release();
-
-        res.json({ message: 'Avatar updated', url: fileUrl });
-    } catch (err) {
-        console.error("Avatar upload error:", err);
-        res.status(500).json({ error: 'Server error during upload' });
-    }
+    res.json({ message: 'Avatar updated', url: fileUrl });
+  } catch (err) {
+    console.error("Cloudinary upload error:", err);
+    res.status(500).json({ error: 'Server error during cloud upload' });
+  }
 });
 
 // 2. User Data Route
