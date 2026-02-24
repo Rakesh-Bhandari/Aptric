@@ -3,7 +3,7 @@ import session from 'express-session';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import mysql from 'mysql2/promise';
-import dbPool from '../db.js';
+import dbPool from './db.js';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
@@ -71,17 +71,6 @@ const STREAK_LOSS = -50;
 
 // --- INITIALIZE APP (MOVED UP) ---
 const app = express();
-
-// --- STATIC FILE SERVING & UPLOAD SETUP ---
-const uploadDir = path.join(__dirname, 'uploads');
-
-// 1. Create directory safely (recursive ensures parent folders exist)
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// 2. Serve the uploads folder publicly
-app.use('/uploads', express.static(uploadDir));
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,

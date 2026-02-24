@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load .env from the root folder (two levels up from src or one from backend)
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const dbPool = mysql.createPool({
     host: process.env.VITE_DB_HOST,
@@ -19,7 +19,7 @@ const dbPool = mysql.createPool({
     port: 4000, 
     ssl: {
         // Path adjusted to look for certs/ folder inside /backend/
-        ca: fs.readFileSync(path.resolve(__dirname, 'certs', 'isrgrootx1.pem')),
+        ca: fs.readFileSync(path.join(__dirname, 'certs', 'isrgrootx1.pem')),
         rejectUnauthorized: true
     },
     waitForConnections: true,
