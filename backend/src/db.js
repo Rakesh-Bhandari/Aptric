@@ -1,4 +1,3 @@
-// backend/db.js
 import mysql from 'mysql2/promise';
 import fs from 'fs';
 import path from 'path';
@@ -8,8 +7,8 @@ import dotenv from 'dotenv';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load .env from the root folder (two levels up from src or one from backend)
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Only load .env locally; Vercel provides these automatically in production
+dotenv.config(); 
 
 const dbPool = mysql.createPool({
     host: process.env.VITE_DB_HOST,
@@ -18,7 +17,7 @@ const dbPool = mysql.createPool({
     database: process.env.VITE_DB_NAME,
     port: 4000, 
     ssl: {
-        // Path adjusted to look for certs/ folder inside /backend/
+        // Point specifically to the certs folder inside your src directory
         ca: fs.readFileSync(path.join(__dirname, 'certs', 'isrgrootx1.pem')),
         rejectUnauthorized: true
     },
