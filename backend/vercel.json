@@ -10,5 +10,11 @@
     "src/server.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/streak-check",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

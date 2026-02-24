@@ -1701,22 +1701,45 @@ app.get('/api/topics/stats', isLoggedIn, async (req, res) => {
     }
 });
 
-// --- CRON JOB ---
-cron.schedule('0 0 * * *', async () => {
-    console.log('Running daily streak check...');
+app.get('/api/cron/streak-check', async (req, res) => {
+    // Basic Security: Check for Vercel Cron Header
+    // This prevents random people from triggering your cron logic
+    const authHeader = req.headers['authorization'];
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return res.status(401).end('Unauthorized');
+    }
+
+    console.log('Running daily streak check via Vercel Cron...');
     const conn = await dbPool.getConnection();
     try {
-        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        const yesterday = new Date(); 
+        yesterday.setDate(yesterday.getDate() - 1);
         const yStr = yesterday.toISOString().split('T')[0];
 
-        const [users] = await conn.query('SELECT user_id, day_streak FROM users WHERE last_login < ? AND day_streak > 0', [yStr]);
+        // Reset streaks for users who didn't log in yesterday
+        const [users] = await conn.query(
+            'SELECT user_id, day_streak FROM users WHERE last_login < ? AND day_streak > 0', 
+            [yStr]
+        );
+
+        const STREAK_LOSS = -50; // Defined in your constants 
+
         for (const u of users) {
             const penalty = u.day_streak * STREAK_LOSS;
-            await conn.query('UPDATE users SET day_streak = 0, score = score + ? WHERE user_id = ?', [penalty, u.user_id]);
+            await conn.query(
+                'UPDATE users SET day_streak = 0, score = score + ? WHERE user_id = ?', 
+                [penalty, u.user_id]
+            );
         }
-    } catch (e) { console.error(e); }
-    finally { conn.release(); }
-}, { timezone: "UTC" });
+        
+        res.status(200).json({ processed: users.length });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        conn.release();
+    }
+});
 
 const port = VITE_PORT || 5000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
