@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Feedback.css';
+import API_BASE_URL from '../../utils/config';
 
 // --- ICONS (Tech Style) ---
 const Icons = {
@@ -28,8 +29,6 @@ const Feedback = () => {
     const [editingId, setEditingId] = useState(null);
     const [editRating, setEditRating] = useState(0);
     const [editComment, setEditComment] = useState('');
-
-    const API_BASE_URL = 'http://localhost:5000';
 
     useEffect(() => {
         fetchUserAndFeedback();

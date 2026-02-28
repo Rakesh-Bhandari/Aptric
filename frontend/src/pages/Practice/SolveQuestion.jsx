@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { marked } from 'marked';
 import './Practice.css';
+import API_BASE_URL from '../../utils/config.js';
 
-// --- ICONS ---
 const Icons = {
     Back: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>,
     Check: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>,
@@ -13,7 +13,6 @@ const Icons = {
     Right: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
 };
 
-// Helper for formatted text
 const FormattedText = ({ text }) => {
     if (!text) return null;
     const getHtml = () => {
@@ -25,7 +24,7 @@ const FormattedText = ({ text }) => {
 const SolveQuestion = () => {
     const { qid } = useParams();
     const navigate = useNavigate();
-    
+
     const [q, setQ] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState(null);
@@ -33,31 +32,29 @@ const SolveQuestion = () => {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`http://localhost:5000/api/questions/single/${qid}`, { credentials: 'include' })
-        .then(res => res.json())
-        .then(data => {
-            if(!data.error) {
-                setQ(data);
-                if(['correct', 'wrong'].includes(data.status)) {
-                    setSelectedAnswerIndex(data.selectedAnswerIndex);
-                } else {
-                    setSelectedAnswerIndex(null);
+        fetch(`${API_BASE_URL}/api/single/${qid}`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.error) {
+                    setQ(data);
+                    if (['correct', 'wrong'].includes(data.status)) {
+                        setSelectedAnswerIndex(data.selectedAnswerIndex);
+                    } else {
+                        setSelectedAnswerIndex(null);
+                    }
+                    fetchCategoryQuestions(data.category);
                 }
-                fetchCategoryQuestions(data.category);
-            }
-            setLoading(false);
-        })
-        .catch(err => setLoading(false));
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
     }, [qid]);
 
     const fetchCategoryQuestions = (category) => {
         if (categoryQuestions.length > 0 && categoryQuestions[0].category === category) return;
-        fetch(`http://localhost:5000/api/questions/category?category=${encodeURIComponent(category)}`, { 
-            credentials: 'include' 
-        })
-        .then(res => res.json())
-        .then(list => { if(Array.isArray(list)) setCategoryQuestions(list); })
-        .catch(console.error);
+        fetch(`${API_BASE_URL}/api/category?category=${encodeURIComponent(category)}`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(list => { if (Array.isArray(list)) setCategoryQuestions(list); })
+            .catch(console.error);
     };
 
     const currentIndex = categoryQuestions.findIndex(item => item.qid === qid);
@@ -67,7 +64,7 @@ const SolveQuestion = () => {
     const handleSubmit = async () => {
         if (selectedAnswerIndex === null) return;
         try {
-            const res = await fetch('http://localhost:5000/api/submit-answer', {
+            const res = await fetch(`${API_BASE_URL}/api/submit-answer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -84,7 +81,7 @@ const SolveQuestion = () => {
     };
 
     const handleHint = async () => {
-        const res = await fetch('http://localhost:5000/api/use-hint', {
+        const res = await fetch(`${API_BASE_URL}/api/use-hint`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -96,7 +93,7 @@ const SolveQuestion = () => {
 
     const handleReveal = async () => {
         if (!window.confirm("ABORT QUESTION?")) return;
-        const res = await fetch('http://localhost:5000/api/give-up', {
+        const res = await fetch(`${API_BASE_URL}/api/give-up`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -121,23 +118,20 @@ const SolveQuestion = () => {
 
     return (
         <div className="practice-container" style={{maxWidth: '100%', width: '100%'}}>
-             <button className="cmd-btn" style={{width: '100%', maxWidth: '200px', marginBottom:'1rem'}} onClick={() => navigate('/topics')}>
+            <button className="cmd-btn" style={{width: '100%', maxWidth: '200px', marginBottom:'1rem'}} onClick={() => navigate('/topics')}>
                 <Icons.Back /> RETURN_TO_ROOT
             </button>
-            
-            <div className="console-card">
-                {/* Fixed > with &gt; */}
-                <span className="card-label">&gt;&gt; SINGLE_QUESTION_MODE</span>
 
+            <div className="console-card">
+                <span className="card-label">&gt;&gt; SINGLE_QUESTION_MODE</span>
                 <div className="terminal-header">
                     <span>[{q.difficulty.toUpperCase()}] :: {q.category.toUpperCase()}</span>
                 </div>
-
                 <div className="question-text">
                     <FormattedText text={q.questionText} />
                 </div>
 
-                 {q.hint && (isHintUsed || isAnswered) && (
+                {q.hint && (isHintUsed || isAnswered) && (
                     <div className="terminal-alert alert-hint">
                         [HINT_DECRYPTED]: <FormattedText text={q.hint} />
                     </div>
@@ -159,7 +153,6 @@ const SolveQuestion = () => {
                         } else {
                             if (selectedAnswerIndex === idx) optClass += ' selected';
                         }
-
                         return (
                             <div key={idx} className={optClass} onClick={() => !isAnswered && setSelectedAnswerIndex(idx)}>
                                 <span className="opt-prefix">{String.fromCharCode(65 + idx)} &gt;</span>

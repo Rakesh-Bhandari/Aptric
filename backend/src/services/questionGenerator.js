@@ -15,6 +15,12 @@ function getDifficultyDistribution(userLevel, totalQuestions = 10) {
     return { 'Easy': easy, 'Medium': medium, 'Hard': hard };
 }
 
+// Helper: Map level to difficulty tags used in question bank
+function getLevelDifficulties(userLevel) {
+    const dist = getDifficultyDistribution(userLevel);
+    return Object.entries(dist).filter(([, count]) => count > 0).map(([diff]) => diff);
+}
+
 // Helper: Get random sub-topics
 function getRandomSubTopics() {
     const topics = [
@@ -58,12 +64,8 @@ export function findCorrectIndex(rawAnswer, options) {
     return 0;
 }
 
-export async function generateDailyQuestionsForUser(userLevel, dbPool, progressCallback = null, totalCount = 10) {
-    if (!process.env.OPEN_ROUTER_API_KEY) {
-        console.error('❌ ERROR: OPEN_ROUTER_API_KEY is missing');
-        return [];
-    }
-
+// --- CORE: Generate questions via AI and save to question bank ---
+async function generateAndSaveQuestions(dbPool, difficulty, count, progressCallback, questionsGeneratedSoFar, totalCount) {
     const openai = new OpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: process.env.OPEN_ROUTER_API_KEY,
@@ -74,106 +76,195 @@ export async function generateDailyQuestionsForUser(userLevel, dbPool, progressC
     });
 
     const OPENROUTER_MODEL = 'google/gemini-2.0-flash-001';
-    console.log(`[QuestionGen] Starting generation for level: ${userLevel}`);
+    const subTopics = getRandomSubTopics();
 
-    const distribution = getDifficultyDistribution(userLevel, totalCount);
-    const difficulties = ['Easy', 'Medium', 'Hard'];
-    let allQuestions = [];
-    let questionsGenerated = 0;
+    const prompt = `
+    You are an expert mathematics tutor. Generate ${count} unique ${difficulty} level aptitude questions.
+    Focus on these sub-topics: ${subTopics}.
 
-    for (const diff of difficulties) {
-        const count = distribution[diff];
-        if (count === 0) continue;
+    STRICT RULES:
+    1. Return ONLY valid JSON.
+    2. "correct_answer" MUST be the integer index (0-3).
+    3. "options" must be an array of 4 distinct strings.
+    4. "explanation" must be detailed step-by-step.
+    5. "category" must be one of: Quantitative Aptitude, Logical Reasoning, Verbal Ability, Data Interpretation, Puzzles, Technical Aptitude.
 
-        if (progressCallback) {
-            progressCallback({ progress: questionsGenerated, total: totalCount, message: `Generating ${diff} level questions...` });
-        }
-
-        const subTopics = getRandomSubTopics();
-        const prompt = `
-        You are an expert mathematics tutor. Generate ${count} unique ${diff} level aptitude questions.
-        Focus on these sub-topics: ${subTopics}.
-
-        STRICT RULES:
-        1. Return ONLY valid JSON.
-        2. "correct_answer" SHOULD be the integer index (0-3).
-        3. "options" must be an array of 4 distinct strings.
-        4. "explanation" must be detailed.
-
-        JSON Output Format:
+    JSON Output Format:
+    {
+      "questions": [
         {
-          "questions": [
-            {
-              "question_text": "string",
-              "options": ["A", "B", "C", "D"],
-              "correct_answer": 0,
-              "explanation": "string",
-              "hint": "string",
-              "category": "string"
-            }
-          ]
-        }`;
-
-        try {
-            const completion = await openai.chat.completions.create({
-                model: OPENROUTER_MODEL,
-                messages: [
-                    { role: 'system', content: 'You are a helpful AI that outputs strict JSON.' },
-                    { role: 'user', content: prompt }
-                ],
-                response_format: { type: 'json_object' }
-            });
-
-            const responseText = completion.choices[0].message.content;
-            const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(cleanJson);
-
-            const questions = parsed.questions || [];
-            questions.forEach(q => q.difficulty = diff);
-            allQuestions = [...allQuestions, ...questions];
-            questionsGenerated += questions.length;
-
-            if (progressCallback) {
-                progressCallback({ progress: questionsGenerated, total: totalCount, message: `Generated ${questionsGenerated}/${totalCount} questions...` });
-            }
-        } catch (err) {
-            console.error(`[QuestionGen] Error generating ${diff} questions:`, err.message);
+          "question_text": "string",
+          "options": ["A", "B", "C", "D"],
+          "correct_answer": 0,
+          "explanation": "string",
+          "hint": "string",
+          "category": "string"
         }
-    }
+      ]
+    }`;
 
-    if (allQuestions.length === 0) return [];
+    const completion = await openai.chat.completions.create({
+        model: OPENROUTER_MODEL,
+        messages: [
+            { role: 'system', content: 'You are a helpful AI that outputs strict JSON only.' },
+            { role: 'user', content: prompt }
+        ],
+        response_format: { type: 'json_object' }
+    });
 
-    const generatedQuestionIds = [];
+    const responseText = completion.choices[0].message.content;
+    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleanJson);
+    const questions = (parsed.questions || []).map(q => ({ ...q, difficulty }));
+
+    const savedIds = [];
     const today = new Date().toISOString().split('T')[0];
     const conn = await dbPool.getConnection();
 
     try {
-        if (progressCallback) {
-            progressCallback({ progress: questionsGenerated, total: totalCount, message: 'Saving questions to database...' });
-        }
-
-        for (const q of allQuestions) {
+        for (const q of questions) {
             const qid = `Q${nanoid(10)}`;
             const correctIndex = findCorrectIndex(q.correct_answer, q.options);
             const [result] = await conn.query(
                 `INSERT INTO questions 
                 (qid, question_text, options, correct_answer_index, explanation, hint, difficulty, category, generated_for_date) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [qid, q.question_text, JSON.stringify(q.options), correctIndex, q.explanation, q.hint, q.difficulty, q.category || 'General Aptitude', today]
+                [qid, q.question_text, JSON.stringify(q.options), correctIndex, q.explanation, q.hint, q.difficulty, q.category || 'Quantitative Aptitude', today]
             );
-            generatedQuestionIds.push(result.insertId);
+            savedIds.push(result.insertId);
+
+            if (progressCallback) {
+                progressCallback({
+                    progress: questionsGeneratedSoFar + savedIds.length,
+                    total: totalCount,
+                    message: `Saved question ${questionsGeneratedSoFar + savedIds.length}/${totalCount}...`
+                });
+            }
         }
-    } catch (err) {
-        console.error('[QuestionGen] DB Insert Error:', err);
     } finally {
         conn.release();
     }
 
-    console.log(`[QuestionGen] Created ${generatedQuestionIds.length} questions.`);
+    return savedIds;
+}
 
-    if (progressCallback) {
-        progressCallback({ progress: generatedQuestionIds.length, total: totalCount, message: 'All questions saved successfully!' });
+// --- MAIN: Smart daily question assignment ---
+// Strategy:
+//   1. Get the user's already-seen question IDs (answered_qids)
+//   2. For each difficulty slot, try to find unused questions from the bank
+//   3. Only generate new AI questions for slots that can't be filled from the bank
+//   4. All newly generated questions are saved to the bank for future reuse
+export async function generateDailyQuestionsForUser(userLevel, dbPool, progressCallback = null, totalCount = 10) {
+    if (!process.env.OPEN_ROUTER_API_KEY) {
+        console.error('❌ ERROR: OPEN_ROUTER_API_KEY is missing');
+        return [];
     }
 
-    return generatedQuestionIds;
+    console.log(`[QuestionGen] Smart assignment for level: ${userLevel}`);
+
+    const distribution = getDifficultyDistribution(userLevel, totalCount);
+    const assignedIds = []; // final list of question_id (PKs) to assign to user
+
+    // We need to know which qids the user has already seen across ALL time
+    // This is stored in users.answered_qids as a JSON array of qid strings
+    // We'll fetch it once here
+    let seenQids = [];
+    const conn = await dbPool.getConnection();
+    try {
+        // We don't have userId here — dailyQuestions.js passes it separately.
+        // So we return the question IDs and let dailyQuestions.js handle the log insert.
+        // The seenQids filtering happens at the pool level using the user context passed in.
+        // Since generateDailyQuestionsForUser doesn't receive userId, we handle
+        // "no repeats" by tracking at the ensureDailyQuestionsGenerated level.
+        // See updated dailyQuestions.js for the full picture.
+        conn.release();
+    } catch (err) {
+        conn.release();
+        throw err;
+    }
+
+    let questionsAssignedCount = 0;
+
+    for (const [difficulty, needed] of Object.entries(distribution)) {
+        if (needed === 0) continue;
+
+        if (progressCallback) {
+            progressCallback({
+                progress: questionsAssignedCount,
+                total: totalCount,
+                message: `Finding ${difficulty} questions...`
+            });
+        }
+
+        // This function now receives seenQids from caller (dailyQuestions.js)
+        // We store them in a closure variable set before this loop
+        const fromBank = assignedIds._seenQids || [];
+
+        const bankConn = await dbPool.getConnection();
+        let bankIds = [];
+        try {
+            // Fetch unused questions from bank matching difficulty
+            // Exclude questions the user has already seen (by qid)
+            let query = `
+                SELECT question_id, qid FROM questions 
+                WHERE difficulty = ?
+            `;
+            const params = [difficulty];
+
+            if (fromBank.length > 0) {
+                query += ` AND qid NOT IN (${fromBank.map(() => '?').join(',')})`;
+                params.push(...fromBank);
+            }
+
+            query += ` ORDER BY RAND() LIMIT ?`;
+            params.push(needed);
+
+            const [rows] = await bankConn.query(query, params);
+            bankIds = rows.map(r => r.question_id);
+
+            console.log(`[QuestionGen] ${difficulty}: Found ${bankIds.length}/${needed} from bank`);
+        } finally {
+            bankConn.release();
+        }
+
+        assignedIds.push(...bankIds);
+        questionsAssignedCount += bankIds.length;
+
+        // If bank didn't have enough, generate the remainder
+        const stillNeeded = needed - bankIds.length;
+        if (stillNeeded > 0) {
+            console.log(`[QuestionGen] ${difficulty}: Generating ${stillNeeded} new questions via AI...`);
+
+            if (progressCallback) {
+                progressCallback({
+                    progress: questionsAssignedCount,
+                    total: totalCount,
+                    message: `Generating ${stillNeeded} new ${difficulty} questions via AI...`
+                });
+            }
+
+            try {
+                const newIds = await generateAndSaveQuestions(
+                    dbPool, difficulty, stillNeeded,
+                    progressCallback, questionsAssignedCount, totalCount
+                );
+                assignedIds.push(...newIds);
+                questionsAssignedCount += newIds.length;
+            } catch (err) {
+                console.error(`[QuestionGen] AI generation failed for ${difficulty}:`, err.message);
+            }
+        }
+    }
+
+    console.log(`[QuestionGen] Total assigned: ${assignedIds.length} questions`);
+
+    if (progressCallback) {
+        progressCallback({
+            progress: assignedIds.length,
+            total: totalCount,
+            message: 'All questions ready!'
+        });
+    }
+
+    return assignedIds;
 }

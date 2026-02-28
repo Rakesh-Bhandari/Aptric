@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Admin.css'; // Uses the same styles as Admin dashboard
+import API_BASE_URL from '../../utils/config';
 
 const UserDetails = () => {
     const { id } = useParams();
@@ -12,8 +13,6 @@ const UserDetails = () => {
     // Edit Form State
     const [formData, setFormData] = useState({ user_name: '', email: '', role: 'user' });
     const [newPassword, setNewPassword] = useState('');
-
-    const API_BASE_URL = 'http://localhost:5000';
 
     useEffect(() => {
         fetchUserDetails();

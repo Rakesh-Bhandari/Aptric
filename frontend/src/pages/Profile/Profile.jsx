@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePreferences } from '../../context/PreferencesContext';
 import './Profile.css';
+import API_BASE_URL from '../../utils/config';
 
-// FIX: Point directly to Backend Port 5000, not Frontend URL
-const API_BASE_URL = 'http://localhost:5000';
 
 // --- ICONS ---
 const Icons = {

@@ -5,7 +5,7 @@ import { getTodayDate, ALL_CATEGORIES } from '../utils/helpers.js';
 
 const router = Router();
 
-// --- Leaderboard ---
+// --- Leaderboard (public) ---
 router.get('/leaderboard', async (req, res) => {
     try {
         const [rows] = await dbPool.query(
@@ -123,27 +123,40 @@ router.get('/category', isLoggedIn, async (req, res) => {
 });
 
 // --- Get topic stats ---
-router.get('/topics/stats', isLoggedIn, async (req, res) => {
-    const userId = req.user.user_id;
+// NOTE: Returns empty stats for unauthenticated users instead of 401
+// so the Topics page always renders (just shows 0 progress for guests)
+router.get('/topics/stats', async (req, res) => {
     try {
         const conn = await dbPool.getConnection();
-
         const [totalRows] = await conn.query(`SELECT category, COUNT(*) as total FROM questions GROUP BY category`);
-        const [solvedRows] = await conn.query(
-            `SELECT q.category, COUNT(DISTINCT ua.question_id) as solved
-             FROM user_attempts ua
-             JOIN questions q ON ua.question_id = q.question_id
-             WHERE ua.user_id = ? AND ua.status = 'correct'
-             GROUP BY q.category`,
-            [userId]
-        );
+
+        // Build base stats from question bank (works for everyone)
+        const stats = {};
+        ALL_CATEGORIES.forEach(cat => { stats[cat] = { total: 0, solved: 0 }; });
+        totalRows.forEach(row => {
+            if (stats[row.category] !== undefined) {
+                stats[row.category].total = row.total;
+            }
+        });
+
+        // If logged in, also add the user's solved count
+        if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+            const [solvedRows] = await conn.query(
+                `SELECT q.category, COUNT(DISTINCT ua.question_id) as solved
+                 FROM user_attempts ua
+                 JOIN questions q ON ua.question_id = q.question_id
+                 WHERE ua.user_id = ? AND ua.status = 'correct'
+                 GROUP BY q.category`,
+                [req.user.user_id]
+            );
+            solvedRows.forEach(row => {
+                if (stats[row.category] !== undefined) {
+                    stats[row.category].solved = row.solved;
+                }
+            });
+        }
 
         conn.release();
-
-        const stats = {};
-        totalRows.forEach(row => { stats[row.category] = { total: row.total, solved: 0 }; });
-        solvedRows.forEach(row => { if (stats[row.category]) stats[row.category].solved = row.solved; });
-
         res.json(stats);
     } catch (err) {
         console.error('Topic stats error:', err);

@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './Leaderboard.css';
+import API_BASE_URL from '../../utils/config.js';
 
-// FIX: Point directly to Backend Port 5000
-const API_BASE_URL = 'http://localhost:5000';
-
-/* --- SVG MATH HELPERS (Required for SkillWheel) --- */
+/* --- SVG MATH HELPERS --- */
 const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
     const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-    return {
-        x: centerX + (radius * Math.cos(angleInRadians)),
-        y: centerY + (radius * Math.sin(angleInRadians))
-    };
+    return { x: centerX + (radius * Math.cos(angleInRadians)), y: centerY + (radius * Math.sin(angleInRadians)) };
 };
 
 const describeDonutSegment = (x, y, radius, innerRadius, startAngle, endAngle) => {
@@ -20,47 +15,29 @@ const describeDonutSegment = (x, y, radius, innerRadius, startAngle, endAngle) =
     const startInner = polarToCartesian(x, y, innerRadius, endAngle);
     const endInner = polarToCartesian(x, y, innerRadius, startAngle);
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-    return [
-        "M", startOuter.x, startOuter.y,
-        "A", radius, radius, 0, largeArcFlag, 0, endOuter.x, endOuter.y,
-        "L", endInner.x, endInner.y,
-        "A", innerRadius, innerRadius, 0, largeArcFlag, 1, startInner.x, startInner.y,
-        "Z"
-    ].join(" ");
+    return ["M", startOuter.x, startOuter.y, "A", radius, radius, 0, largeArcFlag, 0, endOuter.x, endOuter.y, "L", endInner.x, endInner.y, "A", innerRadius, innerRadius, 0, largeArcFlag, 1, startInner.x, startInner.y, "Z"].join(" ");
 };
 
-/* --- DYNAMIC WEIGHTED SKILL WHEEL --- */
 const SkillWheel = ({ topics }) => {
-    const allCategories = [
-        'Quantitative Aptitude', 'Logical Reasoning', 'Verbal Ability', 
-        'Data Interpretation', 'Puzzles', 'Technical Aptitude'
-    ];
-
+    const allCategories = ['Quantitative Aptitude', 'Logical Reasoning', 'Verbal Ability', 'Data Interpretation', 'Puzzles', 'Technical Aptitude'];
     const safeTopics = allCategories.map(cat => {
         const existing = (topics || []).find(t => t.name === cat);
         return existing || { name: cat, progress: 0, total: 0, correct: 0 };
     });
 
     const [activeIndex, setActiveIndex] = useState(() => {
-        const maxIdx = safeTopics.reduce((max, curr, idx, arr) => 
-            (Number(curr.progress) || 0) > (Number(arr[max])?.progress || 0) ? idx : max, 0);
-        return maxIdx;
+        return safeTopics.reduce((max, curr, idx, arr) =>
+            (Number(curr.progress) || 0) > (Number(arr[max]?.progress) || 0) ? idx : max, 0);
     });
-    
+
     const colors = ['#2ea043', '#3b82f6', '#a855f7', '#d29922', '#f85149', '#06b6d4'];
     const grandTotal = safeTopics.reduce((acc, t) => acc + (t.total || 0), 0);
-    
+
     let currentAngle = 0;
     const slices = safeTopics.map((topic, i) => {
         const weight = grandTotal > 0 ? (topic.total || 0) / grandTotal : 1 / 6;
         const angleSize = weight * 360;
-        const slice = {
-            ...topic,
-            color: colors[i % colors.length],
-            startAngle: currentAngle,
-            endAngle: currentAngle + angleSize,
-            midAngle: currentAngle + (angleSize / 2)
-        };
+        const slice = { ...topic, color: colors[i % colors.length], startAngle: currentAngle, endAngle: currentAngle + angleSize, midAngle: currentAngle + (angleSize / 2) };
         currentAngle += angleSize;
         return slice;
     });
@@ -74,18 +51,9 @@ const SkillWheel = ({ topics }) => {
                 <svg viewBox="0 0 200 200" className="skill-svg">
                     <circle cx="100" cy="100" r="90" fill="transparent" stroke="rgba(255,255,255,0.03)" strokeWidth="15" />
                     {slices.map((slice, i) => (
-                        <path
-                            key={i}
-                            d={describeDonutSegment(100, 100, activeIndex === i ? 96 : 90, 60, slice.startAngle + 1.5, slice.endAngle - 1.5)}
-                            fill={slice.color}
-                            onMouseEnter={() => setActiveIndex(i)}
-                            className="wheel-segment"
-                            style={{ 
-                                opacity: activeIndex === i ? 1 : 0.6, 
-                                filter: activeIndex === i ? `drop-shadow(0 0 8px ${slice.color})` : 'none',
-                                transition: '0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                            }}
-                        />
+                        <path key={i} d={describeDonutSegment(100, 100, activeIndex === i ? 96 : 90, 60, slice.startAngle + 1.5, slice.endAngle - 1.5)}
+                            fill={slice.color} onMouseEnter={() => setActiveIndex(i)} className="wheel-segment"
+                            style={{ opacity: activeIndex === i ? 1 : 0.6, filter: activeIndex === i ? `drop-shadow(0 0 8px ${slice.color})` : 'none', transition: '0.4s cubic-bezier(0.4, 0, 0.2, 1)' }} />
                     ))}
                 </svg>
                 <div className="wheel-center">
@@ -107,7 +75,9 @@ const SkillWheel = ({ topics }) => {
             </div>
             <div className="skill-legend-bottom">
                 {slices.map((slice, i) => (
-                    <div key={i} className={`mini-legend-item ${activeIndex === i ? 'active' : ''}`} style={{ borderColor: activeIndex === i ? slice.color : 'rgba(255,255,255,0.05)' }} onMouseEnter={() => setActiveIndex(i)}>
+                    <div key={i} className={`mini-legend-item ${activeIndex === i ? 'active' : ''}`}
+                        style={{ borderColor: activeIndex === i ? slice.color : 'rgba(255,255,255,0.05)' }}
+                        onMouseEnter={() => setActiveIndex(i)}>
                         <span className="dot" style={{ background: slice.color }}></span>
                         {slice.name.split(' ')[0]}
                     </div>
@@ -130,13 +100,13 @@ const Leaderboard = () => {
                 const lbRes = await fetch(`${API_BASE_URL}/api/leaderboard`);
                 const lbData = await lbRes.json();
                 setLeaders(Array.isArray(lbData) ? lbData : []);
-                
+
                 const userRes = await fetch(`${API_BASE_URL}/api/user`, { credentials: 'include' });
                 if (userRes.ok) {
                     const userData = await userRes.json();
                     setCurrentUser(userData.user);
                 }
-            } catch (error) { console.error("Leaderboard Fetch Error:", error); } 
+            } catch (error) { console.error("Leaderboard Fetch Error:", error); }
             finally { setLoading(false); }
         };
         fetchData();
@@ -144,18 +114,17 @@ const Leaderboard = () => {
 
     const handleUserClick = async (userId) => {
         setProfileLoading(true);
-        setSelectedProfile(null); // Clear previous
+        setSelectedProfile(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/users/${userId}/public`);
+            const res = await fetch(`${API_BASE_URL}/api/user/${userId}/public`);
             if (res.ok) {
                 const data = await res.json();
                 setSelectedProfile(data);
             }
-        } catch (err) { console.error("Public Profile Fetch Error:", err); } 
+        } catch (err) { console.error("Public Profile Fetch Error:", err); }
         finally { setProfileLoading(false); }
     };
 
-    // Helper to get safe Avatar URL
     const getAvatarUrl = (path, name) => {
         if (path && path.startsWith('http')) return path;
         if (path) return `${API_BASE_URL}${path}`;
@@ -215,13 +184,13 @@ const Leaderboard = () => {
                                         <img src={getAvatarUrl(selectedProfile.profilePic, selectedProfile.name)} className="modal-avatar-premium" alt="Avatar" />
                                         <h2 style={{ fontFamily: 'Audiowide', fontSize: '1.5rem', marginBottom: '4px' }}>{selectedProfile.name}</h2>
                                         <div className="premium-label" style={{ color: 'var(--accent-green)' }}>{selectedProfile.stats?.level} Operative</div>
-                                        <p className="premium-bio">{selectedProfile.bio || "No tactical biography provided for this operative."}</p>
+                                        <p className="premium-bio">{selectedProfile.bio || "No tactical biography provided."}</p>
                                     </div>
                                     <div className="card-bento-stat" style={{ textAlign: 'center' }}>
                                         <span className="premium-label">Active_Streak</span>
                                         <span className="premium-value" style={{ color: 'var(--gold)' }}>🔥 {selectedProfile.stats?.streak} Days</span>
                                     </div>
-                                    <div className="card-bento-stat" style={{ gridColumn: 'span 2', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div className="card-bento-stat" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span className="premium-label" style={{ margin: 0 }}>Network_Joined</span>
                                         <span style={{ fontFamily: 'JetBrains Mono', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(selectedProfile.stats?.joined).toLocaleDateString()}</span>
                                     </div>

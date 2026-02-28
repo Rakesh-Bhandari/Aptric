@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { marked } from 'marked';
 import './Practice.css';
-
-const API_BASE_URL = 'http://localhost:5000';
+import API_BASE_URL from '../../utils/config';
 
 // --- ICONS (Tech Style) ---
 const Icons = {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
+import API_BASE_URL from '../../utils/config';
 
 const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
     const [isLogin, setIsLogin] = useState(true);
@@ -13,7 +14,6 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
     const [otp, setOtp] = useState('');
 
     const navigate = useNavigate();
-    const API_BASE_URL = 'http://localhost:5000';
 
     const handleAuth = async (e) => {
         e.preventDefault();

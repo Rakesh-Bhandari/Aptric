@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Progress.css';
+import API_BASE_URL from '../../utils/config';
 
 const Progress = () => {
     const navigate = useNavigate();
@@ -9,8 +10,6 @@ const Progress = () => {
     const [topics, setTopics] = useState([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    const API_BASE_URL = 'http://localhost:5000';
 
     useEffect(() => {
         const fetchAllData = async () => {

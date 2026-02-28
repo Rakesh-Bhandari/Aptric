@@ -4,9 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { useTheme } from './hooks/useTheme';
 import { useClickSpark } from './hooks/useClickSpark';
-import { PreferencesProvider, usePreferences } from './context/PreferencesContext'; // Import Context
+import { PreferencesProvider, usePreferences } from './context/PreferencesContext';
 
-// ... imports for components (Navbar, Auth, etc.) ...
 import Navbar from './components/Navbar/Navbar';
 import Dock from './components/Dock/Dock';
 import { useLocation } from 'react-router-dom';
@@ -28,13 +27,14 @@ import ActivateAccount from './pages/ActivateAccount/ActivateAccount';
 import './assets/styles/styles.css';
 import './App.css';
 
-// Create an inner component to consume the Context
+// ✅ FIXED: correct relative path (was '../src/utils/config' which is wrong)
+import API_BASE_URL from './utils/config';
+
 const AppContent = () => {
   const location = useLocation();
   useTheme();
   useClickSpark();
 
-  // Consume Preferences
   const { reduceMotion } = usePreferences();
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -42,11 +42,9 @@ const AppContent = () => {
   const [loading, setLoading] = useState(true);
   const spotlightRef = useRef(null);
 
-  // Add this to your top-level React component
   useEffect(() => {
     const syncLogout = (event) => {
       if (event.key === 'login-event') {
-        // If another tab just logged in, refresh this tab to get the session
         window.location.reload();
       }
     };
@@ -57,7 +55,7 @@ const AppContent = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/user', { credentials: 'include' });
+        const response = await fetch(`${API_BASE_URL}/api/user`, { credentials: 'include' });
         const data = await response.json();
         if (data.authenticated) {
           setIsAuthenticated(true);
@@ -72,9 +70,7 @@ const AppContent = () => {
     checkSession();
   }, []);
 
-  // --- MAGIC BENTO LOGIC (Updated) ---
   useEffect(() => {
-    // If animations are disabled, ensure spotlight is removed and return early
     if (reduceMotion) {
       if (spotlightRef.current) spotlightRef.current.style.display = 'none';
       return;
@@ -86,7 +82,7 @@ const AppContent = () => {
       spotlight.className = 'global-spotlight';
       document.body.appendChild(spotlight);
     }
-    spotlight.style.display = 'block'; // Ensure it's visible if we re-enabled it
+    spotlight.style.display = 'block';
     spotlightRef.current = spotlight;
 
     const spotlightRadius = 300;
@@ -95,7 +91,6 @@ const AppContent = () => {
       const rect = card.getBoundingClientRect();
       const relativeX = ((mouseX - rect.left) / rect.width) * 100;
       const relativeY = ((mouseY - rect.top) / rect.height) * 100;
-
       card.style.setProperty('--glow-x', `${relativeX}%`);
       card.style.setProperty('--glow-y', `${relativeY}%`);
       card.style.setProperty('--glow-intensity', glow.toString());
@@ -107,12 +102,7 @@ const AppContent = () => {
       const cards = document.querySelectorAll('.card, .topic-card, .stat-card, .rank-card, .about-section, .faq-item, .feedback-item');
       const { clientX, clientY } = e;
 
-      gsap.to(spotlightRef.current, {
-        left: clientX,
-        top: clientY,
-        duration: 0.1,
-        ease: 'power2.out'
-      });
+      gsap.to(spotlightRef.current, { left: clientX, top: clientY, duration: 0.1, ease: 'power2.out' });
 
       let minDistance = Infinity;
       const proximity = spotlightRadius * 0.5;
@@ -133,13 +123,11 @@ const AppContent = () => {
         updateCardGlowProperties(card, clientX, clientY, glowIntensity);
       });
 
-      const targetOpacity = minDistance <= proximity ? 0.8 : minDistance <= fadeDistance ? ((fadeDistance - minDistance) / (fadeDistance - proximity)) * 0.8 : 0;
+      const targetOpacity = minDistance <= proximity ? 0.8
+        : minDistance <= fadeDistance ? ((fadeDistance - minDistance) / (fadeDistance - proximity)) * 0.8
+        : 0;
 
-      gsap.to(spotlightRef.current, {
-        opacity: targetOpacity,
-        duration: targetOpacity > 0 ? 0.2 : 0.5,
-        ease: 'power2.out'
-      });
+      gsap.to(spotlightRef.current, { opacity: targetOpacity, duration: targetOpacity > 0 ? 0.2 : 0.5, ease: 'power2.out' });
     };
 
     const handleMouseLeave = () => {
@@ -155,7 +143,7 @@ const AppContent = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       document.body.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [reduceMotion]); // Re-run if preference changes
+  }, [reduceMotion]);
 
   const handleAuthTrigger = () => {
     if (!isAuthenticated) setIsAuthOpen(true);
@@ -181,26 +169,14 @@ const AppContent = () => {
           <Route path="/topics" element={<Topics />} />
           <Route path="/practice/topic" element={<TopicQuestions />} />
           <Route path="/solve/:qid" element={<SolveQuestion />} />
-          <Route
-            path="/activate/:token"
-            element={<ActivateAccount setIsAuthenticated={setIsAuthenticated} />}
-          />
+          <Route path="/activate/:token" element={<ActivateAccount setIsAuthenticated={setIsAuthenticated} />} />
         </Routes>
       </main>
-      {/* Conditionally render the Dock: 
-          It will only appear if the current path is NOT the home page ('/') 
-      */}
-      {/* {
-        location.pathname !== '/' && (
-          <Dock isAuthenticated={isAuthenticated} />
-        )
-      } */}
       <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setIsAuthenticated={setIsAuthenticated} />
     </>
   );
 };
 
-// Wrap main App with Provider
 function App() {
   return (
     <PreferencesProvider>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Home.css';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../../utils/config';
 
 const Home = ({ isAuthenticated, onAuthClick }) => {
     const navigate = useNavigate();

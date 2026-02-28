@@ -20,20 +20,40 @@ dotenv.config();
 
 const app = express();
 
-// --- Middleware ---
+// -------------------------------------------------------
+// CORS — credentials: true is required for cookies to
+// work cross-port (frontend :6969 <-> backend :5000)
+// -------------------------------------------------------
+const ALLOWED_ORIGINS = [
+    process.env.VITE_FRONTEND_URL,   // e.g. http://localhost:6969
+    'http://localhost:5173',          // Vite default fallback
+    'http://localhost:3000',          // CRA fallback
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.VITE_FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (Postman, server-to-server, cron)
+        if (!origin) return callback(null, true);
+        if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+        console.warn(`[CORS] Blocked origin: ${origin}`);
+        return callback(new Error(`CORS policy: origin ${origin} not allowed`), false);
+    },
     credentials: true,
 }));
+
 app.use(express.json());
 app.use(cookieParser());
+
 app.use(session({
     secret: process.env.VITE_SESSION_SECRET || 'fallback-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Set to true in production with HTTPS
+        // secure: true requires HTTPS — false locally, true in production
+        secure: process.env.VITE_NODE_ENV === 'production',
         httpOnly: true,
+        // sameSite 'none' needed for cross-domain cookies in production
+        sameSite: process.env.VITE_NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     }
 }));
@@ -44,6 +64,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // --- Routes ---
+// questionRoutes stays at /api (original mount) so all existing
+// frontend calls (/api/leaderboard, /api/topics/stats, /api/category,
+// /api/single/:qid) continue to work without any frontend changes.
 app.use('/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', gameRoutes);
@@ -57,8 +80,37 @@ app.get('/', (req, res) => {
     res.json({ status: 'Server is active and running smoothly!' });
 });
 
+// --- Global 404 handler ---
+app.use((req, res) => {
+    res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+});
+
+// --- Global error handler (prevents unhandled crashes) ---
+app.use((err, req, res, next) => {
+    console.error('[Server Error]', err.message);
+    const message = process.env.VITE_NODE_ENV === 'production'
+        ? 'Internal server error'
+        : err.message;
+    res.status(err.status || 500).json({ error: message });
+});
+
+// --- Prevent crashes from unhandled promise rejections ---
+process.on('unhandledRejection', (reason) => {
+    console.error('[UnhandledRejection]', reason);
+    // Log but do NOT exit — keeps server alive
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('[UncaughtException]', err.message);
+    if (err.code === 'MODULE_NOT_FOUND') {
+        console.error('Fatal: missing module. Exiting.');
+        process.exit(1);
+    }
+    // All other errors: log and stay alive
+});
+
 // --- Start ---
 const port = process.env.VITE_PORT || 5000;
-app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
+app.listen(port, () => console.log(`Server running on port ${port}`));
 
 export default app;

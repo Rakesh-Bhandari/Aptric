@@ -1,5 +1,6 @@
 import React from 'react';
 import './Help.css';
+import API_BASE_URL from '../../utils/config';
 
 const Help = () => {
     return (

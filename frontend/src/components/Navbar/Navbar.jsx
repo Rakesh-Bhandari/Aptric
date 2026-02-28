@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePreferences } from '../../context/PreferencesContext'; 
 import './Navbar.css';
-
+import API_BASE_URL from '../../utils/config';
 import GradientText from '../../assets/styles/Navbar/GradientText';
 import logoSymbol from '/LOGO.png'; 
 
@@ -25,7 +25,7 @@ const Navbar = ({ isAuthenticated, onAuthClick, setIsAuthenticated }) => {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:5000/auth/logout', { credentials: 'include' });
+      await fetch(`${API_BASE_URL}/auth/logout`, { credentials: 'include' });
       setIsAuthenticated(false);
       navigate('/');
       closeMenu();

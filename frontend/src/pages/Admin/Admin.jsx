@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Admin.css';
+import API_BASE_URL from '../../utils/config';
 
 const Admin = () => {
     // 1. State Management
@@ -44,8 +45,6 @@ const Admin = () => {
     const [filterCategory, setFilterCategory] = useState('All');
     const [filterDifficulty, setFilterDifficulty] = useState('All');
     const [sortOrder, setSortOrder] = useState('newest');
-
-    const API_BASE_URL = 'http://localhost:5000';
 
     // 2. Authentication Logic
     const handleLogin = async (e) => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import './ActivateAccount.css';
+import API_BASE_URL from '../../utils/config';
 
 const ActivateAccount = ({ setIsAuthenticated }) => {
     const { token } = useParams();

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Topics.css';
-
-const API_BASE_URL = 'http://localhost:5000';
+import API_BASE_URL from '../../utils/config.js';
 
 // --- ICONS (Tech Style) ---
 const Icons = {
@@ -29,7 +28,6 @@ const Topics = () => {
 
     return (
         <div className="topics-container">
-            {/* 1. Header */}
             <div className="topics-header">
                 <div className="system-status">
                     <div className="status-dot"></div> SYSTEM_MODULES_ONLINE
@@ -40,15 +38,12 @@ const Topics = () => {
                 </p>
             </div>
 
-            {/* 2. Bento Grid */}
             <div className="topics-grid">
                 {categories.map((topic, index) => {
                     const topicData = stats[topic] || { total: 0, solved: 0 };
                     const { total, solved } = topicData;
                     const percent = total > 0 ? Math.round((solved / total) * 100) : 0;
                     const isCompleted = percent === 100 && total > 0;
-
-                    // Pad index for visual tech look (01, 02...)
                     const modIndex = String(index + 1).padStart(2, '0');
 
                     return (
@@ -59,10 +54,8 @@ const Topics = () => {
                             style={{cursor: 'pointer'}}
                         >
                             <div>
-                                {/* Escaped > symbols */}
                                 <span className="card-label">&gt;&gt; MODULE_{modIndex} [ACTIVE]</span>
                                 <h3 className="topic-title">{topic}</h3>
-
                                 <div className="topic-stats">
                                     <div className="progress-info">
                                         <span>PROGRESS_STATUS</span>
@@ -76,7 +69,6 @@ const Topics = () => {
                                     </div>
                                 </div>
                             </div>
-
                             <button className={`cmd-btn ${isCompleted ? 'review-mode' : ''}`}>
                                 {isCompleted ? <Icons.Check /> : <Icons.Play />}
                                 {isCompleted ? 'REVIEW_DATA' : 'INITIALIZE'}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Admin.css'; // Uses existing admin styles
+import API_BASE_URL from '../../utils/config';
 
 const QuestionDetails = () => {
     const { id } = useParams();
@@ -16,8 +17,6 @@ const QuestionDetails = () => {
         hint: '',
         explanation: ''
     });
-
-    const API_BASE_URL = 'http://localhost:5000';
 
     useEffect(() => {
         const fetchQuestion = async () => {

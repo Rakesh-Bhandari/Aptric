@@ -1,5 +1,6 @@
 import React from 'react';
 import './About.css';
+import API_BASE_URL from '../../utils/config';
 
 // --- ICONS ---
 const Icons = {
