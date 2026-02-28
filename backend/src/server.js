@@ -19,6 +19,7 @@ import cronRoutes from './routes/cron.js';
 dotenv.config();
 
 const app = express();
+const isProd = process.env.VITE_NODE_ENV === 'production';
 
 // -------------------------------------------------------
 // CORS — credentials: true is required for cookies to
@@ -50,10 +51,10 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         // secure: true requires HTTPS — false locally, true in production
-        secure: process.env.VITE_NODE_ENV === 'production',
+        secure: isProd,
         httpOnly: true,
         // sameSite 'none' needed for cross-domain cookies in production
-        sameSite: process.env.VITE_NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: isProd? 'none' : 'lax',
         maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     }
 }));
@@ -64,9 +65,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // --- Routes ---
-// questionRoutes stays at /api (original mount) so all existing
-// frontend calls (/api/leaderboard, /api/topics/stats, /api/category,
-// /api/single/:qid) continue to work without any frontend changes.
 app.use('/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', gameRoutes);
