@@ -24,8 +24,19 @@ router.get('/login/callback', (req, res, next) => {
 
         req.logIn(user, async (loginErr) => {
             if (loginErr) return next(loginErr);
-            await ensureDailyQuestionsGenerated(req.user, dbPool);
-            return res.redirect(`${process.env.VITE_FRONTEND_URL}/practice`);
+
+            // ✅ CRITICAL: explicitly save session to TiDB BEFORE redirecting.
+            // On Vercel serverless, without this the redirect fires before the
+            // session write completes, so the next request finds no session → 401.
+            req.session.save(async (saveErr) => {
+                if (saveErr) {
+                    console.error('[OAuth] Session save error:', saveErr);
+                    return res.redirect(`${process.env.VITE_FRONTEND_URL}/?auth_error=session_error`);
+                }
+                // Generate daily questions in background — don't await (avoid timeout)
+                ensureDailyQuestionsGenerated(req.user, dbPool).catch(console.error);
+                return res.redirect(`${process.env.VITE_FRONTEND_URL}/practice`);
+            });
         });
     })(req, res, next);
 });
@@ -34,7 +45,7 @@ router.get('/logout', (req, res) => {
     req.logout((err) => {
         if (err) return res.status(500).json({ error: 'Logout failed' });
         req.session.destroy();
-        res.clearCookie('connect.sid');
+        res.clearCookie('aptric_sid');
         res.json({ message: 'Logged out' });
     });
 });
@@ -99,15 +110,28 @@ router.post('/login', async (req, res) => {
 
         req.login(user, async (err) => {
             if (err) return res.status(500).json({ error: 'Login error' });
-            await ensureDailyQuestionsGenerated(user, dbPool);
-            res.json({ user_id: user.user_id, name: user.user_name });
+
+            // ✅ CRITICAL: save session to TiDB before sending response.
+            // Without this on Vercel, the JSON response arrives at the
+            // frontend before the session row exists in the DB → next
+            // request gets 401 even though login appeared to succeed.
+            req.session.save(async (saveErr) => {
+                if (saveErr) {
+                    console.error('[Login] Session save error:', saveErr);
+                    return res.status(500).json({ error: 'Session save failed' });
+                }
+                // Generate daily questions in background
+                ensureDailyQuestionsGenerated(user, dbPool).catch(console.error);
+                res.json({ user_id: user.user_id, name: user.user_name });
+            });
         });
     } catch (err) {
+        console.error('Login error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-// --- Forgot Password (Send OTP) ---
+// --- Forgot Password ---
 router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     const [[user]] = await dbPool.query('SELECT user_id FROM users WHERE email = ?', [email]);
@@ -128,7 +152,7 @@ router.post('/forgot-password', async (req, res) => {
     res.json({ message: 'OTP sent to your email.' });
 });
 
-// --- Reset Password (Verify OTP) ---
+// --- Reset Password ---
 router.post('/reset-password', async (req, res) => {
     const { email, otp, newPassword } = req.body;
 
@@ -158,7 +182,7 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
-// --- Verify Email Token (Activate Account) ---
+// --- Verify Email Token ---
 router.get('/verify/:token', async (req, res) => {
     const { token } = req.params;
     try {
@@ -183,7 +207,10 @@ router.get('/verify/:token', async (req, res) => {
             const userId = user.user_id;
             updateActivationStatus(userId, { status: 'generating', progress: 0, total: 10, message: 'Initializing question generation...' });
 
-            // Non-blocking async generation
+            req.session.save((saveErr) => {
+                if (saveErr) console.error('[Verify] Session save error:', saveErr);
+            });
+
             (async () => {
                 try {
                     await ensureDailyQuestionsGenerated(user, dbPool, (progress) => {
@@ -229,7 +256,6 @@ router.get('/activation-status', isLoggedIn, async (req, res) => {
                 return res.json({ status: 'pending', progress: 0, total: 10, message: 'Checking status...' });
             }
         } catch (err) {
-            console.error('Status check error:', err);
             return res.status(500).json({ error: 'Status check failed' });
         }
     }

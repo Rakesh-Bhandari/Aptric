@@ -1,10 +1,10 @@
 import express from 'express';
 import session from 'express-session';
-import MySQLStoreFactory from 'express-mysql-session';
 import passport from 'passport';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import { createRequire } from 'module';
 
 import { configurePassport } from './config/passport.js';
 import dbPool from './config/db.js';
@@ -22,17 +22,42 @@ dotenv.config();
 const app = express();
 const isProd = process.env.VITE_NODE_ENV === 'production';
 
-const ALLOWED_ORIGINS = [
-    process.env.VITE_FRONTEND_URL,
+// express-mysql-session is CommonJS — must use createRequire in ESM
+const require = createRequire(import.meta.url);
+const MySQLStoreFactory = require('express-mysql-session');
+const MySQLStore = MySQLStoreFactory(session);
+
+// ── CORS ───────────────────────────────────────────────────────
+// Vercel creates a new preview URL on EVERY deployment like:
+// aptric-bxno-q1kg2jvmq-rakesh-bhandaris-projects.vercel.app
+// We must allow all subdomains of your project, not just the main one.
+const ALLOWED_EXACT_ORIGINS = [
+    process.env.VITE_FRONTEND_URL,   // main production frontend URL
     'http://localhost:5173',
     'http://localhost:6969',
     'http://localhost:3000',
 ].filter(Boolean);
 
+// Allow any Vercel preview URL for your frontend project
+// Pattern: aptric-bxno-*.vercel.app  (your frontend project slug)
+const FRONTEND_SLUG = 'aptric-bxno'; // the part before the hash in preview URLs
+
+function isOriginAllowed(origin) {
+    if (!origin) return true;
+    if (ALLOWED_EXACT_ORIGINS.includes(origin)) return true;
+    // Allow all Vercel preview deployments for this project
+    try {
+        const url = new URL(origin);
+        if (url.hostname.endsWith('.vercel.app') && url.hostname.startsWith(FRONTEND_SLUG)) {
+            return true;
+        }
+    } catch (_) {}
+    return false;
+}
+
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+        if (isOriginAllowed(origin)) return callback(null, true);
         console.warn(`[CORS] Blocked: ${origin}`);
         return callback(new Error(`Origin ${origin} not allowed`), false);
     },
@@ -42,20 +67,19 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// SESSION STORE — MySQL/TiDB
-// Vercel is stateless: default in-memory sessions are lost between
-// requests. Storing in TiDB keeps sessions alive across cold starts.
-const MySQLStore = MySQLStoreFactory(session);
+// ── SESSION STORE (TiDB) ───────────────────────────────────────
 const sessionStore = new MySQLStore({
     clearExpired: true,
     checkExpirationInterval: 900000,
     expiration: 604800000,
-    createDatabaseTable: true,
+    createDatabaseTable: false,
     schema: {
         tableName: 'sessions',
         columnNames: { session_id: 'session_id', expires: 'expires', data: 'data' }
     }
 }, dbPool);
+
+sessionStore.on('error', (err) => console.error('[SessionStore]', err.message));
 
 app.use(session({
     key: 'aptric_sid',
@@ -75,6 +99,7 @@ configurePassport();
 app.use(passport.initialize());
 app.use(passport.session());
 
+// ── Routes ─────────────────────────────────────────────────────
 app.use('/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', gameRoutes);
@@ -85,6 +110,16 @@ app.use('/api/cron', cronRoutes);
 
 app.get('/', (req, res) => {
     res.json({ status: 'Server running', env: isProd ? 'production' : 'development' });
+});
+
+app.get('/api/debug/session', (req, res) => {
+    res.json({
+        sessionID: req.sessionID,
+        isAuthenticated: req.isAuthenticated?.() ?? false,
+        user: req.user ? { id: req.user.user_id, name: req.user.user_name } : null,
+        cookie: req.session?.cookie,
+        isProd,
+    });
 });
 
 app.use((req, res) => {
