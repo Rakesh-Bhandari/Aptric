@@ -6,7 +6,6 @@ import { getTodayDate, calculateLevel, POINTS_CORRECT, POINTS_WRONG, POINTS_HINT
 
 const router = Router();
 
-// --- Shared: Update score and level after a game action ---
 async function updateGameStats(userId, points, conn) {
     await conn.query('UPDATE users SET score = score + ? WHERE user_id = ?', [points, userId]);
     const [[{ score }]] = await conn.query('SELECT score FROM users WHERE user_id = ?', [userId]);
@@ -15,27 +14,38 @@ async function updateGameStats(userId, points, conn) {
 }
 
 // --- Get Daily Questions ---
+// NEVER generates questions here — generation happens at login time.
+// If no questions exist yet, returns status:'generating' so frontend
+// can poll and show a loading screen instead of timing out.
 router.get('/daily-questions', isLoggedIn, async (req, res) => {
     const userId = req.user.user_id;
     const today = getTodayDate();
     const conn = await dbPool.getConnection();
 
     try {
-        let [logs] = await conn.query('SELECT * FROM user_daily_log WHERE user_id = ? AND challenge_date = ?', [userId, today]);
+        const [logs] = await conn.query(
+            'SELECT * FROM user_daily_log WHERE user_id = ? AND challenge_date = ?',
+            [userId, today]
+        );
 
+        // Questions not ready yet — tell frontend to poll
         if (logs.length === 0) {
-            await ensureDailyQuestionsGenerated(req.user, dbPool);
-            [logs] = await conn.query('SELECT * FROM user_daily_log WHERE user_id = ? AND challenge_date = ?', [userId, today]);
+            conn.release();
+            return res.status(202).json({
+                status: 'generating',
+                message: 'Your questions are being prepared. Please wait...'
+            });
         }
-
-        if (logs.length === 0) { conn.release(); return res.status(404).json({ error: 'Could not generate questions.' }); }
 
         const questionIds = logs[0].question_ids_json;
 
         if (!questionIds || questionIds.length === 0) {
             await conn.query('DELETE FROM user_daily_log WHERE log_id = ?', [logs[0].log_id]);
             conn.release();
-            return res.status(404).json({ error: 'Empty log found. Please refresh.' });
+            return res.status(202).json({
+                status: 'generating',
+                message: 'Retrying question preparation...'
+            });
         }
 
         const [questions] = await conn.query(
@@ -47,7 +57,10 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
         if (questions.length === 0) {
             await conn.query('DELETE FROM user_daily_log WHERE log_id = ?', [logs[0].log_id]);
             conn.release();
-            return res.status(404).json({ error: 'Question data missing. Please refresh to regenerate.' });
+            return res.status(202).json({
+                status: 'generating',
+                message: 'Retrying question preparation...'
+            });
         }
 
         const qids = questions.map(q => q.qid);
@@ -65,7 +78,6 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
         const dailyQuestions = questions.map(q => {
             const attempt = attemptsMap.get(q.qid);
             const isAnswered = attempt && ['correct', 'wrong', 'gave_up'].includes(attempt.status);
-
             return {
                 questionId: q.question_id,
                 qid: q.qid,
@@ -90,10 +102,10 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
         });
 
         conn.release();
-        res.json({ questions: dailyQuestions, logId: logs[0].log_id });
+        res.json({ status: 'ready', questions: dailyQuestions, logId: logs[0].log_id });
     } catch (err) {
         if (conn) conn.release();
-        console.error(err);
+        console.error('[daily-questions]', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -151,7 +163,7 @@ router.post('/submit-answer', isLoggedIn, async (req, res) => {
         res.json({ status, pointsEarned: points, ...qData });
     } catch (err) {
         await conn.rollback();
-        console.error(err);
+        console.error('[submit-answer]', err);
         res.status(500).json({ error: 'Server error' });
     } finally {
         conn.release();
@@ -163,8 +175,8 @@ router.post('/use-hint', isLoggedIn, async (req, res) => {
     const { questionId, qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
-
     const conn = await dbPool.getConnection();
+
     try {
         await conn.beginTransaction();
 
@@ -208,8 +220,8 @@ router.post('/give-up', isLoggedIn, async (req, res) => {
     const { questionId, qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
-
     const conn = await dbPool.getConnection();
+
     try {
         await conn.beginTransaction();
 
