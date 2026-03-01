@@ -6,23 +6,56 @@ import { ALL_CATEGORIES } from '../utils/helpers.js';
 
 const router = Router();
 
-// --- Get current user (basic) ---
-router.get('/', isLoggedIn, (req, res) => {
-    const { user_id, user_name, email, score, level, day_streak, last_login, is_banned } = req.user;
-    res.json({
-        authenticated: true,
-        user: { id: user_id, name: user_name, email, score, level, streak: day_streak, lastLogin: last_login, is_banned }
-    });
+// --- Get current user ---
+// Does NOT use isLoggedIn middleware — reads session directly.
+// This is what App.jsx calls on load to check auth status.
+// Must never return 401 — always return { authenticated: false } so
+// the frontend can handle it gracefully.
+router.get('/', async (req, res) => {
+    try {
+        const userId = req.session?.passport?.user;
+        if (!userId) return res.json({ authenticated: false });
+
+        const [users] = await dbPool.query(
+            'SELECT user_id, user_name, email, score, level, day_streak, last_login, is_banned FROM users WHERE user_id = ?',
+            [userId]
+        );
+
+        if (!users || users.length === 0) return res.json({ authenticated: false });
+
+        const user = users[0];
+        if (user.is_banned) {
+            req.session.destroy(() => {});
+            return res.json({ authenticated: false });
+        }
+
+        req.user = user; // attach for any downstream middleware
+
+        res.json({
+            authenticated: true,
+            user: {
+                id: user.user_id,
+                name: user.user_name,
+                email: user.email,
+                score: user.score,
+                level: user.level,
+                streak: user.day_streak,
+                lastLogin: user.last_login,
+                is_banned: user.is_banned
+            }
+        });
+    } catch (err) {
+        console.error('[GET /api/user]', err.message);
+        res.json({ authenticated: false });
+    }
 });
 
 // --- Upload avatar ---
 router.post('/avatar', isLoggedIn, upload.single('avatar'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
     try {
-        const userId = req.user.user_id;
         const fileUrl = req.file.path;
-        await dbPool.query('UPDATE users SET profile_pic = ? WHERE user_id = ?', [fileUrl, userId]);
+        await dbPool.query('UPDATE users SET profile_pic = ? WHERE user_id = ?', [fileUrl, req.user.user_id]);
         res.json({ message: 'Avatar updated', url: fileUrl });
     } catch (err) {
         console.error('Cloudinary upload error:', err);
@@ -33,7 +66,6 @@ router.post('/avatar', isLoggedIn, upload.single('avatar'), async (req, res) => 
 // --- Get user progress / dashboard ---
 router.get('/progress', isLoggedIn, async (req, res) => {
     const userId = req.user.user_id;
-
     try {
         const conn = await dbPool.getConnection();
 
@@ -50,30 +82,27 @@ router.get('/progress', isLoggedIn, async (req, res) => {
             `SELECT q.category,
               COUNT(ua.attempt_id) AS total_attempted,
               SUM(CASE WHEN ua.status = 'correct' THEN 1 ELSE 0 END) AS total_correct
-            FROM user_attempts ua
-            JOIN questions q ON ua.question_id = q.question_id
-            WHERE ua.user_id = ? AND ua.status IN ('correct', 'wrong')
-            GROUP BY q.category`,
+             FROM user_attempts ua
+             JOIN questions q ON ua.question_id = q.question_id
+             WHERE ua.user_id = ? AND ua.status IN ('correct', 'wrong')
+             GROUP BY q.category`,
             [userId]
         );
 
         const [recentActivity] = await conn.query(
-            `SELECT ua.attempt_date, ua.status, ua.points_earned, q.category, q.difficulty 
-            FROM user_attempts ua
-            JOIN questions q ON ua.question_id = q.question_id
-            WHERE ua.user_id = ?
-            ORDER BY ua.attempt_id DESC LIMIT 5`,
+            `SELECT ua.attempt_date, ua.status, ua.points_earned, q.category, q.difficulty
+             FROM user_attempts ua
+             JOIN questions q ON ua.question_id = q.question_id
+             WHERE ua.user_id = ?
+             ORDER BY ua.attempt_id DESC LIMIT 5`,
             [userId]
         );
 
         const [calendarRows] = await conn.query(
-            `SELECT DATE_FORMAT(attempt_date, '%Y-%m-%d') as dateStr, COUNT(*) as count 
-            FROM user_attempts WHERE user_id = ? GROUP BY dateStr`,
+            `SELECT DATE_FORMAT(attempt_date, '%Y-%m-%d') as dateStr, COUNT(*) as count
+             FROM user_attempts WHERE user_id = ? GROUP BY dateStr`,
             [userId]
         );
-
-        const calendarMap = {};
-        calendarRows.forEach(row => { calendarMap[row.dateStr] = row.count; });
 
         const [totalAnswered] = await conn.query(
             `SELECT COUNT(*) as count FROM user_attempts WHERE user_id = ? AND status IN ('correct', 'wrong')`,
@@ -88,6 +117,8 @@ router.get('/progress', isLoggedIn, async (req, res) => {
 
         const total = totalAnswered[0].count;
         const correct = totalCorrect[0].count;
+        const calendarMap = {};
+        calendarRows.forEach(row => { calendarMap[row.dateStr] = row.count; });
 
         const topics = ALL_CATEGORIES.map(category => {
             const stats = topicStats.find(t => t.category === category);
@@ -131,11 +162,9 @@ router.get('/progress', isLoggedIn, async (req, res) => {
 // --- Update profile ---
 router.put('/update', isLoggedIn, async (req, res) => {
     const { bio, user_name } = req.body;
-    const userId = req.user.user_id;
-
     try {
         const conn = await dbPool.getConnection();
-        await conn.query('UPDATE users SET bio = ?, user_name = ? WHERE user_id = ?', [bio, user_name, userId]);
+        await conn.query('UPDATE users SET bio = ?, user_name = ? WHERE user_id = ?', [bio, user_name, req.user.user_id]);
         conn.release();
         res.json({ message: 'Profile updated successfully' });
     } catch (err) {
@@ -154,22 +183,21 @@ router.get('/:id/public', async (req, res) => {
             [targetUserId]
         );
         if (users.length === 0) { conn.release(); return res.status(404).json({ error: 'User not found' }); }
-        const user = users[0];
 
+        const user = users[0];
         const [topicStats] = await conn.query(
             `SELECT q.category,
-            COUNT(ua.attempt_id) AS total_attempted,
-            SUM(CASE WHEN ua.status = 'correct' THEN 1 ELSE 0 END) AS total_correct
-            FROM user_attempts ua
-            JOIN questions q ON ua.question_id = q.question_id
-            WHERE ua.user_id = ? AND ua.status IN ('correct', 'wrong')
-            GROUP BY q.category`,
+             COUNT(ua.attempt_id) AS total_attempted,
+             SUM(CASE WHEN ua.status = 'correct' THEN 1 ELSE 0 END) AS total_correct
+             FROM user_attempts ua
+             JOIN questions q ON ua.question_id = q.question_id
+             WHERE ua.user_id = ? AND ua.status IN ('correct', 'wrong')
+             GROUP BY q.category`,
             [targetUserId]
         );
-
         const [totals] = await conn.query(
-            `SELECT COUNT(*) as total, 
-             SUM(CASE WHEN status = 'correct' THEN 1 ELSE 0 END) as correct 
+            `SELECT COUNT(*) as total,
+             SUM(CASE WHEN status = 'correct' THEN 1 ELSE 0 END) as correct
              FROM user_attempts WHERE user_id = ? AND status IN ('correct', 'wrong')`,
             [targetUserId]
         );
