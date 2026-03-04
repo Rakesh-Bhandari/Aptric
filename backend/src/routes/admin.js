@@ -13,7 +13,13 @@ const router = Router();
 router.post('/login', (req, res) => {
     const { password } = req.body;
     if (password === process.env.VITE_ADMIN_PASSWORD) {
-        req.session.adminLoggedIn = true;
+        res.cookie('aptric_admin', password, {
+            httpOnly: true,
+            secure: process.env.VITE_NODE_ENV === 'production',
+            sameSite: process.env.VITE_NODE_ENV === 'production' ? 'none' : 'lax',
+            path: '/',
+            maxAge: 24 * 60 * 60 * 1000 // 1 day
+        });
         res.json({ message: 'Admin logged in' });
     } else {
         res.status(401).json({ error: 'Invalid password' });
@@ -22,16 +28,18 @@ router.post('/login', (req, res) => {
 
 // --- Admin Stats ---
 router.get('/stats', isAdmin, async (req, res) => {
+    let conn;
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
         const [[{ total_users }]] = await conn.query('SELECT COUNT(*) as total_users FROM users');
         const [[{ total_questions }]] = await conn.query('SELECT COUNT(*) as total_questions FROM questions');
         const [[{ total_feedback }]] = await conn.query('SELECT COUNT(*) as total_feedback FROM user_feedback');
         const [[{ pending_reports }]] = await conn.query("SELECT COUNT(*) as pending_reports FROM feedback_reports WHERE status = 'pending'");
-        conn.release();
         res.json({ total_users, total_questions, total_feedback, pending_reports });
     } catch (err) {
         res.status(500).json({ error: 'Error fetching stats' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -96,19 +104,19 @@ router.post('/users/:id/promote', isAdmin, async (req, res) => {
     const userId = req.params.id;
     const levels = ['Beginner', 'Intermediate', 'Advanced', 'Pro', 'Expert'];
     const levelThresholds = { 'Intermediate': 25001, 'Advanced': 50001, 'Pro': 75001, 'Expert': 100001 };
+    let conn;
 
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
         const [users] = await conn.query('SELECT level, score FROM users WHERE user_id = ?', [userId]);
 
-        if (users.length === 0) { conn.release(); return res.status(404).json({ error: 'User not found' }); }
+        if (users.length === 0) { return res.status(404).json({ error: 'User not found' }); }
 
         const currentLevel = users[0].level;
         const currentScore = users[0].score;
         const currentIndex = levels.indexOf(currentLevel);
 
         if (currentIndex === -1 || currentIndex === levels.length - 1) {
-            conn.release();
             return res.status(400).json({ error: 'User is already at max level or invalid level' });
         }
 
@@ -124,11 +132,12 @@ router.post('/users/:id/promote', isAdmin, async (req, res) => {
         await conn.query(query, params);
         await logActivity(dbPool, userId, 'Admin Promotion', `Promoted to ${newLevel} by Admin`);
 
-        conn.release();
         res.json({ message: `User promoted to ${newLevel}`, newLevel });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 

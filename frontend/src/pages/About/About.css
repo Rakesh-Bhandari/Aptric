@@ -18,9 +18,8 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-primary);
     font-family: 'Inter', sans-serif;
-    /* Cyberpunk Grid Background */
-    background-image: 
-        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
+    background-image:
+        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
     background-size: 40px 40px;
 }
@@ -31,35 +30,72 @@ body {
     padding: 0 1.5rem;
 }
 
-/* --- HERO SECTION --- */
-.about-header {
+/* ── HEADER ──────────────────────────────────────────────────── */
+.practice-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.header-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.practice-rank-badge {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--accent-green);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(4px);
+}
+
+.rank-label {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.55rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.rank-number {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 1rem;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.header-main-title {
     text-align: center;
-    margin-bottom: 4rem;
-    position: relative;
+    overflow: hidden;
+}
+
+.subtitle-timer {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.8rem;
+    color: var(--accent-green);
+    margin-top: 0.4rem;
 }
 
 .glitch-title {
     font-family: 'Audiowide', sans-serif;
-    font-size: 3.5rem;
+    font-size: clamp(1.2rem, 6vw, 3.5rem);
     color: white;
     text-transform: uppercase;
     text-shadow: 0 0 20px rgba(46, 160, 67, 0.6);
-    letter-spacing: 4px;
-    margin-bottom: 0.5rem;
-}
-
-.system-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    background: rgba(46, 160, 67, 0.1);
-    border: 1px solid var(--accent-green);
-    border-radius: 99px;
-    font-family: 'Michroma', sans-serif;
-    font-size: 0.75rem;
-    color: var(--accent-green);
-    letter-spacing: 1px;
+    letter-spacing: clamp(0px, 0.3vw, 4px);
+    margin: 0;
+    line-height: 1.1;
+    word-break: break-word;
 }
 
 .status-dot {
@@ -69,9 +105,10 @@ body {
     border-radius: 50%;
     box-shadow: 0 0 10px var(--accent-green);
     animation: pulse 2s infinite;
+    flex-shrink: 0;
 }
 
-/* --- BENTO GRID LAYOUT --- */
+/* ── BENTO GRID LAYOUT ────────────────────────────────────────── */
 .bento-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -88,7 +125,7 @@ body {
     padding: 2rem;
     position: relative;
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .info-card:hover {
@@ -97,8 +134,7 @@ body {
     border-color: var(--accent-green);
 }
 
-/* --- SPECIFIC CARD SIZES --- */
-/* Mission: Wide card spanning 2 columns */
+/* ── SPECIFIC CARD SIZES ──────────────────────────────────────── */
 .card-mission {
     grid-column: span 2;
     display: flex;
@@ -106,20 +142,25 @@ body {
     justify-content: center;
 }
 
-/* Stats: Tall card for side */
 .card-stats {
     grid-column: span 1;
     grid-row: span 2;
     background: linear-gradient(180deg, rgba(22, 27, 34, 0.8) 0%, rgba(46, 160, 67, 0.1) 100%);
 }
 
-/* Features: 3 small cards at bottom */
 .card-feature {
     grid-column: span 1;
     min-height: 200px;
 }
 
-/* --- TYPOGRAPHY --- */
+.card-tech {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* ── TYPOGRAPHY ───────────────────────────────────────────────── */
 .card-label {
     font-family: 'Michroma', sans-serif;
     font-size: 0.7rem;
@@ -138,16 +179,21 @@ body {
     margin-bottom: 1rem;
 }
 
+/* Size variant used on feature cards */
+.card-title--sm {
+    font-size: 1.2rem;
+}
+
 .card-text {
     font-size: 1rem;
     color: var(--text-secondary);
     line-height: 1.6;
 }
 
-/* --- TERMINAL EFFECT (For Mission) --- */
+/* ── TERMINAL EFFECT ──────────────────────────────────────────── */
 .terminal-window {
     background: #0d1117;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     padding: 1.5rem;
     font-family: 'JetBrains Mono', monospace;
@@ -156,43 +202,74 @@ body {
     position: relative;
     margin-top: 1rem;
 }
-.cmd-prompt { color: var(--accent-green); margin-right: 10px; }
-.cursor { animation: blink 1s step-end infinite; }
 
-/* --- STATS LIST --- */
+.cmd-prompt {
+    color: var(--accent-green);
+    margin-right: 10px;
+}
+
+.cursor {
+    animation: blink 1s step-end infinite;
+}
+
+/* Body text inside terminal — replaces the old hard-coded style prop */
+.terminal-body-text {
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+}
+
+/* ── STATS LIST ───────────────────────────────────────────────── */
 .stat-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-.stat-name { color: var(--text-secondary); font-size: 0.9rem; }
-.stat-val { font-family: 'Audiowide', sans-serif; color: white; font-size: 1.2rem; }
 
-/* --- ICONS --- */
+.stat-name {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.stat-val {
+    font-family: 'Audiowide', sans-serif;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+}
+
+/* Footer region inside stats card — replaces hard-coded inline border + margin */
+.stats-region-footer {
+    margin-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1rem;
+}
+
+/* Region row — replaces hard-coded inline color:'white' */
+.region-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 5px;
+    color: var(--text-primary);
+}
+
+/* ── ICONS ────────────────────────────────────────────────────── */
 .icon-box {
     width: 45px;
     height: 45px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--accent-green);
     margin-bottom: 1rem;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* New Card: Spans 2 columns at the bottom */
-.card-tech {
-    grid-column: span 2;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-/* Dependencies Grid inside the Tech Card */
+/* ── TECH STACK GRID ──────────────────────────────────────────── */
 .tech-stack-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -225,6 +302,7 @@ body {
     height: 6px;
     border-radius: 50%;
     background: var(--text-secondary);
+    flex-shrink: 0;
 }
 
 .tech-item:hover .tech-dot {
@@ -232,18 +310,218 @@ body {
     box-shadow: 0 0 5px var(--accent-green);
 }
 
-/* Mobile fix */
-@media (max-width: 900px) {
-    .card-tech { grid-column: span 1; }
+/* ── ANIMATIONS ───────────────────────────────────────────────── */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 
-/* ANIMATIONS */
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-@keyframes blink { 50% { opacity: 0; } }
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
 
-/* RESPONSIVE */
+/* ── RESPONSIVE ───────────────────────────────────────────────── */
 @media (max-width: 900px) {
-    .bento-grid { grid-template-columns: 1fr; }
-    .card-mission, .card-stats, .card-feature { grid-column: span 1; }
-    .glitch-title { font-size: 2.5rem; }
+    .bento-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .card-mission,
+    .card-stats,
+    .card-feature,
+    .card-tech {
+        grid-column: span 1;
+    }
+
+    .glitch-title {
+        font-size: 2.5rem;
+    }
+
+    .info-card:hover {
+        transform: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .about-container {
+        padding: 0 0.75rem;
+        margin: 1.5rem auto;
+    }
+
+    .glitch-title {
+        font-size: 1.8rem;
+        letter-spacing: 1px;
+    }
+
+    .practice-header {
+        margin-bottom: 2rem;
+    }
+
+    .info-card {
+        padding: 1.2rem;
+        border-radius: 12px;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+    }
+
+    .tech-stack-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 400px) {
+    .about-container {
+        padding: 0 0.5rem;
+    }
+
+    .glitch-title {
+        font-size: 1.4rem;
+        letter-spacing: 0.5px;
+    }
+
+    .tech-stack-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHT MODE  [data-theme="light"]
+   All overrides scoped so dark mode is completely untouched.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Body / page background */
+[data-theme="light"] body {
+    background-color: #f0f4f8;
+    color: #0f172a;
+    background-image:
+        linear-gradient(rgba(22, 163, 74, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22, 163, 74, 0.06) 1px, transparent 1px);
+}
+
+/* Header */
+[data-theme="light"] .glitch-title {
+    color: #0f172a;
+    text-shadow: 0 2px 10px rgba(22, 163, 74, 0.15);
+}
+
+[data-theme="light"] .system-status {
+    background: rgba(22, 163, 74, 0.08);
+    border-color: #16a34a;
+    color: #15803d;
+}
+
+[data-theme="light"] .status-dot {
+    background: #16a34a;
+    box-shadow: 0 0 8px #16a34a;
+}
+
+/* Cards */
+[data-theme="light"] .info-card {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    backdrop-filter: none;
+    box-shadow: 0 2px 16px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="light"] .info-card:hover {
+    border-color: #16a34a;
+    box-shadow: 0 10px 32px rgba(22, 163, 74, 0.12);
+    transform: translateY(-5px);
+}
+
+[data-theme="light"] .card-stats {
+    background: linear-gradient(180deg, #ffffff 0%, rgba(22, 163, 74, 0.05) 100%);
+}
+
+[data-theme="light"] .card-label {
+    color: #16a34a;
+    opacity: 1;
+}
+
+[data-theme="light"] .card-title {
+    color: #0f172a;
+}
+
+[data-theme="light"] .card-text {
+    color: #475569;
+}
+
+/* Terminal window */
+[data-theme="light"] .terminal-window {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+
+[data-theme="light"] .cmd-prompt {
+    color: #16a34a;
+}
+
+/* .terminal-body-text — replaces the old inline style color:'#e6edf3' */
+[data-theme="light"] .terminal-body-text {
+    color: #0f172a;
+}
+
+/* Stats list */
+[data-theme="light"] .stat-row {
+    border-bottom-color: #e2e8f0;
+}
+
+[data-theme="light"] .stat-name {
+    color: #475569;
+}
+
+[data-theme="light"] .stat-val {
+    color: #0f172a;
+}
+
+/* Stats footer region — replaces inline borderTop rgba(255,255,255,0.1) */
+[data-theme="light"] .stats-region-footer {
+    border-top-color: #e2e8f0;
+}
+
+/* Region row — replaces inline color:'white' */
+[data-theme="light"] .region-row {
+    color: #0f172a;
+}
+
+/* Icon boxes */
+[data-theme="light"] .icon-box {
+    background: rgba(22, 163, 74, 0.08);
+    border-color: #d1fae5;
+    color: #16a34a;
+}
+
+/* Tech stack */
+[data-theme="light"] .tech-item {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #0f172a;
+}
+
+[data-theme="light"] .tech-item:hover {
+    border-color: #16a34a;
+    background: rgba(22, 163, 74, 0.06);
+}
+
+[data-theme="light"] .tech-dot {
+    background: #94a3b8;
+}
+
+[data-theme="light"] .tech-item:hover .tech-dot {
+    background: #16a34a;
+    box-shadow: 0 0 5px #16a34a;
 }

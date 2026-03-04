@@ -28,14 +28,11 @@ const Topics = () => {
 
     return (
         <div className="topics-container">
-            <div className="topics-header">
-                <div className="system-status">
-                    <div className="status-dot"></div> SYSTEM_MODULES_ONLINE
+            <div className="practice-header">
+                <div className="header-main-title">
+                    <h1 className="glitch-title">TRAINING_GROUNDS</h1>
+                    <p className="subtitle-timer">SELECT_MODULE_TO_BEGIN</p>
                 </div>
-                <h1 className="glitch-title">TRAINING_GROUNDS</h1>
-                <p style={{fontFamily:'Michroma', fontSize:'0.8rem', color:'var(--accent-green)'}}>
-                    SELECT_MODULE_TO_BEGIN
-                </p>
             </div>
 
             <div className="topics-grid">
@@ -51,7 +48,7 @@ const Topics = () => {
                             key={topic}
                             className="console-card"
                             onClick={() => navigate(`/practice/topic?topic=${topic}`)}
-                            style={{cursor: 'pointer'}}
+                            style={{ cursor: 'pointer' }}
                         >
                             <div>
                                 <span className="card-label">&gt;&gt; MODULE_{modIndex} [ACTIVE]</span>

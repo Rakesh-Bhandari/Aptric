@@ -21,15 +21,15 @@
     text-align: center;
     padding: 20px;
     /* Uses svh to avoid the address bar push-down on mobile */
-    height: 100vh; 
-    height: 100svh; 
+    height: 100vh;
+    height: 100svh;
     background-color: var(--bg-dark);
     position: relative;
     /* Strictly disable scrolling */
     overflow: hidden;
-    
-    background-image: 
-        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
+
+    background-image:
+        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
     background-size: 40px 40px;
 }
@@ -38,9 +38,11 @@
 .hero-section::after {
     content: "";
     position: absolute;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
-    width: 60vw; height: 60vw;
+    width: 60vw;
+    height: 60vw;
     background: radial-gradient(circle, rgba(46, 160, 67, 0.15) 0%, transparent 70%);
     pointer-events: none;
     z-index: 0;
@@ -56,9 +58,11 @@
 /* --- SYSTEM BADGE --- */
 /* --- SYSTEM BADGE (Repositioned) --- */
 .system-status-badge {
-    position: absolute; 
-    bottom: 30px;       /* Distance from bottom edge */
-    right: 30px;        /* Changed from left to right */
+    position: absolute;
+    bottom: 30px;
+    /* Distance from bottom edge */
+    right: 30px;
+    /* Changed from left to right */
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -71,11 +75,12 @@
     color: var(--accent-green);
     letter-spacing: 1px;
     box-shadow: 0 0 20px rgba(46, 160, 67, 0.2);
-    z-index: 20; 
+    z-index: 20;
 }
 
 .status-dot {
-    width: 8px; height: 8px;
+    width: 8px;
+    height: 8px;
     background: var(--accent-green);
     border-radius: 50%;
     box-shadow: 0 0 10px var(--accent-green);
@@ -85,13 +90,15 @@
 /* --- TITLE --- */
 .hero-title {
     font-family: 'Audiowide', sans-serif;
-    font-size: clamp(2.5rem, 8vw, 4.5rem); /* Dynamically scales between 2.5rem and 4.5rem */
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    /* Dynamically scales between 2.5rem and 4.5rem */
     color: white;
     text-transform: uppercase;
     text-shadow: 0 0 30px rgba(46, 160, 67, 0.4);
     letter-spacing: 2px;
     margin: 0 0 1.5rem 0;
     line-height: 1.1;
+    animation: slideUpFade 0.8s ease-out forwards;
 }
 
 .hero-title span {
@@ -105,11 +112,13 @@
     color: var(--text-secondary);
     margin-bottom: 3rem;
     line-height: 1.6;
-    min-height: 4.8em; 
+    min-height: 4.8em;
     display: block;
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
+    opacity: 0;
+    animation: slideUpFade 0.8s ease-out 0.3s forwards;
 }
 
 .typing-cursor {
@@ -127,6 +136,8 @@
     display: flex;
     gap: 1.5rem;
     justify-content: center;
+    opacity: 0;
+    animation: slideUpFade 0.8s ease-out 0.6s forwards;
 }
 
 .hero-btn {
@@ -148,7 +159,7 @@
     background: rgba(46, 160, 67, 0.15);
     border: 1px solid var(--accent-green);
     color: var(--accent-green);
-    box-shadow: 0 0 15px rgba(46, 160, 67, 0.1);
+    animation: btnGlow 3s infinite ease-in-out;
 }
 
 .hero-btn.primary:hover {
@@ -172,8 +183,57 @@
 }
 
 /* --- ANIMATIONS --- */
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+@keyframes slideUpFade {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes btnGlow {
+    0% {
+        box-shadow: 0 0 15px rgba(46, 160, 67, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(46, 160, 67, 0.5);
+    }
+
+    100% {
+        box-shadow: 0 0 15px rgba(46, 160, 67, 0.2);
+    }
+}
 
 /* --- MOBILE SPECIFIC FIXES --- */
 @media (max-width: 768px) {
@@ -188,27 +248,28 @@
 
     .hero-title {
         /* Tighter font for small screens to prevent line-wrapping */
-        font-size: 1.8rem; 
+        font-size: 1.8rem;
         margin-bottom: 0.8rem;
     }
 
     .hero-description {
         font-size: 0.85rem;
         /* Constrain the height so it doesn't push buttons off-screen */
-        min-height: 5em; 
+        min-height: 5em;
         margin-bottom: 1.5rem;
         padding: 0 10px;
     }
 
     .system-status-badge {
-        bottom: 15px; /* Tighter spacing for mobile */
+        bottom: 15px;
+        /* Tighter spacing for mobile */
         left: 15px;
         font-size: 0.55rem;
         padding: 4px 12px;
     }
 
     .cta-buttons {
-        flex-direction: column; 
+        flex-direction: column;
         width: 100%;
         max-width: 240px;
         margin: 0 auto;
@@ -224,7 +285,17 @@
 
 /* Landscape Mode Fix (for very short phones) */
 @media (max-height: 500px) {
-    .hero-title { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    .hero-description { display: none; } /* Hide text in short landscape to keep buttons visible */
-    .system-status-badge { display: none; }
+    .hero-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .hero-description {
+        display: none;
+    }
+
+    /* Hide text in short landscape to keep buttons visible */
+    .system-status-badge {
+        display: none;
+    }
 }

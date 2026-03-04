@@ -8,6 +8,7 @@ import { PreferencesProvider, usePreferences } from './context/PreferencesContex
 
 import Navbar from './components/Navbar/Navbar';
 import Dock from './components/Dock/Dock';
+// import Footer from './components/Footer/Footer';
 import { useLocation } from 'react-router-dom';
 import Auth from './components/Auth/Auth';
 import Admin from './pages/Admin/Admin';
@@ -25,6 +26,7 @@ import SolveQuestion from './pages/Practice/SolveQuestion';
 import QuestionDetails from './pages/Admin/QuestionDetails';
 import ActivateAccount from './pages/ActivateAccount/ActivateAccount';
 import './assets/styles/styles.css';
+import './assets/styles/lightmode.css'
 import './App.css';
 
 // ✅ FIXED: correct relative path (was '../src/utils/config' which is wrong)
@@ -125,7 +127,7 @@ const AppContent = () => {
 
       const targetOpacity = minDistance <= proximity ? 0.8
         : minDistance <= fadeDistance ? ((fadeDistance - minDistance) / (fadeDistance - proximity)) * 0.8
-        : 0;
+          : 0;
 
       gsap.to(spotlightRef.current, { opacity: targetOpacity, duration: targetOpacity > 0 ? 0.2 : 0.5, ease: 'power2.out' });
     };

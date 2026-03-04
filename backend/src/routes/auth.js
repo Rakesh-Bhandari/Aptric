@@ -128,36 +128,37 @@ router.post('/forgot-password', async (req, res) => {
 // ── Reset Password ─────────────────────────────────────────────
 router.post('/reset-password', async (req, res) => {
     const { email, otp, newPassword } = req.body;
+    let conn;
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
         const [[user]] = await conn.query('SELECT user_id, otp_code, otp_expires FROM users WHERE email = ?', [email]);
-        if (!user) { conn.release(); return res.status(404).json({ error: 'User not found' }); }
+        if (!user) { return res.status(404).json({ error: 'User not found' }); }
         if (user.otp_code !== otp || new Date() > new Date(user.otp_expires)) {
-            conn.release(); return res.status(400).json({ error: 'INVALID_OR_EXPIRED_OTP' });
+            return res.status(400).json({ error: 'INVALID_OR_EXPIRED_OTP' });
         }
         const hash = await bcrypt.hash(newPassword, 10);
         await conn.query('UPDATE users SET password_hash = ?, otp_code = NULL, otp_expires = NULL WHERE email = ?', [hash, email]);
-        conn.release();
         res.json({ message: 'PASSWORD_RESET_SUCCESSFUL' });
     } catch (err) {
         console.error('[reset-password]', err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
 // ── Email Verification ─────────────────────────────────────────
 router.get('/verify/:token', async (req, res) => {
+    let conn;
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
         const [users] = await conn.query('SELECT * FROM users WHERE verification_token = ?', [req.params.token]);
         if (!users.length) {
-            conn.release();
             return res.status(400).json({ error: 'Token invalid or already used' });
         }
 
         const user = users[0];
         await conn.query('UPDATE users SET is_verified = true, verification_token = NULL WHERE user_id = ?', [user.user_id]);
-        conn.release();
 
         // Set JWT cookie
         setAuthCookie(res, user.user_id);
@@ -173,25 +174,29 @@ router.get('/verify/:token', async (req, res) => {
     } catch (err) {
         console.error('[verify]', err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
 // ── Activation status polling ──────────────────────────────────
 router.get('/activation-status', isLoggedIn, async (req, res) => {
+    let conn;
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
         const today = getTodayDate();
         const [[log]] = await conn.query(
             'SELECT log_id FROM user_daily_log WHERE user_id = ? AND challenge_date = ?',
             [req.user.user_id, today]
         );
-        conn.release();
         if (log) {
             return res.json({ status: 'complete', progress: 10, total: 10, message: 'Questions ready!' });
         }
         res.json({ status: 'generating', progress: 0, total: 10, message: 'Still preparing...' });
     } catch (err) {
         res.status(500).json({ error: 'Status check failed' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 

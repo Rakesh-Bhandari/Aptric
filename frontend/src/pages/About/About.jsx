@@ -13,117 +13,120 @@ const Icons = {
 };
 
 const About = () => {
-  return (
-    <div className="about-container">
-      
-      {/* 1. Header */}
-      <div className="about-header">
-        <div className="system-status">
-            <div className="status-dot"></div> SYSTEM ONLINE
-        </div>
-        <h1 className="glitch-title">Platform_Overview</h1>
-        <p style={{color:'var(--text-secondary)', fontFamily:'Michroma', fontSize:'0.9rem'}}>
-            V 2.4.0 // STABLE BUILD
-        </p>
-      </div>
+    return (
+        <div className="about-container">
 
-      {/* 2. Bento Grid Layout */}
-      <div className="bento-grid">
-
-        {/* A. Core Directive (Mission) - Wide Card */}
-        <div className="info-card card-mission">
-            <span className="card-label">CORE DIRECTIVE</span>
-            <h2 className="card-title">Mission Protocol</h2>
-            <div className="terminal-window">
-                <div><span className="cmd-prompt">root@aptitude:~$</span> cat mission.txt</div>
-                <br/>
-                <div style={{color:'#e6edf3'}}>
-                    "To engineer the ultimate logical reasoning engine. We provide a gamified, data-driven environment for mastering aptitude through consistency and adaptive algorithms."
-                </div>
-                <br/>
-                <div><span className="cmd-prompt">root@aptitude:~$</span> <span className="cursor">_</span></div>
-            </div>
-        </div>
-
-        {/* B. System Stats - Tall Side Card (Spans 2 rows) */}
-        <div className="info-card card-stats">
-            <span className="card-label">SYSTEM METRICS</span>
-            <h2 className="card-title">Live Data</h2>
-            
-            <div className="stat-row">
-                <span className="stat-name">Uptime</span>
-                <span className="stat-val" style={{color:'var(--accent-green)'}}>99.9%</span>
-            </div>
-            <div className="stat-row">
-                <span className="stat-name">Questions</span>
-                <span className="stat-val">1,500+</span>
-            </div>
-            <div className="stat-row">
-                <span className="stat-name">Active Users</span>
-                <span className="stat-val">842</span>
-            </div>
-            <div className="stat-row">
-                <span className="stat-name">Daily Gen</span>
-                <span className="stat-val">Automated</span>
-            </div>
-            
-            <div style={{marginTop:'2rem', borderTop:'1px solid rgba(255,255,255,0.1)', paddingTop:'1rem'}}>
-                <span className="stat-name">Server Region</span>
-                <div style={{display:'flex', alignItems:'center', gap:'10px', marginTop:'5px', color:'white'}}>
-                    <Icons.Globe /> Asia-Pacific (AP-1)
+            {/* 1. Header */}
+            {/* 1. Header */}
+            <div className="practice-header">
+                <div className="header-main-title">
+                    <h1 className="glitch-title">Platform_Overview</h1>
+                    <p className="subtitle-timer">V 2.4.0 // STABLE BUILD</p>
                 </div>
             </div>
-        </div>
 
-        {/* C. Feature 1 */}
-        <div className="info-card card-feature">
-            <div className="icon-box"><Icons.Cpu /></div>
-            <span className="card-label">MODULE A</span>
-            <h3 className="card-title" style={{fontSize:'1.2rem'}}>Daily AI Gen</h3>
-            <p className="card-text">
-                10 fresh questions generated every 24h cycle. Logic gates reset at midnight.
-            </p>
-        </div>
+            {/* 2. Bento Grid Layout */}
+            <div className="bento-grid">
 
-        {/* D. Feature 2 */}
-        <div className="info-card card-feature">
-            <div className="icon-box"><Icons.Zap /></div>
-            <span className="card-label">MODULE B</span>
-            <h3 className="card-title" style={{fontSize:'1.2rem'}}>Performance</h3>
-            <p className="card-text">
-                Real-time analytics engine tracking accuracy, velocity, and streak retention.
-            </p>
-        </div>
+                {/* A. Core Directive (Mission) - Wide Card */}
+                <div className="info-card card-mission">
+                    <span className="card-label">CORE DIRECTIVE</span>
+                    <h2 className="card-title">Mission Protocol</h2>
+                    <div className="terminal-window">
+                        <div><span className="cmd-prompt">root@aptitude:~$</span> cat mission.txt</div>
+                        <br />
+                        {/* ✅ was: color:'#e6edf3' (hard-coded white) → now uses CSS class */}
+                        <div className="terminal-body-text">
+                            "To engineer the ultimate logical reasoning engine. We provide a gamified, data-driven environment for mastering aptitude through consistency and adaptive algorithms."
+                        </div>
+                        <br />
+                        <div><span className="cmd-prompt">root@aptitude:~$</span> <span className="cursor">_</span></div>
+                    </div>
+                </div>
 
-        {/* E. Feature 3 */}
-        <div className="info-card card-feature">
-            <div className="icon-box"><Icons.Shield /></div>
-            <span className="card-label">MODULE C</span>
-            <h3 className="card-title" style={{fontSize:'1.2rem'}}>Adaptive Rank</h3>
-            <p className="card-text">
-                Dynamic difficulty scaling. System evolves from Beginner to Expert based on user input.
-            </p>
-        </div>
+                {/* B. System Stats - Tall Side Card (Spans 2 rows) */}
+                <div className="info-card card-stats">
+                    <span className="card-label">SYSTEM METRICS</span>
+                    <h2 className="card-title">Live Data</h2>
 
-        {/* F. NEW: System Architecture (Spans remaining 2 cols) */}
-        <div className="info-card card-tech">
-            <span className="card-label">INFRASTRUCTURE</span>
-            <h2 className="card-title" style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                <Icons.Server /> Architecture
-            </h2>
-            <div className="tech-stack-grid">
-                <div className="tech-item"><div className="tech-dot"></div>React.js</div>
-                <div className="tech-item"><div className="tech-dot"></div>Node Runtime</div>
-                <div className="tech-item"><div className="tech-dot"></div>Express API</div>
-                <div className="tech-item"><div className="tech-dot"></div>MySQL DB</div>
-                <div className="tech-item"><div className="tech-dot"></div>Passport Auth</div>
-                <div className="tech-item"><div className="tech-dot"></div>Bento UI</div>
+                    <div className="stat-row">
+                        <span className="stat-name">Uptime</span>
+                        {/* ✅ accent-green is already a variable — fine */}
+                        <span className="stat-val" style={{ color: 'var(--accent-green)' }}>99.9%</span>
+                    </div>
+                    <div className="stat-row">
+                        <span className="stat-name">Questions</span>
+                        <span className="stat-val">1,500+</span>
+                    </div>
+                    <div className="stat-row">
+                        <span className="stat-name">Active Users</span>
+                        <span className="stat-val">842</span>
+                    </div>
+                    <div className="stat-row">
+                        <span className="stat-name">Daily Gen</span>
+                        <span className="stat-val">Automated</span>
+                    </div>
+
+                    {/* ✅ was: borderTop:'1px solid rgba(255,255,255,0.1)' (hard-coded) → class */}
+                    <div className="stats-region-footer">
+                        <span className="stat-name">Server Region</span>
+                        {/* ✅ was: color:'white' (hard-coded) → class */}
+                        <div className="region-row">
+                            <Icons.Globe /> Asia-Pacific (AP-1)
+                        </div>
+                    </div>
+                </div>
+
+                {/* C. Feature 1 */}
+                <div className="info-card card-feature">
+                    <div className="icon-box"><Icons.Cpu /></div>
+                    <span className="card-label">MODULE A</span>
+                    <h3 className="card-title card-title--sm">Daily AI Gen</h3>
+                    <p className="card-text">
+                        10 fresh questions generated every 24h cycle. Logic gates reset at midnight.
+                    </p>
+                </div>
+
+                {/* D. Feature 2 */}
+                <div className="info-card card-feature">
+                    <div className="icon-box"><Icons.Zap /></div>
+                    <span className="card-label">MODULE B</span>
+                    <h3 className="card-title card-title--sm">Performance</h3>
+                    <p className="card-text">
+                        Real-time analytics engine tracking accuracy, velocity, and streak retention.
+                    </p>
+                </div>
+
+                {/* E. Feature 3 */}
+                <div className="info-card card-feature">
+                    <div className="icon-box"><Icons.Shield /></div>
+                    <span className="card-label">MODULE C</span>
+                    <h3 className="card-title card-title--sm">Adaptive Rank</h3>
+                    <p className="card-text">
+                        Dynamic difficulty scaling. System evolves from Beginner to Expert based on user input.
+                    </p>
+                </div>
+
+                {/* F. System Architecture */}
+                <div className="info-card card-tech">
+                    <span className="card-label">INFRASTRUCTURE</span>
+                    {/* ✅ display/gap kept as inline — layout only, no color */}
+                    <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Icons.Server /> Architecture
+                    </h2>
+                    <div className="tech-stack-grid">
+                        <div className="tech-item"><div className="tech-dot"></div>React.js</div>
+                        <div className="tech-item"><div className="tech-dot"></div>Node Runtime</div>
+                        <div className="tech-item"><div className="tech-dot"></div>Express API</div>
+                        <div className="tech-item"><div className="tech-dot"></div>MySQL DB</div>
+                        <div className="tech-item"><div className="tech-dot"></div>Passport Auth</div>
+                        <div className="tech-item"><div className="tech-dot"></div>Bento UI</div>
+                    </div>
+                </div>
+
             </div>
         </div>
-
-      </div>
-    </div>
-  );
+    );
 };
 
 export default About;

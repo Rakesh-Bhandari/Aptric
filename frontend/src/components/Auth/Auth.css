@@ -7,22 +7,24 @@
     --bg-dark: #050505;
     --glass-panel: rgba(22, 27, 34, 0.95);
     --glass-border: rgba(63, 185, 80, 0.3);
-    
+
     --text-primary: #e6edf3;
     --text-secondary: #7d8590;
-    
+
     --accent-green: #2ea043;
     --accent-hover: #3fb950;
     --accent-glow: rgba(46, 160, 67, 0.4);
-    
+
     --danger: #f85149;
     --code-bg: rgba(0, 0, 0, 0.5);
 }
 
 .modal-overlay {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(8px);
     display: flex;
@@ -50,7 +52,9 @@
 .auth-modal::before {
     content: "";
     position: absolute;
-    top: 0; left: 0; right: 0;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 2px;
     background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
     box-shadow: 0 0 10px var(--accent-green);
@@ -58,22 +62,26 @@
 
 .modal-close {
     position: absolute;
-    top: 15px; right: 15px;
+    top: 15px;
+    right: 15px;
     background: transparent;
     border: 1px solid transparent;
     color: var(--text-secondary);
-    width: 32px; height: 32px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     font-size: 1.5rem;
     line-height: 1;
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s ease;
 }
 
 .modal-close:hover {
     color: var(--text-primary);
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border-color: var(--text-secondary);
 }
 
@@ -98,7 +106,7 @@
     font-size: 2rem;
     color: white;
     text-transform: uppercase;
-    text-shadow: 0 0 20px rgba(46, 160, 67, 0.3);
+    text-shadow: 0 0 30px rgba(46, 160, 67, 0.6);
     margin: 0;
 }
 
@@ -144,12 +152,17 @@
 .social-divider::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-.social-divider span { padding: 0 10px; }
+
+.social-divider span {
+    padding: 0 10px;
+}
 
 /* --- FORM STYLING --- */
-.form-group { margin-bottom: 1.2rem; }
+.form-group {
+    margin-bottom: 1.2rem;
+}
 
 .form-label {
     display: block;
@@ -165,7 +178,7 @@
     width: 100%;
     padding: 12px;
     background-color: var(--code-bg);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     color: var(--text-primary);
     font-family: 'JetBrains Mono', monospace;
@@ -176,23 +189,37 @@
 .form-input:focus {
     outline: none;
     border-color: var(--accent-green);
-    box-shadow: 0 0 15px rgba(46, 160, 67, 0.1);
+    box-shadow: 0 0 20px rgba(46, 160, 67, 0.3);
     background: black;
 }
 
 /* Password Toggle */
-.password-input-wrapper { position: relative; display: flex; align-items: center; }
-.form-input.password-field { padding-right: 45px; }
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.form-input.password-field {
+    padding-right: 45px;
+}
 
 .password-toggle-btn {
-    position: absolute; right: 10px;
-    background: transparent; border: none;
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: color 0.2s;
 }
-.password-toggle-btn:hover { color: var(--text-primary); }
+
+.password-toggle-btn:hover {
+    color: var(--text-primary);
+}
 
 /* Forgot Password */
 
@@ -237,7 +264,7 @@
 .modal-submit-btn:hover {
     background: var(--accent-green);
     color: black;
-    box-shadow: 0 0 20px rgba(46, 160, 67, 0.4);
+    box-shadow: 0 0 30px rgba(46, 160, 67, 0.6);
     transform: translateY(-2px);
 }
 
@@ -265,5 +292,24 @@
     text-decoration-color: var(--accent-green);
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

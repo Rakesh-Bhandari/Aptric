@@ -1,0 +1,16 @@
+# Backend Fixes Checklist
+
+- [ ] Fix Database Connection Leaks
+    - [ ] [src/routes/auth.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/auth.js): Ensure all `getConnection()` calls have `release()` in `finally` blocks (specifically `/reset-password`, `/verify/:token`, `/activation-status`).
+    - [ ] [src/routes/game.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/game.js): Ensure transactions (`beginTransaction`) are committed or rolled back, and `conn.release()` is ALWAYS called in `finally` blocks for `/daily-questions`, `/submit-answer`, `/use-hint`, `/give-up`.
+    - [ ] [src/routes/questions.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/questions.js): Wrap connection usages in `/single/:qid`, `/category`, `/topics/stats`. Note that `/topics/stats` uses `req.isAuthenticated()` which might cause errors without session; replace with existing middleware or JWT checks if needed.
+    - [ ] [src/routes/user.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/user.js): Fix `conn.release()` guarantees in `/progress` and `/:id/public`.
+    - [ ] [src/routes/admin.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/admin.js): Fix missing `release()` in `/stats`, `/users/:id/promote`.
+    - [ ] [src/routes/feedback.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/feedback.js): Fix connection handling in feedback routes.
+    - [ ] [src/services/dailyQuestions.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/dailyQuestions.js) & [questionGenerator.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/questionGenerator.js): Ensure connections are released.
+- [ ] Fix Admin Authentication
+    - [ ] [src/routes/admin.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/admin.js) (`/login`): Replace `req.session.adminLoggedIn = true` (which crashes because `express-session` is not defined) with setting a cookie `aptric_admin` matching the [isAdmin](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/middleware/auth.js#34-44) middleware expectation.
+- [ ] Fix AI Question Generator logic
+    - [ ] [src/services/questionGenerator.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/questionGenerator.js): Remove the broken closure variable `assignedIds._seenQids` which is always undefined, and properly pass the skipped QIDs so users don't get duplicates.
+- [ ] Code Quality Improvements
+    - [ ] Update error handlers to be more informative instead of crashing.

@@ -8,64 +8,107 @@
     --bg-dark: #050505;
     --glass-panel: rgba(22, 27, 34, 0.6);
     --glass-border: rgba(63, 185, 80, 0.3);
-    
     --text-primary: #e6edf3;
     --text-secondary: #7d8590;
-    
     --accent-green: #2ea043;
     --accent-hover: #3fb950;
     --accent-glow: rgba(46, 160, 67, 0.4);
-    
-    --gold: #d29922; 
+    --gold: #d29922;
     --danger: #f85149;
     --code-bg: rgba(0, 0, 0, 0.3);
+}
+
+* {
+    box-sizing: border-box;
 }
 
 body {
     background-color: var(--bg-dark);
     color: var(--text-primary);
     font-family: 'Inter', sans-serif;
-    /* Cyberpunk Grid Background */
-    background-image: 
-        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
+    background-image:
+        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
     background-size: 40px 40px;
+    overflow-x: hidden;
 }
 
+/* ── CONTAINER ───────────────────────────────────────────────── */
 .topics-container {
     max-width: 1200px;
     margin: 3rem auto;
     padding: 0 1.5rem;
+    width: 100%;
+    overflow-x: hidden;
 }
 
-/* --- HEADER SECTION --- */
-.topics-header {
+/* ── HEADER ──────────────────────────────────────────────────── */
+.practice-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.header-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.practice-rank-badge {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--accent-green);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(4px);
+}
+
+.rank-label {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.55rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.rank-number {
+    font-family: 'Audiowide', sans-serif;
+    font-size: 1rem;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.header-main-title {
     text-align: center;
-    margin-bottom: 3rem;
+    overflow: hidden;
+}
+
+.subtitle-timer {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.8rem;
+    color: var(--accent-green);
+    margin-top: 0.4rem;
 }
 
 .glitch-title {
     font-family: 'Audiowide', sans-serif;
-    font-size: 3rem;
+    /* KEY FIX: no white-space:nowrap — allow wrapping instead */
+    font-size: clamp(1.2rem, 6vw, 3.5rem);
     color: white;
     text-transform: uppercase;
     text-shadow: 0 0 20px rgba(46, 160, 67, 0.6);
-    letter-spacing: 4px;
-    margin-bottom: 0.5rem;
-}
-
-.system-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    background: rgba(46, 160, 67, 0.1);
-    border: 1px solid var(--accent-green);
-    border-radius: 99px;
-    font-family: 'Michroma', sans-serif;
-    font-size: 0.75rem;
-    color: var(--accent-green);
-    letter-spacing: 1px;
+    letter-spacing: clamp(0px, 0.3vw, 4px);
+    margin: 0;
+    line-height: 1.1;
+    word-break: break-word;
 }
 
 .status-dot {
@@ -75,16 +118,17 @@ body {
     border-radius: 50%;
     box-shadow: 0 0 10px var(--accent-green);
     animation: pulse 2s infinite;
+    flex-shrink: 0;
 }
 
-/* --- GRID LAYOUT --- */
+/* ── TOPICS GRID ─────────────────────────────────────────────── */
 .topics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.2rem;
 }
 
-/* --- CONSOLE CARD --- */
+/* ── CONSOLE CARD ────────────────────────────────────────────── */
 .console-card {
     background: var(--glass-panel);
     border: 1px solid var(--glass-border);
@@ -96,12 +140,13 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     height: 100%;
+    min-width: 0;
 }
 
 .console-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     border-color: var(--accent-green);
     box-shadow: 0 10px 30px -5px rgba(46, 160, 67, 0.15);
 }
@@ -119,22 +164,24 @@ body {
 
 .topic-title {
     font-family: 'Audiowide', sans-serif;
-    font-size: 1.4rem;
+    font-size: clamp(1rem, 3vw, 1.4rem);
     color: white;
-    margin-bottom: 1.5rem;
-    line-height: 1.4;
+    margin-bottom: 1.2rem;
+    line-height: 1.3;
+    word-break: break-word;
 }
 
-/* Progress Section */
 .topic-stats {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
 }
 
 .progress-info {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
     margin-bottom: 8px;
 }
@@ -159,21 +206,24 @@ body {
     box-shadow: 0 0 10px var(--gold);
 }
 
-/* Button */
 .cmd-btn {
     width: 100%;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
-    padding: 1rem;
+    padding: 0.9rem;
     border-radius: 6px;
     font-family: 'Michroma', sans-serif;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
     cursor: pointer;
     transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     margin-top: auto;
+    white-space: nowrap;
 }
 
 .cmd-btn:hover {
@@ -186,72 +236,42 @@ body {
     border-color: var(--gold);
     color: var(--gold);
 }
+
 .cmd-btn.review-mode:hover {
     background: rgba(210, 153, 34, 0.1);
 }
 
-/* --- QUESTION LIST VIEW (Add to bottom of Topics.css) --- */
-
-.q-list-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--glass-border);
+/* ── QUESTION LIST ───────────────────────────────────────────── */
+.header-back-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
-.back-btn {
-    background: transparent;
-    border: 1px solid var(--text-secondary);
-    color: var(--text-secondary);
-    padding: 0.5rem 1rem;
-    font-family: 'Michroma', sans-serif;
-    font-size: 0.7rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
-.back-btn:hover {
-    border-color: var(--accent-green);
-    color: var(--accent-green);
-    box-shadow: 0 0 10px rgba(46, 160, 67, 0.2);
-}
-
-.module-title {
-    font-family: 'Audiowide', sans-serif;
-    font-size: 1.5rem;
-    color: white;
-    text-transform: uppercase;
-}
-
-/* Question Grid */
 .q-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.2rem;
 }
 
-/* Individual Question Card */
 .q-card {
     background: var(--glass-panel);
     border: 1px solid var(--glass-border);
-    border-left: 3px solid rgba(255,255,255,0.1);
+    border-left: 3px solid rgba(255, 255, 255, 0.1);
     padding: 1.5rem;
     border-radius: 12px;
     transition: all 0.2s;
     position: relative;
     overflow: hidden;
+    min-width: 0;
 }
 
 .q-card:hover {
     background: rgba(255, 255, 255, 0.03);
     border-left-color: var(--accent-green);
-    transform: translateX(5px);
 }
 
+/* KEY FIX: removed translateX(5px) which causes horizontal scroll on mobile */
 .q-card.solved {
     border-left-color: var(--accent-green);
     background: rgba(46, 160, 67, 0.05);
@@ -260,9 +280,11 @@ body {
 .q-meta {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-bottom: 1rem;
     font-family: 'Michroma', sans-serif;
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -271,37 +293,45 @@ body {
 .status-badge {
     padding: 2px 8px;
     border-radius: 4px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
 }
-.status-badge.complete { color: var(--accent-green); background: rgba(46, 160, 67, 0.15); border: 1px solid var(--accent-green); }
+
+.status-badge.complete {
+    color: var(--accent-green);
+    background: rgba(46, 160, 67, 0.15);
+    border: 1px solid var(--accent-green);
+}
 
 .q-text {
     font-family: 'Inter', sans-serif;
-    font-size: 1.1rem;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
     color: var(--text-primary);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
     line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Option Previews */
 .opt-preview {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 1.5rem;
+    gap: 8px;
+    margin-bottom: 1.2rem;
 }
 
 .opt-pill {
     background: rgba(0, 0, 0, 0.3);
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem;
     border-radius: 4px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
-    border: 1px solid rgba(255,255,255,0.05);
-    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.05);
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 .solve-btn {
@@ -311,21 +341,22 @@ body {
     color: var(--accent-green);
     padding: 0.8rem;
     font-family: 'Audiowide', sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: clamp(0.5px, 0.2vw, 2px);
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
+    border-radius: 6px;
+    white-space: nowrap;
 }
 
 .solve-btn:hover {
     background: var(--accent-green);
     color: black;
-    box-shadow: 0 0 15px var(--accent-green);
 }
 
 .solve-btn.replay {
@@ -333,19 +364,114 @@ body {
     border-color: var(--text-secondary);
     color: var(--text-secondary);
 }
+
 .solve-btn.replay:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: white;
 }
 
-@media (max-width: 768px) {
-    .opt-preview { grid-template-columns: 1fr; }
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
-/* Animations */
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — tablet (≤900px)
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .topics-container {
+        margin: 1.5rem auto;
+        padding: 0 1rem;
+    }
 
-@media (max-width: 768px) {
-    .glitch-title { font-size: 2rem; }
-    .topics-grid { grid-template-columns: 1fr; }
+    .console-card:hover {
+        transform: none;
+    }
+
+    .topics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — mobile (≤640px)
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+    .topics-container {
+        padding: 0 0.75rem;
+    }
+
+    .topics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .console-card {
+        padding: 1.2rem;
+        border-radius: 12px;
+    }
+
+    .topic-title {
+        font-size: 1rem;
+    }
+
+    .header-back-btn {
+        position: static;
+        transform: none;
+        margin-bottom: 10px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .q-card {
+        padding: 1rem;
+        border-radius: 10px;
+    }
+
+    /* Options to single column on mobile */
+    .opt-preview {
+        grid-template-columns: 1fr;
+    }
+
+    .opt-pill {
+        white-space: normal;
+    }
+
+    .solve-btn {
+        font-size: 0.65rem;
+        letter-spacing: 0.5px;
+    }
+
+    .cmd-btn {
+        font-size: 0.65rem;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — small phones (≤400px)
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+    .topics-container {
+        padding: 0 0.5rem;
+    }
+
+    .glitch-title {
+        font-size: 1.2rem;
+        letter-spacing: 0.5px;
+    }
+
+    .q-meta {
+        font-size: 0.55rem;
+    }
+
+    /* hide status badge on very small screens to save space */
+    .status-badge {
+        display: none;
+    }
 }

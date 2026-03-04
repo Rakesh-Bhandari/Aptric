@@ -4,7 +4,7 @@ import './Topics.css';
 import API_BASE_URL from '../../utils/config.js';
 
 const Icons = {
-    Back: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>,
+    Back: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>,
     Check: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>,
     Play: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
 };
@@ -49,34 +49,42 @@ const TopicQuestions = () => {
     }, [category]);
 
     if (loading) return (
-        <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="status-dot"></div>
         </div>
     );
 
     return (
         <div className="topics-container">
-            <div className="q-list-header">
-                <button className="back-btn" onClick={() => navigate('/topics')}>
-                    <Icons.Back /> RETURN_TO_MODULES
-                </button>
-                <div className="module-title">
-                    {category ? category.toUpperCase() : 'UNKNOWN_MODULE'}
+            <header className="practice-header" style={{ position: 'relative' }}>
+                <div className="header-top-bar" style={{ justifyContent: 'center' }}>
+                    <button className="back-btn header-back-btn" onClick={() => navigate('/topics')}>
+                        <Icons.Back /> RETURN_TO_MODULES
+                    </button>
+                    <div className="practice-rank-badge">
+                        <span className="rank-label">SYSTEM_STATUS</span>
+                        <div className="rank-number">
+                            <div className="status-dot"></div> ONLINE
+                        </div>
+                    </div>
                 </div>
-                <div className="system-status">
-                    <div className="status-dot"></div> ONLINE
+                <div className="header-main-title">
+                    <h1 className="glitch-title">{category ? category.toUpperCase() : 'UNKNOWN_MODULE'}</h1>
+                    <div className="subtitle-timer" style={{ color: 'var(--accent-green)' }}>
+                        QUESTION_DATABASE
+                    </div>
                 </div>
-            </div>
+            </header>
 
             <div className="q-grid">
                 {questions.length === 0 ? (
-                    <div style={{textAlign:'center', padding:'4rem', color:'#555', fontFamily:'JetBrains Mono'}}>
+                    <div style={{ textAlign: 'center', padding: '4rem', color: '#555', fontFamily: 'JetBrains Mono' }}>
                         // NO_DATA_PACKETS_FOUND
                     </div>
                 ) : (
                     questions.map((q, index) => {
                         let options = [];
-                        try { options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options; } catch(e){}
+                        try { options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options; } catch (e) { }
                         const qIndex = String(index + 1).padStart(2, '0');
 
                         return (
@@ -91,7 +99,7 @@ const TopicQuestions = () => {
                                 <div className="opt-preview">
                                     {options.slice(0, 4).map((opt, i) => (
                                         <div key={i} className="opt-pill">
-                                            <span style={{color:'var(--accent-green)'}}>{String.fromCharCode(65 + i)} &gt;</span> {opt}
+                                            <span style={{ color: 'var(--accent-green)' }}>{String.fromCharCode(65 + i)} &gt;</span> {opt}
                                         </div>
                                     ))}
                                 </div>

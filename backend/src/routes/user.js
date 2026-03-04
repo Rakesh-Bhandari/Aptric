@@ -45,8 +45,9 @@ router.post('/avatar', isLoggedIn, upload.single('avatar'), async (req, res) => 
 // ── Progress / dashboard ───────────────────────────────────────
 router.get('/progress', isLoggedIn, async (req, res) => {
     const userId = req.user.user_id;
+    let conn;
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
 
         const [userRows] = await conn.query(
             'SELECT email, user_name, bio, profile_pic, score, level, day_streak, created_at, role FROM users WHERE user_id = ?', [userId]
@@ -71,7 +72,6 @@ router.get('/progress', isLoggedIn, async (req, res) => {
             `SELECT COUNT(*) as total, SUM(CASE WHEN status='correct' THEN 1 ELSE 0 END) as correct
              FROM user_attempts WHERE user_id=? AND status IN ('correct','wrong')`, [userId]
         );
-        conn.release();
 
         const calendarMap = {};
         calRows.forEach(r => { calendarMap[r.dateStr] = r.count; });
@@ -80,17 +80,19 @@ router.get('/progress', isLoggedIn, async (req, res) => {
         const topics = ALL_CATEGORIES.map(cat => {
             const s = topicStats.find(t => t.category === cat);
             const tq = s?.total_attempted || 0, cq = s?.total_correct || 0;
-            return { name: cat, progress: tq > 0 ? Number(((cq/tq)*100).toFixed(0)) : 0, total: tq, correct: cq };
+            return { name: cat, progress: tq > 0 ? Number(((cq / tq) * 100).toFixed(0)) : 0, total: tq, correct: cq };
         });
 
         res.json({
             profile: { name: u.user_name, email: u.email, bio: u.bio, profile_pic: u.profile_pic, joined: u.created_at, role: u.role },
-            stats: { questionsAnswered: total, accuracy: total > 0 ? ((correct/total)*100).toFixed(0) : 0, streak: u.day_streak, score: u.score, level: u.level },
+            stats: { questionsAnswered: total, accuracy: total > 0 ? ((correct / total) * 100).toFixed(0) : 0, streak: u.day_streak, score: u.score, level: u.level },
             topics, rank: rankRes[0].rank, activity, calendar: calendarMap
         });
     } catch (err) {
         console.error('[progress]', err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -107,12 +109,13 @@ router.put('/update', isLoggedIn, async (req, res) => {
 
 // ── Public profile ─────────────────────────────────────────────
 router.get('/:id/public', async (req, res) => {
+    let conn;
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
         const [users] = await conn.query(
             'SELECT user_name, bio, profile_pic, score, level, day_streak, created_at FROM users WHERE user_id=?', [req.params.id]
         );
-        if (!users.length) { conn.release(); return res.status(404).json({ error: 'Not found' }); }
+        if (!users.length) { return res.status(404).json({ error: 'Not found' }); }
         const u = users[0];
 
         const [topicStats] = await conn.query(
@@ -125,24 +128,27 @@ router.get('/:id/public', async (req, res) => {
             `SELECT COUNT(*) as total, SUM(CASE WHEN status='correct' THEN 1 ELSE 0 END) as correct
              FROM user_attempts WHERE user_id=? AND status IN ('correct','wrong')`, [req.params.id]
         );
-        conn.release();
 
         const topics = ALL_CATEGORIES.map(cat => {
             const s = topicStats.find(t => t.category === cat);
             const tq = s?.total_attempted || 0, cq = s?.total_correct || 0;
-            return { name: cat, progress: tq > 0 ? Number(((cq/tq)*100).toFixed(0)) : 0, total: tq, correct: cq };
+            return { name: cat, progress: tq > 0 ? Number(((cq / tq) * 100).toFixed(0)) : 0, total: tq, correct: cq };
         });
 
         res.json({
             name: u.user_name, bio: u.bio, profilePic: u.profile_pic,
-            stats: { score: u.score, level: u.level, streak: u.day_streak,
-                     solved: totals[0].correct||0,
-                     accuracy: totals[0].total > 0 ? ((totals[0].correct/totals[0].total)*100).toFixed(0) : 0,
-                     joined: u.created_at },
+            stats: {
+                score: u.score, level: u.level, streak: u.day_streak,
+                solved: totals[0].correct || 0,
+                accuracy: totals[0].total > 0 ? ((totals[0].correct / totals[0].total) * 100).toFixed(0) : 0,
+                joined: u.created_at
+            },
             topics
         });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 

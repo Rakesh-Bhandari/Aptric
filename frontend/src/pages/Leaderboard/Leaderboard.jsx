@@ -67,7 +67,7 @@ const SkillWheel = ({ topics }) => {
                         <div className="popup-header" style={{ color: activeItem.color }}>{activeItem.name}</div>
                         <div className="popup-body">
                             <div className="popup-row"><span>ATTEMPTED</span><span>{activeItem.total || 0}</span></div>
-                            <div className="popup-row"><span>CORRECT</span><span style={{color: '#2ea043'}}>{activeItem.correct || 0}</span></div>
+                            <div className="popup-row"><span>CORRECT</span><span style={{ color: '#2ea043' }}>{activeItem.correct || 0}</span></div>
                             <div className="popup-row"><span>ACCURACY</span><span>{activeItem.progress}%</span></div>
                         </div>
                     </div>
@@ -135,16 +135,12 @@ const Leaderboard = () => {
 
     return (
         <div className="leaderboard-container">
-            <header className="leaderboard-header-section">
-                <div>
+            <div className="practice-header">
+                <div className="header-main-title">
                     <h1 className="glitch-title">OPERATIVE_RANKS</h1>
-                    <p style={{ color: 'var(--accent-green)', fontFamily: 'JetBrains Mono', fontSize: '0.75rem', margin: '5px 0' }}>// GLOBAL_LEADERBOARD_V2.0</p>
+                    <p className="subtitle-timer">// GLOBAL_LEADERBOARD_V2.0</p>
                 </div>
-                <div style={{ textAlign: 'right', fontFamily: 'Michroma', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                    ACTIVE_SESSIONS: {leaders.length} <br />
-                    SYNC_STATUS: <span style={{ color: 'var(--accent-green)' }}>ENCRYPTED</span>
-                </div>
-            </header>
+            </div>
 
             <div className="bento-leaderboard-grid">
                 {leaders.map((player) => {

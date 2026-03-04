@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import dbPool from '../config/db.js';
 import { isLoggedIn } from '../middleware/auth.js';
+import { getUserIdFromCookie } from '../utils/jwt.js';
 import { getTodayDate, ALL_CATEGORIES } from '../utils/helpers.js';
 
 const router = Router();
@@ -40,12 +41,13 @@ router.get('/single/:qid', isLoggedIn, async (req, res) => {
     const { qid } = req.params;
     const userId = req.user.user_id;
     const today = getTodayDate();
+    let conn;
 
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
 
         const [[question]] = await conn.query('SELECT * FROM questions WHERE qid = ?', [qid]);
-        if (!question) { conn.release(); return res.status(404).json({ error: 'Question not found' }); }
+        if (!question) { return res.status(404).json({ error: 'Question not found' }); }
 
         let attempt = null;
         const [[todayAttempt]] = await conn.query(
@@ -62,8 +64,6 @@ router.get('/single/:qid', isLoggedIn, async (req, res) => {
             );
             if (solvedAttempt) attempt = solvedAttempt;
         }
-
-        conn.release();
 
         res.json({
             questionId: question.question_id,
@@ -84,6 +84,8 @@ router.get('/single/:qid', isLoggedIn, async (req, res) => {
     } catch (err) {
         console.error('Single question error:', err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -91,9 +93,10 @@ router.get('/single/:qid', isLoggedIn, async (req, res) => {
 router.get('/category', isLoggedIn, async (req, res) => {
     const { category } = req.query;
     if (!category) return res.status(400).json({ error: 'Category required' });
+    let conn;
 
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
 
         const [questions] = await conn.query(
             `SELECT question_id, qid, question_text, options, difficulty, category 
@@ -113,12 +116,12 @@ router.get('/category', isLoggedIn, async (req, res) => {
             attemptsMap = new Map(attempts.map(a => [a.qid, a.status]));
         }
 
-        conn.release();
-
         res.json(questions.map(q => ({ ...q, status: attemptsMap.get(q.qid) || 'unattempted' })));
     } catch (err) {
         console.error('Category fetch error:', err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -126,8 +129,9 @@ router.get('/category', isLoggedIn, async (req, res) => {
 // NOTE: Returns empty stats for unauthenticated users instead of 401
 // so the Topics page always renders (just shows 0 progress for guests)
 router.get('/topics/stats', async (req, res) => {
+    let conn;
     try {
-        const conn = await dbPool.getConnection();
+        conn = await dbPool.getConnection();
         const [totalRows] = await conn.query(`SELECT category, COUNT(*) as total FROM questions GROUP BY category`);
 
         // Build base stats from question bank (works for everyone)
@@ -140,14 +144,15 @@ router.get('/topics/stats', async (req, res) => {
         });
 
         // If logged in, also add the user's solved count
-        if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        const userId = getUserIdFromCookie(req);
+        if (userId) {
             const [solvedRows] = await conn.query(
                 `SELECT q.category, COUNT(DISTINCT ua.question_id) as solved
                  FROM user_attempts ua
                  JOIN questions q ON ua.question_id = q.question_id
                  WHERE ua.user_id = ? AND ua.status = 'correct'
                  GROUP BY q.category`,
-                [req.user.user_id]
+                [userId]
             );
             solvedRows.forEach(row => {
                 if (stats[row.category] !== undefined) {
@@ -156,11 +161,12 @@ router.get('/topics/stats', async (req, res) => {
             });
         }
 
-        conn.release();
         res.json(stats);
     } catch (err) {
         console.error('Topic stats error:', err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 

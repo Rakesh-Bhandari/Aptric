@@ -22,16 +22,16 @@ const Admin = () => {
     const [showGenModal, setShowGenModal] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [globalSubTopic, setGlobalSubTopic] = useState(''); // Suggested Feature
-    
+
     // Matrix State: { "Logic": { Easy: 0, Medium: 0, Hard: 0 }, ... }
     const categoriesList = [
-        "Quantitative Aptitude", "Logical Reasoning", 
+        "Quantitative Aptitude", "Logical Reasoning",
         "Verbal Ability", "Data Interpretation", "Puzzles", "Technical Aptitude"
     ];
-    
+
     const [genMatrix, setGenMatrix] = useState(
         categoriesList.reduce((acc, cat) => ({
-            ...acc, 
+            ...acc,
             [cat]: { Easy: 0, Medium: 0, Hard: 0 }
         }), {})
     );
@@ -140,8 +140,8 @@ const Admin = () => {
     const handleMatrixChange = (category, difficulty, value) => {
         const val = parseInt(value) || 0;
         // Clamp to avoid huge numbers
-        const safeVal = Math.min(Math.max(val, 0), 20); 
-        
+        const safeVal = Math.min(Math.max(val, 0), 20);
+
         setGenMatrix(prev => ({
             ...prev,
             [category]: { ...prev[category], [difficulty]: safeVal }
@@ -160,7 +160,7 @@ const Admin = () => {
     const handleBulkGenerate = async (e) => {
         e.preventDefault();
         const total = getTotalToGenerate();
-        
+
         if (total === 0) return alert("Please select at least 1 question to generate.");
         if (total > 100) return alert("Max 100 questions per batch to avoid timeouts.");
 
@@ -189,12 +189,12 @@ const Admin = () => {
                 credentials: 'include'
             });
             const data = await res.json();
-            
+
             if (res.ok) {
                 alert(data.message);
                 setShowGenModal(false);
                 // Reset Matrix
-                setGenMatrix(categoriesList.reduce((acc, cat) => ({...acc, [cat]: { Easy: 0, Medium: 0, Hard: 0 }}), {}));
+                setGenMatrix(categoriesList.reduce((acc, cat) => ({ ...acc, [cat]: { Easy: 0, Medium: 0, Hard: 0 } }), {}));
                 if (activeTab === 'questions') loadQuestions();
             } else {
                 alert(data.error || "Generation failed");
@@ -380,10 +380,9 @@ const Admin = () => {
                             {/* NEW GENERATE BUTTON */}
                             <button
                                 className="auth-button"
-                                style={{ backgroundColor: '#8b5cf6' }} // Purple color to distinguish
                                 onClick={() => setShowGenModal(true)}
                             >
-                                ✨ AI Generator
+                                AI Generator
                             </button>
                         </div>
 
@@ -543,28 +542,28 @@ const Admin = () => {
             {showGenModal && (
                 <div className="admin-login-overlay">
                     <div className="admin-login-box modal-wide">
-                        
+
                         {/* 1. Header (Fixed at top) */}
                         <div className="modal-header">
                             <h2>AI Question Generator</h2>
                             <p>Distribute questions across categories. Max 100 per batch.</p>
                             <button onClick={() => setShowGenModal(false)} className="close-modal-btn">×</button>
                         </div>
-                        
+
                         {/* 2. Scrollable Body */}
                         <div className="modal-body">
                             <form id="bulk-gen-form" onSubmit={handleBulkGenerate}>
                                 {/* Sub-Topic Input */}
-                                <div className="form-group" style={{textAlign: 'left'}}>
-                                    <label style={{fontWeight:'600', color:'var(--primary)', display:'block', marginBottom:'0.5rem'}}>
-                                        Sub-Topic Focus <span style={{fontWeight:'400', color:'var(--text-muted)'}}>(Optional)</span>
+                                <div className="form-group" style={{ textAlign: 'left' }}>
+                                    <label style={{ fontWeight: '600', color: 'var(--primary)', display: 'block', marginBottom: '0.5rem' }}>
+                                        Sub-Topic Focus <span style={{ fontWeight: '400', color: 'var(--text-muted)' }}>(Optional)</span>
                                     </label>
-                                    <input 
-                                        className="form-input" 
+                                    <input
+                                        className="form-input"
                                         placeholder="e.g. 'Time and Work', 'Blood Relations'..."
                                         value={globalSubTopic}
                                         onChange={e => setGlobalSubTopic(e.target.value)}
-                                        style={{background:'rgba(255,255,255,0.03)'}}
+                                        style={{ background: 'rgba(255,255,255,0.03)' }}
                                     />
                                 </div>
 
@@ -574,9 +573,9 @@ const Admin = () => {
                                         <thead>
                                             <tr>
                                                 <th>Category</th>
-                                                <th style={{color:'#4ade80'}}>Easy</th>
-                                                <th style={{color:'#fbbf24'}}>Medium</th>
-                                                <th style={{color:'#f87171'}}>Hard</th>
+                                                <th style={{ color: '#4ade80' }}>Easy</th>
+                                                <th style={{ color: '#fbbf24' }}>Medium</th>
+                                                <th style={{ color: '#f87171' }}>Hard</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -584,27 +583,27 @@ const Admin = () => {
                                                 <tr key={cat}>
                                                     <td>{cat}</td>
                                                     <td>
-                                                        <input 
-                                                            type="number" min="0" max="20" 
-                                                            className="matrix-input" 
+                                                        <input
+                                                            type="number" min="0" max="20"
+                                                            className="matrix-input"
                                                             value={genMatrix[cat].Easy === 0 ? '' : genMatrix[cat].Easy}
                                                             onChange={e => handleMatrixChange(cat, 'Easy', e.target.value)}
                                                             placeholder="-"
                                                         />
                                                     </td>
                                                     <td>
-                                                        <input 
-                                                            type="number" min="0" max="20" 
-                                                            className="matrix-input" 
+                                                        <input
+                                                            type="number" min="0" max="20"
+                                                            className="matrix-input"
                                                             value={genMatrix[cat].Medium === 0 ? '' : genMatrix[cat].Medium}
                                                             onChange={e => handleMatrixChange(cat, 'Medium', e.target.value)}
                                                             placeholder="-"
                                                         />
                                                     </td>
                                                     <td>
-                                                        <input 
-                                                            type="number" min="0" max="20" 
-                                                            className="matrix-input" 
+                                                        <input
+                                                            type="number" min="0" max="20"
+                                                            className="matrix-input"
                                                             value={genMatrix[cat].Hard === 0 ? '' : genMatrix[cat].Hard}
                                                             onChange={e => handleMatrixChange(cat, 'Hard', e.target.value)}
                                                             placeholder="-"
@@ -620,29 +619,29 @@ const Admin = () => {
 
                         {/* 3. Footer (Fixed at bottom) */}
                         <div className="modal-footer">
-                            <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
-                                <span style={{color:'var(--text-muted)', fontSize:'0.9rem', fontWeight:'600'}}>TOTAL QUESTIONS:</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '600' }}>TOTAL QUESTIONS:</span>
                                 <span className="total-badge">{getTotalToGenerate()}</span>
                             </div>
-                            
-                            <div style={{display:'flex', gap:'10px'}}>
-                                <button 
-                                    type="button" 
-                                    className="admin-logout-btn" 
-                                    onClick={() => setShowGenModal(false)} 
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    type="button"
+                                    className="admin-logout-btn"
+                                    onClick={() => setShowGenModal(false)}
                                     disabled={isGenerating}
-                                    style={{border:'1px solid var(--border)', padding:'0.6rem 1.2rem'}}
+                                    style={{ border: '1px solid var(--border)', padding: '0.6rem 1.2rem' }}
                                 >
                                     Cancel
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     form="bulk-gen-form" /* Connects to form in body */
-                                    className="auth-button" 
+                                    className="auth-button"
                                     disabled={isGenerating || getTotalToGenerate() === 0}
                                     style={{
-                                        display:'flex', alignItems:'center', gap:'10px', 
-                                        padding:'0.6rem 1.5rem', fontSize:'1rem'
+                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                        padding: '0.6rem 1.5rem', fontSize: '1rem'
                                     }}
                                 >
                                     {isGenerating ? (
@@ -663,7 +662,7 @@ const Admin = () => {
                     </div>
                 </div>
             )}
-            
+
             {/* Create User Modal */}
             {showCreateModal && (
                 <div className="admin-login-overlay">

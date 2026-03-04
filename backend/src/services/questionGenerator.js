@@ -5,12 +5,12 @@ import { nanoid } from 'nanoid';
 function getDifficultyDistribution(userLevel, totalQuestions = 10) {
     let easy = 0, medium = 0, hard = 0;
     switch (userLevel) {
-        case 'Beginner':     easy = 7; medium = 3; hard = 0; break;
+        case 'Beginner': easy = 7; medium = 3; hard = 0; break;
         case 'Intermediate': easy = 4; medium = 5; hard = 1; break;
-        case 'Advanced':     easy = 2; medium = 5; hard = 3; break;
-        case 'Pro':          easy = 1; medium = 4; hard = 5; break;
-        case 'Expert':       easy = 0; medium = 3; hard = 7; break;
-        default:             easy = 7; medium = 3; hard = 0;
+        case 'Advanced': easy = 2; medium = 5; hard = 3; break;
+        case 'Pro': easy = 1; medium = 4; hard = 5; break;
+        case 'Expert': easy = 0; medium = 3; hard = 7; break;
+        default: easy = 7; medium = 3; hard = 0;
     }
     return { 'Easy': easy, 'Medium': medium, 'Hard': hard };
 }
@@ -154,7 +154,7 @@ async function generateAndSaveQuestions(dbPool, difficulty, count, progressCallb
 //   2. For each difficulty slot, try to find unused questions from the bank
 //   3. Only generate new AI questions for slots that can't be filled from the bank
 //   4. All newly generated questions are saved to the bank for future reuse
-export async function generateDailyQuestionsForUser(userLevel, dbPool, progressCallback = null, totalCount = 10) {
+export async function generateDailyQuestionsForUser(userLevel, dbPool, progressCallback = null, totalCount = 10, seenQids = []) {
     if (!process.env.OPEN_ROUTER_API_KEY) {
         console.error('❌ ERROR: OPEN_ROUTER_API_KEY is missing');
         return [];
@@ -164,24 +164,6 @@ export async function generateDailyQuestionsForUser(userLevel, dbPool, progressC
 
     const distribution = getDifficultyDistribution(userLevel, totalCount);
     const assignedIds = []; // final list of question_id (PKs) to assign to user
-
-    // We need to know which qids the user has already seen across ALL time
-    // This is stored in users.answered_qids as a JSON array of qid strings
-    // We'll fetch it once here
-    let seenQids = [];
-    const conn = await dbPool.getConnection();
-    try {
-        // We don't have userId here — dailyQuestions.js passes it separately.
-        // So we return the question IDs and let dailyQuestions.js handle the log insert.
-        // The seenQids filtering happens at the pool level using the user context passed in.
-        // Since generateDailyQuestionsForUser doesn't receive userId, we handle
-        // "no repeats" by tracking at the ensureDailyQuestionsGenerated level.
-        // See updated dailyQuestions.js for the full picture.
-        conn.release();
-    } catch (err) {
-        conn.release();
-        throw err;
-    }
 
     let questionsAssignedCount = 0;
 
@@ -196,9 +178,8 @@ export async function generateDailyQuestionsForUser(userLevel, dbPool, progressC
             });
         }
 
-        // This function now receives seenQids from caller (dailyQuestions.js)
-        // We store them in a closure variable set before this loop
-        const fromBank = assignedIds._seenQids || [];
+        // This function now receives seenQids from caller
+        const fromBank = seenQids || [];
 
         const bankConn = await dbPool.getConnection();
         let bankIds = [];

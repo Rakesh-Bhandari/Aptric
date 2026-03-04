@@ -8,16 +8,13 @@
     --bg-dark: #050505;
     --glass-panel: rgba(22, 27, 34, 0.6);
     --glass-border: rgba(63, 185, 80, 0.3);
-    
     --text-primary: #e6edf3;
     --text-secondary: #7d8590;
-    
     --accent-green: #2ea043;
     --accent-hover: #3fb950;
     --accent-glow: rgba(46, 160, 67, 0.4);
-    
     --danger: #f85149;
-    --warning: #d29922; 
+    --warning: #d29922;
     --success: #238636;
     --code-bg: rgba(0, 0, 0, 0.3);
     --gold: #d29922;
@@ -31,38 +28,39 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-primary);
     font-family: 'Inter', sans-serif;
-    /* Cyberpunk Grid Background */
-    background-image: 
-        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px), 
+    background-image:
+        linear-gradient(rgba(46, 160, 67, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(46, 160, 67, 0.05) 1px, transparent 1px);
     background-size: 40px 40px;
+    overflow-x: hidden;
 }
 
+/* ── CONTAINER ───────────────────────────────────────────────── */
 .practice-container {
     max-width: 1200px;
     margin: 3rem auto;
     padding: 0 1.5rem;
+    width: 100%;
     overflow-x: hidden;
 }
 
-/* --- HEADER SECTION (Fixed Layout) --- */
+/* ── HEADER ──────────────────────────────────────────────────── */
 .practice-header {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; /* Space between top bar and title */
-    margin-bottom: 2.5rem;
-    position: relative;
+    gap: 1.2rem;
+    margin-bottom: 2rem;
 }
 
-/* Container for Badge and Status */
 .header-top-bar {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     width: 100%;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
-/* Rank Badge */
 .practice-rank-badge {
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--accent-green);
@@ -70,10 +68,7 @@ body {
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     backdrop-filter: blur(4px);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    min-width: 140px;
 }
 
 .rank-label {
@@ -87,20 +82,17 @@ body {
 
 .rank-number {
     font-family: 'Audiowide', sans-serif;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: var(--accent-green);
-    line-height: 1;
     text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(46, 160, 67, 0.2);
     white-space: nowrap;
 }
 
-/* System Status */
 .system-status {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 16px;
+    padding: 6px 14px;
     background: rgba(46, 160, 67, 0.1);
     border: 1px solid var(--accent-green);
     border-radius: 99px;
@@ -108,6 +100,7 @@ body {
     font-size: 0.7rem;
     color: var(--accent-green);
     letter-spacing: 1px;
+    flex-shrink: 0;
 }
 
 .status-dot {
@@ -117,45 +110,43 @@ body {
     border-radius: 50%;
     box-shadow: 0 0 10px var(--accent-green);
     animation: pulse 2s infinite;
+    flex-shrink: 0;
 }
 
-/* Title Section (Centered Below) */
 .header-main-title {
     text-align: center;
+    overflow: hidden;
 }
 
 .glitch-title {
     font-family: 'Audiowide', sans-serif;
-    /* Scales between 1.5rem and 3.5rem based on screen width */
-    font-size: clamp(1.5rem, 8vw, 3.5rem); 
+    /* KEY FIX: no white-space:nowrap — allow wrapping instead */
+    font-size: clamp(1.2rem, 6vw, 3.5rem);
     color: white;
     text-transform: uppercase;
     text-shadow: 0 0 20px rgba(46, 160, 67, 0.6);
-    /* Reduced from 4px to ensure it fits mobile */
-    letter-spacing: 2px; 
+    letter-spacing: clamp(0px, 0.3vw, 4px);
     margin: 0;
     line-height: 1.1;
-    /* Force single line */
-    white-space: nowrap; 
+    word-break: break-word;
 }
 
 .subtitle-timer {
     font-family: 'Michroma', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--accent-green);
-    margin-top: 0.5rem;
-    opacity: 0.9;
+    margin-top: 0.4rem;
 }
 
-/* --- BENTO GRID LAYOUT --- */
+/* ── GRID ────────────────────────────────────────────────────── */
 .practice-grid {
     display: grid;
-    grid-template-columns: 300px 1fr; /* Left: Stats, Right: Terminal */
+    grid-template-columns: 300px 1fr;
     gap: 1.5rem;
     align-items: start;
 }
 
-/* Generic Console Card */
+/* ── CARD ────────────────────────────────────────────────────── */
 .console-card {
     background: var(--glass-panel);
     border: 1px solid var(--glass-border);
@@ -166,6 +157,14 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.console-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-green);
+    box-shadow: 0 10px 30px -5px rgba(46, 160, 67, 0.15);
 }
 
 .card-label {
@@ -177,17 +176,23 @@ body {
     margin-bottom: 1rem;
     display: block;
     opacity: 0.8;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding-bottom: 10px;
 }
 
-/* --- LEFT SIDE: STATS & LOGS --- */
+/* ── STATS ───────────────────────────────────────────────────── */
+.stats-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
 .stat-tile {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     padding: 1rem;
     border-radius: 8px;
-    margin-bottom: 0;
     text-align: center;
 }
 
@@ -196,7 +201,6 @@ body {
     font-size: 1.8rem;
     color: white;
     display: block;
-    text-shadow: 0 0 10px rgba(46, 160, 67, 0.3);
 }
 
 .stat-desc {
@@ -207,14 +211,7 @@ body {
     letter-spacing: 1px;
 }
 
-.stats-wrapper {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-/* Progress Grid */
+/* ── PROGRESS DOTS ───────────────────────────────────────────── */
 .progress-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -224,8 +221,8 @@ body {
 
 .progress-dot {
     aspect-ratio: 1;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -237,19 +234,41 @@ body {
     transition: all 0.2s;
 }
 
-.progress-dot:hover { border-color: var(--accent-green); color: white; }
-.progress-dot.active { background: var(--accent-green); color: black; font-weight: bold; box-shadow: 0 0 10px var(--accent-green); }
-.progress-dot.correct { border-color: var(--accent-green); color: var(--accent-green); background: rgba(46, 160, 67, 0.1); }
-.progress-dot.wrong { border-color: var(--danger); color: var(--danger); background: rgba(248, 81, 73, 0.1); }
-.progress-dot.hinted { border-color: var(--warning); color: var(--warning); }
+.progress-dot:hover {
+    border-color: var(--accent-green);
+    color: white;
+}
 
-/* Log Stream */
+.progress-dot.active {
+    background: var(--accent-green);
+    color: black;
+    font-weight: bold;
+    box-shadow: 0 0 10px var(--accent-green);
+}
+
+.progress-dot.correct {
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+    background: rgba(46, 160, 67, 0.1);
+}
+
+.progress-dot.wrong {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: rgba(248, 81, 73, 0.1);
+}
+
+.progress-dot.hinted {
+    border-color: var(--warning);
+    color: var(--warning);
+}
+
+/* ── LOG STREAM ──────────────────────────────────────────────── */
 .log-stream {
     margin-top: 2rem;
     max-height: 300px;
     overflow-y: auto;
-    padding-right: 5px;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 1rem;
     scrollbar-width: thin;
     scrollbar-color: var(--accent-green) transparent;
@@ -260,26 +279,49 @@ body {
     font-size: 0.8rem;
     margin-bottom: 8px;
     padding: 8px;
-    background: rgba(255,255,255,0.02);
+    background: rgba(255, 255, 255, 0.02);
     border-radius: 4px;
     border-left: 2px solid transparent;
     display: flex;
     justify-content: space-between;
+    gap: 4px;
+    flex-wrap: wrap;
 }
 
-.log-item.correct { border-left-color: var(--accent-green); background: rgba(46, 160, 67, 0.05); }
-.log-item.wrong { border-left-color: var(--danger); background: rgba(248, 81, 73, 0.05); }
-.log-item.gave_up { border-left-color: var(--warning); opacity: 0.7; }
+.log-item.correct {
+    border-left-color: var(--accent-green);
+    background: rgba(46, 160, 67, 0.05);
+}
 
-.log-id { color: var(--text-secondary); }
-.log-result { font-weight: bold; }
-.log-pts { color: var(--gold); }
+.log-item.wrong {
+    border-left-color: var(--danger);
+    background: rgba(248, 81, 73, 0.05);
+}
 
-/* --- RIGHT SIDE: QUESTION TERMINAL --- */
+.log-item.gave_up {
+    border-left-color: var(--warning);
+    opacity: 0.7;
+}
+
+.log-id {
+    color: var(--text-secondary);
+}
+
+.log-result {
+    font-weight: bold;
+}
+
+.log-pts {
+    color: var(--gold);
+}
+
+/* ── QUESTION TERMINAL ───────────────────────────────────────── */
 .terminal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     margin-bottom: 1.5rem;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
@@ -288,81 +330,110 @@ body {
 
 .question-text {
     font-family: 'Inter', sans-serif;
-    font-size: 1.1rem;
+    font-size: 1rem;
     line-height: 1.6;
     color: var(--text-primary);
-    background: rgba(0,0,0,0.3);
-    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.2rem;
     border-radius: 8px;
     border-left: 3px solid var(--accent-green);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Terminal Options */
+/* ── OPTIONS ─────────────────────────────────────────────────── */
 .option-stack {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .terminal-option {
     font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1rem;
+    padding: 0.9rem 1rem;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
-    gap: 1rem;
-    align-items: center;
+    gap: 0.8rem;
+    align-items: flex-start;
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .terminal-option:hover:not(.disabled) {
     background: rgba(46, 160, 67, 0.1);
     border-color: var(--accent-green);
-    transform: translateX(5px);
+    transform: translateX(4px);
 }
 
 .terminal-option.selected {
     background: rgba(46, 160, 67, 0.2);
     border-color: var(--accent-green);
-    box-shadow: 0 0 15px rgba(46, 160, 67, 0.1);
+    box-shadow: 0 0 15px rgba(46, 160, 67, 0.3);
 }
 
-.terminal-option.correct { border-color: var(--accent-green); background: rgba(46, 160, 67, 0.25); }
-.terminal-option.incorrect { border-color: var(--danger); background: rgba(248, 81, 73, 0.15); }
-.terminal-option.disabled { opacity: 0.6; cursor: default; }
+.terminal-option.correct {
+    border-color: var(--accent-green);
+    background: rgba(46, 160, 67, 0.25);
+}
 
-.opt-prefix { color: var(--text-secondary); }
-.terminal-option.selected .opt-prefix { color: var(--accent-green); }
+.terminal-option.incorrect {
+    border-color: var(--danger);
+    background: rgba(248, 81, 73, 0.15);
+}
 
-/* Buttons */
+.terminal-option.disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.opt-prefix {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.terminal-option.selected .opt-prefix {
+    color: var(--accent-green);
+}
+
+/* ── BUTTONS ─────────────────────────────────────────────────── */
 .cmd-bar {
     display: flex;
-    gap: 1rem;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 1.5rem;
+    gap: 0.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1.2rem;
+    flex-wrap: wrap;
 }
 
 .cmd-btn {
     flex: 1;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    min-width: 70px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text-secondary);
-    padding: 1rem;
+    padding: 0.9rem 0.5rem;
     border-radius: 6px;
     font-family: 'Audiowide', sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     cursor: pointer;
     transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
 }
 
 .cmd-btn:hover:not(:disabled) {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: white;
     border-color: white;
 }
@@ -372,160 +443,133 @@ body {
     border-color: var(--accent-green);
     color: var(--accent-green);
 }
+
 .cmd-btn.primary:hover:not(:disabled) {
     background: var(--accent-green);
     color: black;
     box-shadow: 0 0 20px var(--accent-green);
 }
 
-.cmd-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.cmd-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
 
-/* Info Boxes */
 .terminal-alert {
     font-family: 'JetBrains Mono', monospace;
     padding: 1rem;
     border-radius: 6px;
     margin-bottom: 1rem;
     font-size: 0.85rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
-.alert-hint { background: rgba(210, 153, 34, 0.1); border: 1px solid var(--warning); color: var(--warning); }
-.alert-info { background: rgba(255,255,255,0.05); border: 1px solid var(--text-secondary); color: var(--text-primary); }
 
-/* Navigation */
+.alert-hint {
+    background: rgba(210, 153, 34, 0.1);
+    border: 1px solid var(--warning);
+    color: var(--warning);
+}
+
+.alert-info {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--text-secondary);
+    color: var(--text-primary);
+}
+
 .nav-row {
     display: flex;
     justify-content: space-between;
-    margin-top: 1.5rem;
+    gap: 0.8rem;
+    margin-top: 1.2rem;
 }
 
-/* --- TERMINAL LOADER RESPONSIVENESS --- */
+/* ── LOADER ──────────────────────────────────────────────────── */
 .terminal-loader-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 300px;
-    padding: 2rem 1rem; /* Balanced padding for mobile */
+    min-height: 280px;
+    padding: 2rem 1rem;
     text-align: center;
-    box-sizing: border-box;
 }
 
 .glitch-text {
     font-family: 'JetBrains Mono', monospace;
     color: var(--accent-green);
-    font-size: clamp(0.9rem, 4vw, 1.2rem); /* Scales smoothly */
-    margin: 1.5rem 0 0.5rem 0;
-    word-break: break-all; /* Prevents long strings from breaking layout */
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    margin: 1rem 0 0.5rem;
+    word-break: break-all;
 }
 
 .helper-text {
-    font-size: clamp(0.75rem, 3vw, 0.9rem);
+    font-size: clamp(0.75rem, 2.5vw, 0.9rem);
     color: var(--text-secondary);
-    max-width: 400px; /* Prevents text from becoming too wide on desktop */
+    max-width: 360px;
     line-height: 1.5;
 }
 
-/* Ensure the status dot stays centered and visible */
-.terminal-loader-container .status-dot {
-    width: 12px;
-    height: 12px;
-    margin-bottom: 10px;
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(46, 160, 67, 0.2);
+    border-top-color: var(--accent-green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 4rem auto;
 }
 
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
+@keyframes pulse {
 
-/* --- COMPREHENSIVE RESPONSIVE OVERHAUL --- */
+    0%,
+    100% {
+        opacity: 1;
+    }
 
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — tablet (≤900px)
+   ════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
     .practice-container {
         margin: 1rem auto;
-        padding: 0 0.8rem; /* Reduced padding to give content more room */
-        width: 100%;
-        max-width: 100vw;
+        padding: 0 1rem;
     }
 
-    /* 1. Header & Title Fixes */
-    .glitch-title {
-        /* On smaller screens, cap it at a size that won't overflow */
-        font-size: clamp(1.2rem, 7vw, 1.8rem); 
-        letter-spacing: 1px; /* Tighten letters for mobile */
-        text-align: center;
-        width: 100%;
-    }
-
-    .header-main-title {
-        padding: 0 5px;
-        overflow: hidden; /* Safety against layout break */
-    }
-
-    .subtitle-timer {
-        font-size: 0.7rem;
-    }
-
-    .practice-rank-badge {
-        min-width: 100px;
-        padding: 0.4rem;
-    }
-
-    .rank-number {
-        font-size: 0.8rem !important; /* Force override for small screens */
-    }
-
-    /* 2. Grid & Container Fixes */
     .practice-grid {
-        grid-template-columns: 100%; /* Total collapse to single column */
+        grid-template-columns: 1fr;
+        /* single column */
         gap: 1rem;
     }
 
     .console-card {
-        padding: 1rem; /* Smaller padding inside cards */
-        width: 100%;
-    }
-
-    /* 3. Stats Wrapper Fix */
-    .stats-wrapper {
-        grid-template-columns: repeat(2, 1fr);
-        width: 100%;
-    }
-
-    .stat-tile {
-        padding: 0.6rem;
+        padding: 1.2rem;
     }
 
     .stat-val {
-        font-size: 1.2rem;
+        font-size: 1.4rem;
     }
 
-    /* 4. Question Matrix (The Dots) */
-    .progress-grid {
-        grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
-        gap: 6px;
-    }
-
-    /* 5. Terminal Options */
-    .terminal-option {
-        padding: 0.8rem;
-        font-size: 0.85rem;
-        word-break: break-word; /* Prevents code snippets in options from breaking layout */
-        line-height: 1.4;
-    }
-
-    .opt-prefix {
-        flex-shrink: 0; /* Ensures 'A >' doesn't get crushed */
-    }
-
-    /* 6. Command Bar (Buttons) */
     .cmd-bar {
         display: grid;
-        grid-template-columns: 1fr 1fr; /* 2x2 grid for buttons */
+        grid-template-columns: 1fr 1fr;
         gap: 0.6rem;
     }
 
     .cmd-btn.primary {
-        grid-column: span 2; /* Submit takes full top row */
-        padding: 1rem;
+        grid-column: span 2;
     }
 
     .cmd-btn {
@@ -533,46 +577,90 @@ body {
         padding: 0.8rem 0.4rem;
     }
 
-    /* 7. Nav Row */
-    .nav-row {
-        gap: 0.8rem;
+    /* disable translateX hover on touch */
+    .terminal-option:hover:not(.disabled) {
+        transform: none;
     }
 }
 
-@media (max-width: 480px) {
-    .terminal-loader-container {
-        padding: 1.5rem 0.5rem;
-        min-height: 250px;
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — mobile (≤600px)
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+    .practice-container {
+        padding: 0 0.75rem;
     }
-    
-    .terminal-loader-container .cmd-btn {
-        width: 100%; /* Full width button for easier tapping */
-        max-width: 200px;
-    }
-}
 
-/* Extra Tight Viewports (iPhone SE / Small Android) */
-@media (max-width: 380px) {
-    .header-top-bar {
-        flex-direction: column; /* Stack Rank and Status */
-        align-items: center;
-        gap: 10px;
-        text-align: center;
-    }
     .glitch-title {
-        font-size: 1.1rem; /* Minimum readable size for one line */
+        font-size: clamp(1rem, 7vw, 1.6rem);
         letter-spacing: 0.5px;
     }
-    
-    .practice-container {
-        padding: 0 0.5rem; /* Maximize horizontal space */
+
+    .header-top-bar {
+        flex-direction: column;
+        align-items: flex-start;
     }
-    .system-status {
-        width: 50%;
-        justify-content: center;
+
+    .console-card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .stat-tile {
+        padding: 0.7rem 0.5rem;
+    }
+
+    .stat-val {
+        font-size: 1.2rem;
+    }
+
+    .stat-desc {
+        font-size: 0.55rem;
+    }
+
+    .question-text {
+        font-size: 0.9rem;
+        padding: 1rem;
+    }
+
+    .terminal-option {
+        font-size: 0.8rem;
+        padding: 0.75rem 0.8rem;
+    }
+
+    .terminal-alert {
+        font-size: 0.78rem;
+        padding: 0.75rem;
+    }
+
+    .terminal-loader-container {
+        min-height: 220px;
+        padding: 1.5rem 0.75rem;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — small phones (≤380px)
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+    .practice-container {
+        padding: 0 0.5rem;
+    }
+
+    .glitch-title {
+        font-size: 1rem;
+        letter-spacing: 0;
+    }
+
+    .console-card {
+        padding: 0.75rem;
     }
 
     .stat-val {
         font-size: 1rem;
+    }
+
+    .cmd-btn {
+        font-size: 0.62rem;
     }
 }

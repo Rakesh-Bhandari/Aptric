@@ -5,19 +5,19 @@
     display: grid;
     /* Sidebar fixed width (260px), Content takes remaining space */
     grid-template-columns: 260px 1fr;
-    grid-template-rows: 1fr; 
+    grid-template-rows: 1fr;
     grid-template-areas: "sidebar content";
-    
+
     /* FIX: Force container to fill exactly the remaining screen height */
     /* Assuming Navbar is approx 70px-80px. Adjust if needed. */
-    height: calc(100vh - 75px); 
+    height: calc(100vh - 75px);
     width: 100%;
-    
+
     /* Remove all gaps and scrolling from the main container */
     gap: 0;
     margin: 0;
     padding: 0;
-    overflow: hidden; 
+    overflow: hidden;
     background-color: var(--bg);
 }
 
@@ -27,14 +27,14 @@
     background-color: var(--card-bg);
     border-right: 1px solid var(--border);
     padding: 1.5rem;
-    
+
     /* Flex layout to push Logout to bottom */
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    
+
     /* Independent scrolling for sidebar if menu is long */
-    overflow-y: auto; 
+    overflow-y: auto;
     height: 100%;
     box-sizing: border-box;
 }
@@ -43,7 +43,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    flex-grow: 1; /* Pushes logout button down */
+    flex-grow: 1;
+    /* Pushes logout button down */
 }
 
 /* Sidebar Links */
@@ -67,7 +68,8 @@
 }
 
 .admin-tab-link.active {
-    background-color: rgba(59, 130, 246, 0.1); /* Primary color low opacity */
+    background-color: rgba(59, 130, 246, 0.1);
+    /* Primary color low opacity */
     color: var(--primary);
     border-color: rgba(59, 130, 246, 0.2);
     font-weight: 600;
@@ -87,9 +89,9 @@
 .admin-content {
     grid-area: content;
     padding: 2rem;
-    
+
     /* Independent scrolling for content */
-    overflow-y: auto; 
+    overflow-y: auto;
     height: 100%;
     box-sizing: border-box;
 }
@@ -118,7 +120,7 @@
     padding: 1.5rem;
     border-radius: 12px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s;
 }
 
@@ -156,8 +158,9 @@
     background-color: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
-    overflow: hidden; /* Clips corners */
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden;
+    /* Clips corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .admin-table {
@@ -264,7 +267,7 @@ select.form-input {
     border-radius: 8px;
     cursor: pointer;
     width: 100%;
-    margin-top: auto; 
+    margin-top: auto;
     font-weight: 600;
     transition: all 0.2s;
 }
@@ -325,8 +328,16 @@ select.form-input {
     font-size: 0.85rem;
     font-weight: 600;
 }
-.status-tag.active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
-.status-tag.banned { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+
+.status-tag.active {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success);
+}
+
+.status-tag.banned {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--error);
+}
 
 /* --- 9. Login Overlay --- */
 .admin-login-overlay {
@@ -367,17 +378,19 @@ select.form-input {
     .admin-container {
         /* On mobile, stack vertically */
         grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr; 
-        grid-template-areas: 
+        grid-template-rows: auto 1fr;
+        grid-template-areas:
             "sidebar"
             "content";
-        height: auto; /* Allow auto height on mobile to scroll page */
+        height: auto;
+        /* Allow auto height on mobile to scroll page */
         min-height: calc(100vh - 75px);
     }
 
     .admin-sidebar {
         flex-direction: row;
-        overflow-x: auto; /* Horizontal scroll for tabs */
+        overflow-x: auto;
+        /* Horizontal scroll for tabs */
         align-items: center;
         padding: 1rem;
         border-right: none;
@@ -385,7 +398,7 @@ select.form-input {
         height: auto;
         white-space: nowrap;
     }
-    
+
     .sidebar-menu {
         flex-direction: row;
         gap: 1rem;
@@ -397,7 +410,7 @@ select.form-input {
         margin-top: 0;
         padding: 0.5rem 1rem;
     }
-    
+
     .admin-content {
         padding: 1rem;
     }
@@ -430,10 +443,14 @@ select.form-input {
     border-radius: 16px;
     display: flex;
     flex-direction: column;
-    max-height: 85vh; /* Fixed max height to ensure it fits */
-    padding: 0; /* Reset padding, we handle it in children */
-    text-align: left; /* RESET: Stop everything from centering */
-    overflow: hidden; /* Clip rounded corners */
+    max-height: 85vh;
+    /* Fixed max height to ensure it fits */
+    padding: 0;
+    /* Reset padding, we handle it in children */
+    text-align: left;
+    /* RESET: Stop everything from centering */
+    overflow: hidden;
+    /* Clip rounded corners */
 }
 
 /* 3. Modal Header (Pinned Top) */
@@ -442,7 +459,8 @@ select.form-input {
     border-bottom: 1px solid var(--border);
     background: var(--card-bg);
     position: relative;
-    text-align: center; /* Center title specifically */
+    text-align: center;
+    /* Center title specifically */
 }
 
 .modal-header h2 {
@@ -469,31 +487,43 @@ select.form-input {
     line-height: 1;
     transition: color 0.2s;
 }
-.close-modal-btn:hover { color: var(--error); }
+
+.close-modal-btn:hover {
+    color: var(--error);
+}
 
 /* 4. Scrollable Body Area */
 .modal-body {
     padding: 1.5rem 2rem;
-    overflow-y: auto; /* Enable Vertical Scrollbar */
-    flex: 1; /* Takes remaining height */
-    
+    overflow-y: auto;
+    /* Enable Vertical Scrollbar */
+    flex: 1;
+    /* Takes remaining height */
+
     /* Custom Scrollbar for Body */
     scrollbar-width: thin;
     scrollbar-color: var(--border) var(--bg);
 }
 
-.modal-body::-webkit-scrollbar { width: 8px; }
-.modal-body::-webkit-scrollbar-track { background: var(--bg); }
-.modal-body::-webkit-scrollbar-thumb { 
-    background-color: var(--border); 
-    border-radius: 4px; 
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 4px;
 }
 
 /* 5. Matrix Table Styling */
 .matrix-scroll-container {
     border: 1px solid var(--border);
     border-radius: 8px;
-    overflow: hidden; /* Round corners */
+    overflow: hidden;
+    /* Round corners */
     margin-top: 1rem;
 }
 
@@ -504,7 +534,8 @@ select.form-input {
 }
 
 .matrix-table thead th {
-    background-color: var(--bg); /* Darker header */
+    background-color: var(--bg);
+    /* Darker header */
     color: var(--text-muted);
     padding: 1rem;
     font-weight: 600;
@@ -520,7 +551,10 @@ select.form-input {
     border-bottom: 1px solid var(--border);
     background: var(--card-bg);
 }
-.matrix-table tbody tr:last-child { border-bottom: none; }
+
+.matrix-table tbody tr:last-child {
+    border-bottom: none;
+}
 
 .matrix-table td {
     padding: 0.75rem;
@@ -560,9 +594,13 @@ select.form-input {
 /* Remove Arrows from Number Input */
 .matrix-input::-webkit-outer-spin-button,
 .matrix-input::-webkit-inner-spin-button {
-    -webkit-appearance: none; margin: 0;
+    -webkit-appearance: none;
+    margin: 0;
 }
-.matrix-input[type=number] { -moz-appearance: textfield; }
+
+.matrix-input[type=number] {
+    -moz-appearance: textfield;
+}
 
 /* 7. Footer Actions */
 .modal-footer {
@@ -584,4 +622,13 @@ select.form-input {
     display: inline-block;
     animation: rotation 1s linear infinite;
 }
-@keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

@@ -18,12 +18,12 @@ export function getActivationStatus(userId) {
 // --- Difficulty distribution by level ---
 function getDifficultyDistribution(userLevel) {
     switch (userLevel) {
-        case 'Beginner':     return { Easy: 7, Medium: 3, Hard: 0 };
+        case 'Beginner': return { Easy: 7, Medium: 3, Hard: 0 };
         case 'Intermediate': return { Easy: 4, Medium: 5, Hard: 1 };
-        case 'Advanced':     return { Easy: 2, Medium: 5, Hard: 3 };
-        case 'Pro':          return { Easy: 1, Medium: 4, Hard: 5 };
-        case 'Expert':       return { Easy: 0, Medium: 3, Hard: 7 };
-        default:             return { Easy: 7, Medium: 3, Hard: 0 };
+        case 'Advanced': return { Easy: 2, Medium: 5, Hard: 3 };
+        case 'Pro': return { Easy: 1, Medium: 4, Hard: 5 };
+        case 'Expert': return { Easy: 0, Medium: 3, Hard: 7 };
+        default: return { Easy: 7, Medium: 3, Hard: 0 };
     }
 }
 
@@ -171,9 +171,10 @@ async function assignQuestionsForUser(userId, userLevel, pool, progressCallback,
         }
 
         // --- Step 1: Pull unused questions from the bank ---
-        const bankConn = await pool.getConnection();
+        let bankConn;
         let bankIds = [];
         try {
+            bankConn = await pool.getConnection();
             let query = `SELECT question_id, qid FROM questions WHERE difficulty = ?`;
             const params = [difficulty];
 
@@ -196,7 +197,7 @@ async function assignQuestionsForUser(userId, userLevel, pool, progressCallback,
             const [rows] = await bankConn.query(query, params);
             bankIds = rows.map(r => r.question_id);
         } finally {
-            bankConn.release();
+            if (bankConn) bankConn.release();
         }
 
         assignedIds.push(...bankIds);
@@ -269,14 +270,15 @@ export async function ensureDailyQuestionsGenerated(user, pool, progressCallback
 
         if (newQuestionIds && newQuestionIds.length > 0) {
             // Save the log entry linking user → today's questions
-            const logConn = await pool.getConnection();
+            let logConn;
             try {
+                logConn = await pool.getConnection();
                 await logConn.query(
                     'INSERT INTO user_daily_log (user_id, challenge_date, question_ids_json) VALUES (?, ?, ?)',
                     [userId, today, JSON.stringify(newQuestionIds)]
                 );
             } finally {
-                logConn.release();
+                if (logConn) logConn.release();
             }
 
             console.log(`[DailyGen] Assigned ${newQuestionIds.length} questions to ${userId}.`);
@@ -293,7 +295,7 @@ export async function ensureDailyQuestionsGenerated(user, pool, progressCallback
         throw err;
     } finally {
         if (conn && !conn._released) {
-            try { conn.release(); } catch (_) {}
+            try { conn.release(); } catch (_) { }
         }
     }
 }

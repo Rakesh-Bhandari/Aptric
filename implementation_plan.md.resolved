@@ -1,0 +1,60 @@
+# Fix Backend Connection Leaks, Security, and Crashes
+
+The backend uses `mysql2` connection pooling. However, many route handlers acquire a connection from the pool (`await dbPool.getConnection()`) but fail to properly release it back to the pool using `conn.release()`. Given the small pool size (`connectionLimit: 5`), missing `conn.release()` on normal early returns or exception paths will quickly exhaust the pool connection limit, causing the server / serverless function to hang and effectively crash. 
+
+Additionally, the admin route was relying on `express-session` which is not installed or configured, causing the admin login to silently fail. 
+
+## User Review Required
+No major architectural changes are proposed. Only structural refactoring to add robust `try...finally` patterns for resource management. 
+
+## Proposed Changes
+
+### Routes
+We will enforce `finally { if (conn) conn.release(); }` across all endpoints to ensure connections are inherently safe from leaking.
+
+#### [MODIFY] [auth.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/auth.js)
+* **Lines 129-146 (`/reset-password`)**: Wrap connection usage in a `try...finally` block. Currently, if an error is thrown, the connection leaks.
+* **Lines 149-177 (`/verify/:token`)**: Ensure `conn.release()` is called in an overarching `finally` block.
+* **Lines 180-196 (`/activation-status`)**: Wrap connection in `try...finally`.
+
+#### [MODIFY] [game.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/game.js)
+* **`/daily-questions`**: Connection is explicitly released during early returns, but skipped if `catch(err)` runs without hitting the exact early exit conditions. Will wrap in `try...finally`.
+* **`/submit-answer`, `/use-hint`, `/give-up`**: These routes use `conn.beginTransaction()`. They currently mix `await conn.rollback(); conn.release();` in various places. Will use standard `try...catch...finally` to ensure `conn.release()` is guaranteed.
+
+#### [MODIFY] [questions.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/questions.js)
+* **`/single/:qid`**: Fix connection leak by using `try...finally`.
+* **`/category`**: Fix connection leak by using `try...finally`.
+* **`/topics/stats`**: Uses `req.isAuthenticated()` which depends on Passport sessions (which aren't configured). Will replace this with a session-less check (e.g., pulling the JWT token from cookies or relying on the decoded token from the [isLoggedIn](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/middleware/auth.js#5-33) middleware).
+
+#### [MODIFY] [user.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/user.js)
+* **`/progress`**: Wrap the connection in `try...finally`.
+* **`/:id/public`**: Wrap the connection in `try...finally`.
+
+#### [MODIFY] [admin.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/admin.js)
+* **`/login`**: Update the route to use `res.cookie('aptric_admin', password)` instead of `req.session.adminLoggedIn = true` because `express-session` is not actually used in this API, breaking admin access.
+* **`/stats`, `/users/:id/promote`**: Wrap database transactions in `try...finally { conn.release(); }`.
+
+#### [MODIFY] [feedback.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/feedback.js)
+* **`/`, `/:id`, `/:id/report`**: Add `try...finally` blocks to guarantee `conn.release()` execution for all manual connection acquisitions.
+
+#### [MODIFY] [cron.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/routes/cron.js)
+* Added safety `conn` release via `finally` block structure.
+
+### Services
+
+#### [MODIFY] [dailyQuestions.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/dailyQuestions.js)
+* **[assignQuestionsForUser](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/dailyQuestions.js#136-233)**: Pass `seenQids` properly instead of relying on broken logic.
+* **[generateAndSaveToBank](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/dailyQuestions.js#43-135)**, **[ensureDailyQuestionsGenerated](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/dailyQuestions.js#234-300)**: Add safe `try...finally` releasing.
+
+#### [MODIFY] [questionGenerator.js](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/questionGenerator.js)
+* **[generateDailyQuestionsForUser](file:///c:/Users/rakes/OneDrive/Desktop/apti_react/backend/src/services/questionGenerator.js#151-271)**: Remove the reliance on `assignedIds._seenQids` which evaluates to undefined. Receive `seenQids` as a parameter explicitly so that generated questions do not duplicate what users have already seen. Add safety `finally { conn.release(); }`.
+
+## Verification Plan
+
+### Automated Tests
+* We will verify the backend still starts up properly using `npm run start` or `node src/server.js`.
+* We will make some mock curl requests to the unauthenticated routes (like `/api/questions/leaderboard`) to ensure no syntax errors were introduced.
+
+### Manual Verification
+* The USER can re-deploy the backend to Vercel and monitor the dashboard for timeout and connection pool exhaustion errors (they should be eliminated).
+* The USER can test logging into the `/admin` portal on the frontend to verify the session-less cookie fix works.

@@ -20,9 +20,10 @@ async function updateGameStats(userId, points, conn) {
 router.get('/daily-questions', isLoggedIn, async (req, res) => {
     const userId = req.user.user_id;
     const today = getTodayDate();
-    const conn = await dbPool.getConnection();
+    let conn;
 
     try {
+        conn = await dbPool.getConnection();
         const [logs] = await conn.query(
             'SELECT * FROM user_daily_log WHERE user_id = ? AND challenge_date = ?',
             [userId, today]
@@ -30,7 +31,6 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
 
         // Questions not ready yet — tell frontend to poll
         if (logs.length === 0) {
-            conn.release();
             return res.status(202).json({
                 status: 'generating',
                 message: 'Your questions are being prepared. Please wait...'
@@ -41,7 +41,6 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
 
         if (!questionIds || questionIds.length === 0) {
             await conn.query('DELETE FROM user_daily_log WHERE log_id = ?', [logs[0].log_id]);
-            conn.release();
             return res.status(202).json({
                 status: 'generating',
                 message: 'Retrying question preparation...'
@@ -56,7 +55,6 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
 
         if (questions.length === 0) {
             await conn.query('DELETE FROM user_daily_log WHERE log_id = ?', [logs[0].log_id]);
-            conn.release();
             return res.status(202).json({
                 status: 'generating',
                 message: 'Retrying question preparation...'
@@ -101,12 +99,12 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
             };
         });
 
-        conn.release();
         res.json({ status: 'ready', questions: dailyQuestions, logId: logs[0].log_id });
     } catch (err) {
-        if (conn) conn.release();
         console.error('[daily-questions]', err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -118,8 +116,9 @@ router.post('/submit-answer', isLoggedIn, async (req, res) => {
 
     if (selectedAnswerIndex === undefined || !qid) return res.status(400).json({ error: 'Missing data' });
 
-    const conn = await dbPool.getConnection();
+    let conn;
     try {
+        conn = await dbPool.getConnection();
         await conn.beginTransaction();
 
         const [existing] = await conn.query(
@@ -127,12 +126,12 @@ router.post('/submit-answer', isLoggedIn, async (req, res) => {
             [userId, qid, today]
         );
         if (existing.length > 0 && existing[0].status !== 'pending' && existing[0].status !== 'hint_used') {
-            await conn.rollback(); conn.release();
+            await conn.rollback();
             return res.status(403).json({ error: 'Already answered' });
         }
 
         const [[qData]] = await conn.query('SELECT correct_answer_index, explanation, hint FROM questions WHERE qid = ?', [qid]);
-        if (!qData) { await conn.rollback(); conn.release(); return res.status(404).json({ error: 'Question not found' }); }
+        if (!qData) { await conn.rollback(); return res.status(404).json({ error: 'Question not found' }); }
 
         const isCorrect = parseInt(selectedAnswerIndex) === qData.correct_answer_index;
         const hadHint = existing.length > 0 && existing[0].status === 'hint_used';
@@ -162,11 +161,11 @@ router.post('/submit-answer', isLoggedIn, async (req, res) => {
         await conn.commit();
         res.json({ status, pointsEarned: points, ...qData });
     } catch (err) {
-        await conn.rollback();
+        if (conn) await conn.rollback();
         console.error('[submit-answer]', err);
         res.status(500).json({ error: 'Server error' });
     } finally {
-        conn.release();
+        if (conn) conn.release();
     }
 });
 
@@ -175,9 +174,10 @@ router.post('/use-hint', isLoggedIn, async (req, res) => {
     const { questionId, qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
-    const conn = await dbPool.getConnection();
+    let conn;
 
     try {
+        conn = await dbPool.getConnection();
         await conn.beginTransaction();
 
         const [existing] = await conn.query(
@@ -187,7 +187,7 @@ router.post('/use-hint', isLoggedIn, async (req, res) => {
 
         if (existing.length > 0 && existing[0].status !== 'pending') {
             const [[q]] = await conn.query('SELECT hint FROM questions WHERE qid = ?', [qid]);
-            await conn.rollback(); conn.release();
+            await conn.rollback();
             return res.json({ hint: q.hint, pointsEarned: 0 });
         }
 
@@ -209,9 +209,10 @@ router.post('/use-hint', isLoggedIn, async (req, res) => {
         await conn.commit();
         res.json({ hint: qData.hint, pointsEarned: POINTS_HINT });
     } catch (err) {
-        await conn.rollback();
-        conn.release();
+        if (conn) await conn.rollback();
         res.status(500).json({ error: 'Error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -220,9 +221,10 @@ router.post('/give-up', isLoggedIn, async (req, res) => {
     const { questionId, qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
-    const conn = await dbPool.getConnection();
+    let conn;
 
     try {
+        conn = await dbPool.getConnection();
         await conn.beginTransaction();
 
         const [existing] = await conn.query(
@@ -231,7 +233,7 @@ router.post('/give-up', isLoggedIn, async (req, res) => {
         );
 
         if (existing.length > 0 && existing[0].status !== 'pending' && existing[0].status !== 'hint_used') {
-            await conn.rollback(); conn.release();
+            await conn.rollback();
             return res.status(403).json({ error: 'Already done' });
         }
 
@@ -260,9 +262,10 @@ router.post('/give-up', isLoggedIn, async (req, res) => {
         await conn.commit();
         res.json({ status: 'gave_up', pointsEarned: points, ...qData });
     } catch (err) {
-        await conn.rollback();
-        conn.release();
+        if (conn) await conn.rollback();
         res.status(500).json({ error: 'Error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 

@@ -1,6 +1,7 @@
 /* index.css */
 :root {
-  color-scheme: dark; /* Forces dark scrollbars and system elements */
+  color-scheme: dark;
+  /* Forces dark scrollbars and system elements */
 }
 
 * {
@@ -32,4 +33,35 @@ a {
 
 button {
   font-family: inherit;
+}
+
+/* Custom Tech Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark, #050505);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(46, 160, 67, 0.4);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(46, 160, 67, 0.8);
+}
+
+/* Custom Text Selection */
+::selection {
+  background: rgba(46, 160, 67, 0.4);
+  color: #fff;
+}
+
+/* Accessible Focus Outlines */
+*:focus-visible {
+  outline: 2px solid var(--accent-green, #2ea043);
+  outline-offset: 2px;
 }
