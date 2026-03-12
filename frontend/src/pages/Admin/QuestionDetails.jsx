@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Admin.css'; // Uses existing admin styles
 import API_BASE_URL from '../../utils/config';
+import { useToast } from '../../context/ToastContext';
 
 const QuestionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const toast = useToast();
     const [loading, setLoading] = useState(true);
     
     const [formData, setFormData] = useState({
@@ -61,7 +63,7 @@ const QuestionDetails = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
-        if(!window.confirm("Save changes?")) return;
+        if(!(await toast.confirm({ message: 'Save changes to this question?', confirmText: 'Save', cancelText: 'Cancel', variant: 'info' }))) return;
 
         try {
             const res = await fetch(`${API_BASE_URL}/api/admin/questions/${id}`, {
@@ -81,7 +83,7 @@ const QuestionDetails = () => {
     };
 
     const handleDelete = async () => {
-        if(!window.confirm("Delete this question permanently?")) return;
+        if(!(await toast.confirm({ message: 'Delete this question permanently? This cannot be undone.', confirmText: 'Delete', cancelText: 'Cancel', variant: 'danger' }))) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include' });
             if(res.ok) {

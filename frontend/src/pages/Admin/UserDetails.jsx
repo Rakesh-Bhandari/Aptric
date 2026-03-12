@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Admin.css'; // Uses the same styles as Admin dashboard
 import API_BASE_URL from '../../utils/config';
+import { useToast } from '../../context/ToastContext';
 
 const UserDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const toast = useToast();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
@@ -42,7 +44,7 @@ const UserDetails = () => {
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
-        if (!window.confirm("Save changes?")) return;
+        if (!(await toast.confirm({ message: 'Save changes to this user profile?', confirmText: 'Save', cancelText: 'Cancel', variant: 'info' }))) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
                 method: 'PUT',
@@ -59,7 +61,8 @@ const UserDetails = () => {
 
     // --- PROMOTE ACTION ---
     const handlePromoteUser = async () => {
-        if (!window.confirm(`Promote ${user.user_name} to the next level? \nThis will strictly boost their score to meet the minimum requirement.`)) return;
+        if (!(await toast.confirm({ message: `Promote ${user.user_name} to the next level?
+This will strictly boost their score to meet the minimum requirement.`, confirmText: 'Promote', cancelText: 'Cancel', variant: 'info' }))) return;
 
         try {
             const res = await fetch(`${API_BASE_URL}/api/admin/users/${id}/promote`, {
@@ -80,7 +83,7 @@ const UserDetails = () => {
     const handleBanToggle = async () => {
         if (!user) return;
         const newState = !user.is_banned;
-        if (!window.confirm(newState ? "Ban this user?" : "Unban this user?")) return;
+        if (!(await toast.confirm({ message: newState ? 'Ban this user? They will not be able to log in.' : 'Unban this user? They will regain access.', confirmText: newState ? 'Ban' : 'Unban', cancelText: 'Cancel', variant: 'danger' }))) return;
         try {
             await fetch(`${API_BASE_URL}/api/admin/users/${id}/ban-toggle`, {
                 method: 'POST',
@@ -94,7 +97,7 @@ const UserDetails = () => {
 
     const handleResetPassword = async () => {
         if (!newPassword) return alert("Enter a new password");
-        if (!window.confirm("Reset user password?")) return;
+        if (!(await toast.confirm({ message: 'Reset this user\'s password?', confirmText: 'Reset', cancelText: 'Cancel', variant: 'warning' }))) return;
         try {
             await fetch(`${API_BASE_URL}/api/admin/users/${id}/reset-password`, {
                 method: 'POST',
@@ -108,7 +111,7 @@ const UserDetails = () => {
     };
 
     const handleDeleteUser = async () => {
-        if (!window.confirm("⚠ WARNING: This will permanently delete the user and all their data. Continue?")) return;
+        if (!(await toast.confirm({ message: '⚠ This will permanently delete the user and all their data. This cannot be undone.', confirmText: 'Delete User', cancelText: 'Cancel', variant: 'danger' }))) return;
         try {
             await fetch(`${API_BASE_URL}/api/admin/users/${id}`, { method: 'DELETE', credentials: 'include' });
             alert("User deleted");

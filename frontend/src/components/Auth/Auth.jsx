@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 import API_BASE_URL from '../../utils/config';
+import { useToast } from '../../context/ToastContext';
 
 const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
     const [isLogin, setIsLogin] = useState(true);
@@ -14,13 +15,14 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
     const [otp, setOtp] = useState('');
 
     const navigate = useNavigate();
+    const toast = useToast();
 
     const handleAuth = async (e) => {
         e.preventDefault();
 
         // Validation for registration
         if (!isLogin && password !== confirmPassword) {
-            alert("SECURITY ALERT: Access keys do not match.");
+            toast.error('Access keys do not match.');
             return;
         }
 
@@ -41,7 +43,7 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
             if (response.ok) {
                 // If it's a signup, the user might need to check email (based on your instructions)
                 if (!isLogin) {
-                    alert("TRANSMISSION SENT: Check your email to activate account.");
+                    toast.success('Check your email to activate your account.');
                     setIsLogin(true);
                 } else {
                     setIsAuthenticated(true);
@@ -49,7 +51,7 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
                     navigate('/practice');
                 }
             } else {
-                alert(data.error || "Authentication failed");
+                toast.error(data.error || 'Authentication failed');
             }
         } catch (err) {
             console.error("Auth error:", err);
@@ -58,28 +60,27 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
 
     const handleForgotPassword = async () => {
         if (!email) {
-            alert("REQUIRED: Enter Email Designation first.");
+            toast.warning('Enter your email address first.');
             return;
         }
-        const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         });
         const data = await response.json();
         if (response.ok) {
-            alert("OTP SENT: Check your inbox for reset instructions.");
-            // Switch to Reset Mode so the user can see the OTP/New Password fields
+            toast.info('OTP sent — check your inbox for reset instructions.');
             setIsResetting(true);
         } else {
-            alert(data.error);
+            toast.error(data.error);
         }
     };
 
     const handleResetPassword = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+            const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp, newPassword: password })
@@ -87,11 +88,11 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
             const data = await response.json();
 
             if (response.ok) {
-                alert("ACCESS RESTORED: You can now login with your new key.");
+                toast.success('Access restored — login with your new password.');
                 setIsResetting(false);
                 setIsLogin(true);
             } else {
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (err) {
             console.error("Reset error:", err);

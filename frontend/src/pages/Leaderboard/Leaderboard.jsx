@@ -169,37 +169,86 @@ const Leaderboard = () => {
 
             {(selectedProfile || profileLoading) && (
                 <div className="modal-backdrop" onClick={() => setSelectedProfile(null)}>
-                    <div className="modal-glass-panel" onClick={e => e.stopPropagation()}>
-                        <button className="btn-close-minimal" onClick={() => setSelectedProfile(null)}>✕</button>
+                    <div className="lp-modal" onClick={e => e.stopPropagation()}>
+
                         {profileLoading ? (
-                            <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'JetBrains Mono', color: 'var(--accent-green)' }}>// SYNCHRONIZING_DATA...</div>
+                            <div className="lp-modal-loading">
+                                <div className="lp-loading-dots">
+                                    <span></span><span></span><span></span>
+                                </div>
+                                <span>SYNCHRONIZING_DATA...</span>
+                            </div>
                         ) : selectedProfile && (
-                            <div className="bento-modal-wrapper">
-                                <div className="bento-column-left">
-                                    <div className="card-identity-main">
-                                        <img src={getAvatarUrl(selectedProfile.profilePic, selectedProfile.name)} className="modal-avatar-premium" alt="Avatar" />
-                                        <h2 style={{ fontFamily: 'Audiowide', fontSize: '1.5rem', marginBottom: '4px' }}>{selectedProfile.name}</h2>
-                                        <div className="premium-label" style={{ color: 'var(--accent-green)' }}>{selectedProfile.stats?.level} Operative</div>
-                                        <p className="premium-bio">{selectedProfile.bio || "No tactical biography provided."}</p>
+                            <>
+                                {/* ── BANNER ── */}
+                                <div className="lp-banner">
+                                    <div className="lp-banner-pattern"></div>
+                                    <button className="lp-modal-close" onClick={() => setSelectedProfile(null)}>✕</button>
+                                    <div className="lp-banner-label">// USER_PROFILE</div>
+                                </div>
+
+                                {/* ── PROFILE HEADER ── */}
+                                <div className="lp-profile-header">
+                                    <div className="lp-avatar-wrapper">
+                                        <img
+                                            src={getAvatarUrl(selectedProfile.profilePic, selectedProfile.name)}
+                                            className="lp-avatar"
+                                            alt="Avatar"
+                                        />
+                                        <div className="lp-avatar-ring"></div>
                                     </div>
-                                    <div className="card-bento-stat" style={{ textAlign: 'center' }}>
-                                        <span className="premium-label">Active_Streak</span>
-                                        <span className="premium-value" style={{ color: 'var(--gold)' }}>🔥 {selectedProfile.stats?.streak} Days</span>
-                                    </div>
-                                    <div className="card-bento-stat" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span className="premium-label" style={{ margin: 0 }}>Network_Joined</span>
-                                        <span style={{ fontFamily: 'JetBrains Mono', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(selectedProfile.stats?.joined).toLocaleDateString()}</span>
+                                    <div className="lp-identity">
+                                        <h2 className="lp-name">{selectedProfile.name}</h2>
+                                        <div className="lp-meta-row">
+                                            <span className="lp-level-chip">
+                                                <span className="chip-dot"></span>
+                                                {selectedProfile.stats?.level || 'Beginner'}
+                                            </span>
+                                            {selectedProfile.stats?.joined && (
+                                                <span className="lp-joined">
+                                                    ⏱ Since {new Date(selectedProfile.stats.joined).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {selectedProfile.bio && (
+                                            <p className="lp-bio">" {selectedProfile.bio} "</p>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="bento-column-right">
-                                    <div className="card-bento-stat"><span className="premium-label">Global_Score</span><span className="premium-value">{selectedProfile.stats?.score.toLocaleString()}</span></div>
-                                    <div className="card-bento-stat"><span className="premium-label">Avg_Accuracy</span><span className="premium-value">{selectedProfile.stats?.accuracy}%</span></div>
-                                    <div className="card-bento-wide">
-                                        <span className="premium-label" style={{ alignSelf: 'flex-start', marginBottom: '1.5rem' }}>Skill_Matrix_Analysis</span>
+
+                                {/* ── STATS GRID ── */}
+                                <div className="lp-modal-body">
+                                    <div className="lp-section-label">// PERFORMANCE_METRICS</div>
+                                    <div className="lp-stats-row">
+                                        <div className="lp-stat" style={{ '--sc': '#2ea043' }}>
+                                            <span className="lp-stat-icon">◈</span>
+                                            <span className="lp-stat-val" style={{ color: '#2ea043' }}>{selectedProfile.stats?.score?.toLocaleString() ?? 0}</span>
+                                            <span className="lp-stat-lbl">Score</span>
+                                        </div>
+                                        <div className="lp-stat" style={{ '--sc': '#a855f7' }}>
+                                            <span className="lp-stat-icon">◎</span>
+                                            <span className="lp-stat-val" style={{ color: '#a855f7' }}>{selectedProfile.stats?.accuracy ?? 0}%</span>
+                                            <span className="lp-stat-lbl">Accuracy</span>
+                                        </div>
+                                        <div className="lp-stat" style={{ '--sc': '#f59e0b' }}>
+                                            <span className="lp-stat-icon">🔥</span>
+                                            <span className="lp-stat-val" style={{ color: '#f59e0b' }}>{selectedProfile.stats?.streak ?? 0}</span>
+                                            <span className="lp-stat-lbl">Streak</span>
+                                        </div>
+                                        <div className="lp-stat" style={{ '--sc': '#3b82f6' }}>
+                                            <span className="lp-stat-icon">✦</span>
+                                            <span className="lp-stat-val" style={{ color: '#3b82f6' }}>{selectedProfile.stats?.questionsAnswered ?? 0}</span>
+                                            <span className="lp-stat-lbl">Solved</span>
+                                        </div>
+                                    </div>
+
+                                    {/* ── SKILL WHEEL ── */}
+                                    <div className="lp-section-label" style={{ marginTop: '0.5rem' }}>// SKILL_DISTRIBUTION</div>
+                                    <div className="lp-wheel-card">
                                         <SkillWheel topics={selectedProfile.topics} />
                                     </div>
                                 </div>
-                            </div>
+                            </>
                         )}
                     </div>
                 </div>

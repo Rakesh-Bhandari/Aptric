@@ -200,21 +200,327 @@ body {
     font-size: 1.05rem;
 }
 
-/* ── MODAL BACKDROP ──────────────────────────────────────────── */
+/* ── PROFILE MODAL (REDESIGNED) ──────────────────────────────── */
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0,0,0,0.75);
     backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
-    overflow-y: auto;
 }
 
-/* ── MODAL PANEL ─────────────────────────────────────────────── */
+.lp-modal {
+    background: #0d1117;
+    width: min(94%, 760px);
+    max-height: 92vh;
+    border-radius: 20px;
+    border: 1px solid rgba(46, 160, 67, 0.2);
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 40px 80px rgba(0,0,0,0.85),
+        0 0 60px rgba(46,160,67,0.06);
+    display: flex;
+    flex-direction: column;
+    animation: lp-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes lp-pop {
+    from { transform: scale(0.9) translateY(20px); opacity: 0; }
+    to   { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+
+/* ── BANNER ── */
+.lp-banner {
+    position: relative;
+    height: 120px;
+    background: linear-gradient(135deg,
+        rgba(46,160,67,0.25) 0%,
+        rgba(59,130,246,0.15) 40%,
+        rgba(168,85,247,0.15) 70%,
+        rgba(13,17,23,0.6) 100%);
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.lp-banner-pattern {
+    position: absolute;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 24px, rgba(255,255,255,0.025) 25px),
+        repeating-linear-gradient(90deg, transparent, transparent 24px, rgba(255,255,255,0.025) 25px);
+    animation: banner-drift 20s linear infinite;
+}
+@keyframes banner-drift {
+    from { background-position: 0 0; }
+    to   { background-position: 25px 25px; }
+}
+.lp-banner-label {
+    position: absolute;
+    bottom: 0.6rem;
+    left: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(46,160,67,0.8);
+    letter-spacing: 0.1em;
+}
+.lp-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #8b949e;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+    line-height: 1;
+    z-index: 5;
+}
+.lp-modal-close:hover {
+    color: #f85149;
+    background: rgba(248,81,73,0.12);
+    border-color: rgba(248,81,73,0.3);
+}
+
+/* ── PROFILE HEADER ── */
+.lp-profile-header {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.25rem;
+    padding: 0 1.5rem 1.25rem;
+    margin-top: -44px;
+    position: relative;
+    z-index: 2;
+}
+.lp-avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    width: 88px;
+    height: 88px;
+}
+.lp-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 3px solid #0d1117;
+    object-fit: cover;
+    display: block;
+    position: relative;
+    z-index: 2;
+    box-shadow:
+        0 0 0 2px var(--accent-green),
+        0 0 24px rgba(46,160,67,0.4);
+}
+.lp-avatar-ring {
+    position: absolute;
+    inset: -7px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: #2ea043;
+    border-right-color: #3b82f6;
+    border-bottom-color: #a855f7;
+    border-left-color: #2ea043;
+    animation: ring-spin 3s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.85;
+}
+@keyframes ring-spin {
+    to { transform: rotate(360deg); }
+}
+
+.lp-identity {
+    flex: 1;
+    min-width: 0;
+    padding-bottom: 4px;
+}
+.lp-name {
+    font-family: 'Audiowide', sans-serif;
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    color: #e6edf3;
+    margin: 0 0 0.45rem;
+    word-break: break-word;
+    line-height: 1.2;
+}
+.lp-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.45rem;
+}
+.lp-level-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(46,160,67,0.45);
+    background: rgba(46,160,67,0.1);
+    color: var(--accent-green);
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.chip-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
+    animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.7); }
+}
+.lp-joined {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: #484f58;
+}
+.lp-bio {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+    font-style: italic;
+    word-break: break-word;
+    opacity: 0.85;
+}
+
+/* ── MODAL BODY ── */
+.lp-modal-body {
+    padding: 0.25rem 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.lp-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: rgba(46,160,67,0.65);
+    letter-spacing: 0.12em;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ── STATS ROW ── */
+.lp-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+}
+.lp-stat {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 0.9rem 0.4rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    cursor: default;
+}
+.lp-stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--sc, #2ea043);
+    border-radius: 12px 12px 0 0;
+    opacity: 0.8;
+}
+.lp-stat:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--sc, #2ea043);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--sc, #2ea043) 20%, transparent);
+}
+.lp-stat-icon {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    line-height: 1;
+}
+.lp-stat-val {
+    font-family: 'Audiowide', sans-serif;
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    line-height: 1;
+    font-weight: 700;
+}
+.lp-stat-lbl {
+    font-family: 'Michroma', sans-serif;
+    font-size: 0.52rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 1px;
+}
+
+/* ── SKILL WHEEL CARD ── */
+.lp-wheel-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 14px;
+    padding: 1.1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* ── LOADING ── */
+.lp-modal-loading {
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent-green);
+    opacity: 0.7;
+}
+.lp-loading-dots {
+    display: flex;
+    gap: 6px;
+}
+.lp-loading-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    animation: lp-bounce 1.2s ease-in-out infinite;
+}
+.lp-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.lp-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes lp-bounce {
+    0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+    40%           { transform: scale(1);   opacity: 1; }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 500px) {
+    .lp-stats-row { grid-template-columns: repeat(2, 1fr); }
+    .lp-profile-header { flex-direction: column; align-items: flex-start; margin-top: -36px; }
+    .lp-avatar { width: 72px; height: 72px; }
+    .lp-modal-body { padding: 0.25rem 1rem 1rem; }
+    .lp-profile-header { padding: 0 1rem 1rem; }
+}
+
+/* ── LEGACY MODAL (kept for other uses) ──────────────────────── */
 .modal-glass-panel {
     background: #080a0c;
     width: min(90%, 1100px);
@@ -226,6 +532,7 @@ body {
     position: relative;
     box-shadow: 0 50px 100px rgba(0, 0, 0, 0.8);
 }
+
 
 /* ── BENTO MODAL WRAPPER ─────────────────────────────────────── */
 .bento-modal-wrapper {

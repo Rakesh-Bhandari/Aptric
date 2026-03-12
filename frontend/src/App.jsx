@@ -15,6 +15,7 @@ import Admin from './pages/Admin/Admin';
 import Home from './pages/Home/Home';
 import Practice from './pages/Practice/Practice';
 import Profile from './pages/Profile/Profile';
+import Progress from './pages/Progress/Progress';
 import Leaderboard from './pages/Leaderboard/Leaderboard';
 import About from './pages/About/About';
 import Feedback from './pages/Feedback/Feedback';

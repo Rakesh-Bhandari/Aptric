@@ -2,25 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Progress.css';
 import API_BASE_URL from '../../utils/config';
+import { useToast } from '../../context/ToastContext';
 
 const Progress = () => {
     const navigate = useNavigate();
-    const [user, setUser] = useState({ name: 'Loading...', email: 'Loading...' });
-    const [stats, setStats] = useState({ streak: 0, questionsAnswered: 0, accuracy: 0, level: 'Beginner', score: 0 });
+    const toast = useToast();
+    const [user,   setUser]   = useState({ name: 'Loading...', email: 'Loading...' });
+    const [stats,  setStats]  = useState({ streak: 0, questionsAnswered: 0, accuracy: 0, level: 'Beginner', score: 0 });
     const [topics, setTopics] = useState([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleting, setIsDeleting]               = useState(false);
 
     useEffect(() => {
         const fetchAllData = async () => {
             try {
-                // Fetch basic user profile
                 const userRes = await fetch(`${API_BASE_URL}/api/user`, { credentials: 'include' });
-                if (userRes.status === 401) return navigate('/'); 
+                if (userRes.status === 401) return navigate('/');
                 const userData = await userRes.json();
                 setUser(userData.user);
 
-                // Fetch detailed progress and topic stats
                 const progressRes = await fetch(`${API_BASE_URL}/api/user/progress`, { credentials: 'include' });
                 if (progressRes.ok) {
                     const progressData = await progressRes.json();
@@ -28,7 +28,7 @@ const Progress = () => {
                     setTopics(progressData.topics);
                 }
             } catch (err) {
-                console.error("Error loading progress data:", err);
+                console.error('Error loading progress data:', err);
             }
         };
         fetchAllData();
@@ -37,9 +37,9 @@ const Progress = () => {
     const handleLogout = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/auth/logout`, { credentials: 'include' });
-            if (response.ok) window.location.href = '/'; 
+            if (response.ok) window.location.href = '/';
         } catch (err) {
-            console.error("Logout error:", err);
+            console.error('Logout error:', err);
         }
     };
 
@@ -51,11 +51,11 @@ const Progress = () => {
                 credentials: 'include'
             });
             if (response.ok) {
-                alert('Your account has been successfully deleted.');
-                window.location.href = '/';
+                toast.success('Your account has been successfully deleted.');
+                setTimeout(() => { window.location.href = '/'; }, 1200);
             }
         } catch (err) {
-            console.error("Delete account error:", err);
+            console.error('Delete account error:', err);
             setIsDeleting(false);
         }
     };
@@ -117,10 +117,10 @@ const Progress = () => {
                                 <span className="topic-percentage">{topic.progress}%</span>
                             </div>
                             <div className="progress-bar">
-                                <div 
-                                    className="progress-fill" 
+                                <div
+                                    className="progress-fill"
                                     style={{ width: `${topic.progress}%` }}
-                                ></div>
+                                />
                             </div>
                         </div>
                     ))}
@@ -134,7 +134,7 @@ const Progress = () => {
                         <button className="modal-close" onClick={() => setIsDeleteModalOpen(false)}>&times;</button>
                         <h2 className="modal-title">⚠️ Delete Account</h2>
                         <p className="modal-text">
-                            Are you sure you want to delete your account? This action is permanent and cannot be undone. 
+                            Are you sure you want to delete your account? This action is permanent and cannot be undone.
                         </p>
                         <div className="modal-buttons">
                             <button className="confirm-btn" onClick={handleDeleteAccount} disabled={isDeleting}>

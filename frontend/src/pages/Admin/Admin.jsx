@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Admin.css';
 import API_BASE_URL from '../../utils/config';
+import { useToast } from '../../context/ToastContext';
 
 const Admin = () => {
     // 1. State Management
     const navigate = useNavigate();
+    const toast = useToast();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [activeTab, setActiveTab] = useState('dashboard');
     const [password, setPassword] = useState('');
@@ -227,7 +229,7 @@ const Admin = () => {
 
     // Feedback Actions
     const handleDeleteFeedback = async (id) => {
-        if (!window.confirm("Permanently delete this feedback?")) return;
+        if (!(await toast.confirm({ message: 'Permanently delete this feedback entry?', confirmText: 'Delete', cancelText: 'Cancel', variant: 'danger' }))) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/admin/feedback/${id}`, { method: 'DELETE', credentials: 'include' });
             if (res.ok) {
@@ -243,7 +245,7 @@ const Admin = () => {
 
     // Question Actions
     const handleDeleteQuestion = async (id) => {
-        if (!window.confirm("Delete this question? User history for this question will be preserved if possible, otherwise it might error.")) return;
+        if (!(await toast.confirm({ message: 'Delete this question? User history for this question will be preserved if possible, otherwise it might error.', confirmText: 'Delete', cancelText: 'Cancel', variant: 'danger' }))) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include' });
             if (res.ok) {

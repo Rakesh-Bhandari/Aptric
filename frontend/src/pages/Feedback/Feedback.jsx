@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Feedback.css';
 import API_BASE_URL from '../../utils/config';
+import { useToast } from '../../context/ToastContext';
 
 // --- ICONS (Tech Style) ---
 const Icons = {
@@ -15,6 +16,7 @@ const Icons = {
 };
 
 const Feedback = () => {
+    const toast = useToast();
     const [feedbackList, setFeedbackList] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
     const [activeMenuId, setActiveMenuId] = useState(null);
@@ -108,7 +110,7 @@ const Feedback = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('CONFIRM DELETION?')) return;
+        if (!(await toast.confirm({ message: 'Delete this feedback entry?', confirmText: 'Delete', cancelText: 'Cancel', variant: 'danger' }))) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/feedback/${id}`, { method: 'DELETE', credentials: 'include' });
             if (res.ok) loadFeedback();

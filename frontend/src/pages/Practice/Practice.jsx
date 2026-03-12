@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { marked } from 'marked';
 import './Practice.css';
 import API_BASE_URL from '../../utils/config';
+import { useToast } from '../../context/ToastContext';
 
 const Icons = {
     Target: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>,
@@ -25,6 +26,7 @@ const POLL_INTERVAL = 4000;
 const MAX_POLLS = 30; // 2 minutes max
 
 const Practice = () => {
+    const toast = useToast();
     const [userData, setUserData] = useState(null);
     const [userStats, setUserStats] = useState({ rank: 0, accuracy: 0, level: 'Beginner' });
     const [questions, setQuestions] = useState([]);
@@ -193,7 +195,7 @@ const Practice = () => {
     };
 
     const handleReveal = async () => {
-        if (!window.confirm("CONFIRM: ABORT QUESTION?")) return;
+        if (!(await toast.confirm({ message: 'Abort this question? Your progress on it will be lost.', confirmText: 'Abort', cancelText: 'Cancel', variant: 'warning' }))) return;
         const currentQ = questions[currentIndex];
         const res = await apiFetch('/api/give-up', {
             method: 'POST',
