@@ -1201,3 +1201,368 @@
 [data-theme="light"] .glitch-title {
     text-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   16. PROFILE PAGE — LIGHT MODE FIXES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. Avatar editor modal (ae-*) */
+[data-theme="light"] .ae-backdrop {
+    background: rgba(15, 23, 42, 0.55);
+}
+[data-theme="light"] .ae-panel {
+    background: #ffffff;
+    border-color: #d1fae5;
+    box-shadow: 0 0 40px rgba(22, 163, 74, 0.12), 0 20px 48px rgba(15, 23, 42, 0.14);
+}
+[data-theme="light"] .ae-panel::before {
+    background: linear-gradient(90deg, transparent, #16a34a, transparent);
+}
+[data-theme="light"] .ae-title { color: #16a34a; }
+[data-theme="light"] .ae-close { color: #94a3b8; border-color: #e2e8f0; }
+[data-theme="light"] .ae-close:hover { border-color: #dc2626; color: #dc2626; }
+[data-theme="light"] .ae-dropzone:hover { background: rgba(22, 163, 74, 0.04); }
+[data-theme="light"] .ae-dropzone.drag-over {
+    background: rgba(22, 163, 74, 0.08);
+    outline-color: #16a34a;
+}
+[data-theme="light"] .ae-drop-hint { color: #475569; }
+[data-theme="light"] .ae-drop-hint svg { color: #16a34a; }
+[data-theme="light"] .ae-drop-hint strong { color: #15803d; }
+[data-theme="light"] .ae-drop-sub { color: #94a3b8; }
+[data-theme="light"] .ae-tip { color: #94a3b8; }
+[data-theme="light"] .ae-canvas-wrap {
+    border-color: rgba(22, 163, 74, 0.5);
+    box-shadow: 0 0 20px rgba(22, 163, 74, 0.12);
+}
+[data-theme="light"] .ae-zoom-val { color: #475569; }
+[data-theme="light"] .ae-slider { background: #e2e8f0; }
+[data-theme="light"] .ae-btn.primary {
+    background: rgba(22, 163, 74, 0.1);
+    border-color: #16a34a;
+    color: #15803d;
+}
+[data-theme="light"] .ae-btn.primary:hover:not(:disabled) {
+    background: #16a34a;
+    color: #0f172a;   /* dark text on green — stays readable */
+    box-shadow: 0 0 16px rgba(22, 163, 74, 0.3);
+}
+[data-theme="light"] .ae-btn.secondary {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+[data-theme="light"] .ae-btn.secondary:hover {
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+/* 2. Skill wheel segment stroke colour (dark stroke looks odd on light bg) */
+[data-theme="light"] .segment-fill {
+    stroke: #f0f4f8;
+}
+
+/* 3. Year <select> in activity heatmap */
+[data-theme="light"] .profile-container select,
+[data-theme="light"] select.heatmap-year {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* 4. Empty calendar day cells */
+[data-theme="light"] .profile-container [style*="rgba(255,255,255,0.05)"],
+[data-theme="light"] .profile-container [style*="rgba(255, 255, 255, 0.05)"] {
+    background-color: rgba(15, 23, 42, 0.07) !important;
+}
+
+/* 5. Horizontal scrollbar — styled same as vertical (already defined in section 13) */
+[data-theme="light"] ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;      /* horizontal height same as vertical width */
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: rgba(22, 163, 74, 0.4);
+    border-radius: 3px;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #16a34a; }
+/* Firefox */
+[data-theme="light"] * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(22, 163, 74, 0.4) transparent;
+}
+
+/* 6. Footer */
+[data-theme="light"] .site-footer {
+    background: rgba(255, 255, 255, 0.95);
+    border-top-color: rgba(22, 163, 74, 0.2);
+}
+[data-theme="light"] .footer-copy { color: #475569; }
+[data-theme="light"] .footer-links a { color: #475569; }
+[data-theme="light"] .footer-links a:hover { color: #16a34a; }
+
+/* 7. Username (header-info h1) — was white, now dark */
+[data-theme="light"] .header-info h1 { color: #0f172a; }
+[data-theme="light"] .user-id-tag { color: #16a34a; }
+[data-theme="light"] .user-email { color: #475569; }
+[data-theme="light"] .user-bio { color: #475569; }
+
+/* 8a. Save Config button hover — keep text dark on green background */
+[data-theme="light"] .btn-save {
+    background: rgba(22, 163, 74, 0.1);
+    border-color: rgba(22, 163, 74, 0.45);
+    color: #15803d;
+}
+[data-theme="light"] .btn-save:hover {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #0f172a;   /* dark, not white */
+    box-shadow: 0 0 12px rgba(22, 163, 74, 0.2);
+}
+
+/* 8b. .btn-action buttons (Admin Panel, Disconnect) */
+[data-theme="light"] .btn-action {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+[data-theme="light"] .btn-action:hover {
+    background: rgba(22, 163, 74, 0.08);
+    border-color: #16a34a;
+    color: #0f172a;   /* dark, not white */
+}
+[data-theme="light"] .btn-action.logout:hover {
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+}
+
+/* 8c. Active/selected legend pill in skill wheel */
+[data-theme="light"] .mini-legend-item.active {
+    color: #0f172a !important;   /* dark, not white */
+    background: rgba(15, 23, 42, 0.07);
+}
+
+/* Profile tab buttons */
+[data-theme="light"] .tab-btn { color: #475569; }
+[data-theme="light"] .tab-btn:hover { color: #0f172a; }
+[data-theme="light"] .tab-btn.active { color: #16a34a; }
+
+/* Preference toggles */
+[data-theme="light"] .toggle-btn {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+[data-theme="light"] .toggle-btn:hover {
+    border-color: #16a34a;
+    color: #15803d;
+    background: rgba(22, 163, 74, 0.06);
+}
+
+/* Section labels */
+[data-theme="light"] .section-label {
+    color: #16a34a;
+    border-bottom-color: #e2e8f0;
+}
+
+/* Form inputs inside profile settings */
+[data-theme="light"] .form-input,
+[data-theme="light"] .form-textarea {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #0f172a;
+}
+[data-theme="light"] .form-input:focus,
+[data-theme="light"] .form-textarea:focus {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+    background: #ffffff;
+}
+[data-theme="light"] .form-group label { color: #16a34a; }
+[data-theme="light"] .bio-char-count { color: #475569; }
+
+/* Activity feed items */
+[data-theme="light"] .activity-item {
+    background: #f8fafc;
+    border-left-color: #e2e8f0;
+}
+[data-theme="light"] .activity-item:hover {
+    background: rgba(22, 163, 74, 0.04);
+    border-left-color: #16a34a;
+}
+[data-theme="light"] .act-cat { color: #0f172a; }
+[data-theme="light"] .act-date { color: #94a3b8; }
+[data-theme="light"] .act-status.status-correct { color: #16a34a; }
+[data-theme="light"] .act-status.status-wrong  { color: #dc2626; }
+
+/* ── Profile tabs: keep scrollbar hidden even after global * rule ── */
+[data-theme="light"] .profile-tabs {
+    scrollbar-width: none;
+}
+[data-theme="light"] .profile-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+/* ── Skill wheel popup — value text visible on light bg ── */
+[data-theme="light"] .popup-row span:last-child {
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .popup-row {
+    color: #475569;
+}
+[data-theme="light"] .popup-header {
+    color: #0f172a;
+    border-bottom-color: #e2e8f0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   17. LEADERBOARD — PROFILE VIEW MODAL (lp-*)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Backdrop */
+[data-theme="light"] .modal-backdrop {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+}
+
+/* Modal panel */
+[data-theme="light"] .lp-modal {
+    background: #ffffff;
+    border-color: rgba(22, 163, 74, 0.2);
+    box-shadow:
+        0 0 0 1px rgba(22, 163, 74, 0.08),
+        0 40px 80px rgba(15, 23, 42, 0.2),
+        0 0 60px rgba(22, 163, 74, 0.06);
+}
+
+/* Banner */
+[data-theme="light"] .lp-banner {
+    background: linear-gradient(135deg,
+        rgba(22, 163, 74, 0.2) 0%,
+        rgba(59, 130, 246, 0.1) 40%,
+        rgba(168, 85, 247, 0.1) 70%,
+        rgba(240, 244, 248, 0.8) 100%);
+}
+[data-theme="light"] .lp-banner-pattern {
+    background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 24px, rgba(15, 23, 42, 0.04) 25px),
+        repeating-linear-gradient(90deg, transparent, transparent 24px, rgba(15, 23, 42, 0.04) 25px);
+}
+[data-theme="light"] .lp-banner-label { color: rgba(22, 163, 74, 0.75); }
+
+/* Close button */
+[data-theme="light"] .lp-modal-close {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: #e2e8f0;
+    color: #64748b;
+}
+[data-theme="light"] .lp-modal-close:hover {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.3);
+}
+
+/* Avatar */
+[data-theme="light"] .lp-avatar {
+    border-color: #ffffff;
+    box-shadow:
+        0 0 0 2px #16a34a,
+        0 0 18px rgba(22, 163, 74, 0.3);
+}
+
+/* Identity */
+[data-theme="light"] .lp-name { color: #0f172a; }
+[data-theme="light"] .lp-bio { color: #475569; }
+[data-theme="light"] .lp-joined { color: #94a3b8; }
+
+/* Level chip */
+[data-theme="light"] .lp-level-chip {
+    border-color: rgba(22, 163, 74, 0.4);
+    background: rgba(22, 163, 74, 0.08);
+    color: #16a34a;
+}
+
+/* Section label */
+[data-theme="light"] .lp-section-label {
+    color: rgba(22, 163, 74, 0.75);
+    border-bottom-color: #e2e8f0;
+}
+
+/* Stat tiles */
+[data-theme="light"] .lp-stat {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+[data-theme="light"] .lp-stat:hover {
+    background: rgba(22, 163, 74, 0.05);
+    border-color: #16a34a;
+}
+[data-theme="light"] .lp-stat-val { color: #0f172a; }
+[data-theme="light"] .lp-stat-lbl { color: #64748b; }
+
+/* Skill wheel card */
+[data-theme="light"] .lp-wheel-card {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+/* Skill popup inside modal */
+[data-theme="light"] .lp-modal .stat-popup {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: #e2e8f0;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+[data-theme="light"] .lp-modal .popup-header {
+    color: #0f172a;
+    border-bottom-color: #e2e8f0;
+}
+[data-theme="light"] .lp-modal .popup-row { color: #475569; }
+[data-theme="light"] .lp-modal .popup-row span:last-child {
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.06);
+}
+
+/* Legend pills */
+[data-theme="light"] .lp-modal .mini-legend-item {
+    background: rgba(15, 23, 42, 0.03);
+    color: #475569;
+}
+[data-theme="light"] .lp-modal .mini-legend-item.active {
+    background: rgba(15, 23, 42, 0.07);
+    color: #0f172a !important;
+}
+
+/* Skill wheel segment stroke */
+[data-theme="light"] .lp-modal .segment-fill { stroke: #f0f4f8; }
+
+/* Loading state */
+[data-theme="light"] .lp-modal-loading { color: #16a34a; }
+[data-theme="light"] .lp-loading-dots span { background: #16a34a; }
+
+/* Legacy glass panel (if still in use) */
+[data-theme="light"] .modal-glass-panel {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 40px 80px rgba(15, 23, 42, 0.18);
+}
+[data-theme="light"] .card-identity-main {
+    background: linear-gradient(145deg, #f8fafc, #ffffff);
+    border-color: #e2e8f0;
+}
+[data-theme="light"] .premium-value { color: #0f172a; }
+[data-theme="light"] .premium-bio { color: #475569; }
+[data-theme="light"] .card-bento-stat {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+[data-theme="light"] .card-bento-stat:hover {
+    background: rgba(22, 163, 74, 0.05);
+    border-color: #16a34a;
+}
+[data-theme="light"] .card-bento-wide {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import './Topics.css';
 import API_BASE_URL from '../../utils/config.js';
+import useAntiCheat from '../../hooks/useAntiCheat';
 
 const Icons = {
     Back: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>,
@@ -13,7 +14,7 @@ const TopicQuestions = () => {
     const [searchParams] = useSearchParams();
     const category = searchParams.get('topic');
     const navigate = useNavigate();
-
+    useAntiCheat();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
 

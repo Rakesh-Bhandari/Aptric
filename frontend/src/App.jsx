@@ -19,6 +19,8 @@ import Leaderboard from './pages/Leaderboard/Leaderboard';
 import About from './pages/About/About';
 import Feedback from './pages/Feedback/Feedback';
 import Help from './pages/Help/Help';
+import Terms from './pages/Terms/Terms';
+import Contact from './pages/Contact/Contact';
 import UserDetails from './pages/Admin/UserDetails';
 import Topics from './pages/Topics/Topics';
 import TopicQuestions from './pages/Topics/TopicQuestions';
@@ -154,9 +156,9 @@ const AppContent = () => {
   if (loading) return null;
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar isAuthenticated={isAuthenticated} onAuthClick={handleAuthTrigger} setIsAuthenticated={setIsAuthenticated} />
-      <main className={reduceMotion ? '' : 'page-enter'}>
+      <main className={reduceMotion ? '' : 'page-enter'} style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home isAuthenticated={isAuthenticated} onAuthClick={handleAuthTrigger} />} />
           <Route path="/practice" element={<Practice />} />
@@ -172,11 +174,13 @@ const AppContent = () => {
           <Route path="/practice/topic" element={<TopicQuestions />} />
           <Route path="/solve/:qid" element={<SolveQuestion />} />
           <Route path="/activate/:token" element={<ActivateAccount setIsAuthenticated={setIsAuthenticated} />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/contact" element={<Contact />} />
         </Routes>
       </main>
       <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setIsAuthenticated={setIsAuthenticated} />
       <Footer />
-    </>
+    </div>
   );
 };
 

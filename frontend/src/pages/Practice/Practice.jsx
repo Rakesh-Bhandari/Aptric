@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import './Practice.css';
 import API_BASE_URL from '../../utils/config';
 import { useToast } from '../../context/ToastContext';
+import useAntiCheat from '../../hooks/useAntiCheat';
 
 const Icons = {
     Target: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>,
@@ -27,6 +28,11 @@ const MAX_POLLS = 30; // 2 minutes max
 
 const Practice = () => {
     const toast = useToast();
+    useAntiCheat({
+        onTabSwitch: (count) => {
+            toast.error(`Tab switch detected! Count: ${count}`);
+        }
+    });
     const [userData, setUserData] = useState(null);
     const [userStats, setUserStats] = useState({ rank: 0, accuracy: 0, level: 'Beginner' });
     const [questions, setQuestions] = useState([]);
@@ -257,7 +263,7 @@ const Practice = () => {
                             <span className="stat-desc">SCORE</span>
                         </div>
                         <div className="stat-tile">
-                            <span className="stat-val" style={{ color: 'var(--gold)' }}>🔥 {userStats.streak || 0}</span>
+                            <span className="stat-val" style={{ color: 'var(--gold)' }}>{userStats.streak || 0}</span>
                             <span className="stat-desc">STREAK</span>
                         </div>
                         <div className="stat-tile">

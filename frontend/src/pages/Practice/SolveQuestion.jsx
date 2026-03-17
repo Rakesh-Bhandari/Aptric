@@ -4,9 +4,10 @@ import { marked } from 'marked';
 import './Practice.css';
 import API_BASE_URL from '../../utils/config.js';
 import { useToast } from '../../context/ToastContext';
+import useAntiCheat from '../../hooks/useAntiCheat';
 
 const Icons = {
-    Back: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>,
+    Back: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>,
     Check: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>,
     Bulb: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .5 2 1.5 3.5.8.8 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>,
     Book: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>,
@@ -26,7 +27,11 @@ const SolveQuestion = () => {
     const { qid } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
-
+    useAntiCheat({
+        onTabSwitch: (count) => {
+            toast.error(`Tab switch detected! Count: ${count}`);
+        }
+    });
     const [q, setQ] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState(null);
@@ -111,16 +116,16 @@ const SolveQuestion = () => {
     };
 
     if (loading) return <div className="loading-spinner"></div>;
-    if (!q) return <div className="practice-container" style={{color:'white'}}>DATA_CORRUPTED</div>;
+    if (!q) return <div className="practice-container" style={{ color: 'white' }}>DATA_CORRUPTED</div>;
 
     const isAnswered = ['correct', 'wrong', 'gave_up'].includes(q.status);
     const isHintUsed = q.status === 'hint_used';
     let options = [];
-    try { options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options; } catch(e){}
+    try { options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options; } catch (e) { }
 
     return (
-        <div className="practice-container" style={{maxWidth: '100%', width: '100%'}}>
-            <button className="cmd-btn" style={{width: '100%', maxWidth: '200px', marginBottom:'1rem'}} onClick={() => navigate('/topics')}>
+        <div className="practice-container" style={{ maxWidth: '100%', width: '100%' }}>
+            <button className="cmd-btn" style={{ width: '100%', maxWidth: '200px', marginBottom: '1rem' }} onClick={() => navigate('/topics')}>
                 <Icons.Back /> RETURN_TO_ROOT
             </button>
 

@@ -234,12 +234,25 @@ const Help = () => {
                 <div className="contact-icon"><Icons.Mail /></div>
                 <h3 className="contact-title">Still need help?</h3>
                 <p className="contact-subtitle">
-                    Can't find what you're looking for? Submit a ticket via the Feedback page
-                    and our team will respond within 24 hours.
+                    Reach us directly at{' '}
+                    <a href="mailto:aptricofficials@gmail.com" style={{ color: 'var(--accent-green)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                        aptricofficials@gmail.com
+                    </a>{' '}
+                    or open a feedback ticket — we respond within 24 hours.
                 </p>
-                <a href="/feedback" className="contact-btn">
-                    <Icons.Send /> OPEN_FEEDBACK_CHANNEL
-                </a>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <a href="mailto:aptricofficials@gmail.com" className="contact-btn">
+                        <Icons.Mail /> EMAIL_US
+                    </a>
+                    <a href="/feedback" className="contact-btn" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <Icons.Send /> OPEN_FEEDBACK
+                    </a>
+                </div>
+                <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                    <a href="/contact" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem', color: 'var(--text-secondary)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Contact Page</a>
+                    <span style={{ color: 'var(--text-secondary)', opacity: 0.4 }}>•</span>
+                    <a href="/terms" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem', color: 'var(--text-secondary)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Terms &amp; Conditions</a>
+                </div>
             </div>
 
         </div>
