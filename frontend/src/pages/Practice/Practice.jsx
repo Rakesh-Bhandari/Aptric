@@ -139,7 +139,7 @@ const Practice = () => {
             const h = Math.floor(diff / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
             const s = Math.floor((diff % 60000) / 1000);
-            setCountdownTime(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+            setCountdownTime(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
         }, 1000);
 
         return () => {
@@ -162,7 +162,7 @@ const Practice = () => {
         return () => clearInterval(timerRef.current);
     }, [currentIndex, questions]);
 
-    const formatTime = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
     const updateQuestionState = (qid, newData) => {
         setQuestions(prev => prev.map(q => q.qid === qid ? { ...q, ...newData } : q));
@@ -214,7 +214,7 @@ const Practice = () => {
             <p className="glitch-text">// AI_GENERATION_PROTOCOL_ACTIVE...</p>
             <p className="helper-text">{genMessage}</p>
             <p style={{ fontFamily: 'JetBrains Mono', fontSize: '0.7rem', color: '#555', marginTop: '0.5rem' }}>
-                Auto-refreshing every {POLL_INTERVAL/1000}s &bull; Attempt {pollCountRef.current}/{MAX_POLLS}
+                Auto-refreshing every {POLL_INTERVAL / 1000}s &bull; Attempt {pollCountRef.current}/{MAX_POLLS}
             </p>
             <button onClick={() => { pollCountRef.current = 0; setGenStatus('loading'); fetchDailyQuestions(); }} className="cmd-btn" style={{ marginTop: '1rem' }}>
                 FORCE_RETRY
@@ -230,7 +230,7 @@ const Practice = () => {
     const attemptedCount = questions.filter(q => ['correct', 'wrong', 'gave_up'].includes(q.status)).length;
 
     let options = [];
-    try { options = typeof currentQ?.options === 'string' ? JSON.parse(currentQ.options) : (currentQ?.options || []); } catch (e) {}
+    try { options = typeof currentQ?.options === 'string' ? JSON.parse(currentQ.options) : (currentQ?.options || []); } catch (e) { }
 
     return (
         <div className="practice-container">
@@ -295,7 +295,7 @@ const Practice = () => {
                                     <div key={idx} className={`log-item ${q.status}`}>
                                         <span className="log-id">Q-{String(idx + 1).padStart(2, '0')}</span>
                                         <span className="log-result">{q.status.toUpperCase()}</span>
-                                        <span className="log-pts">{q.status === 'correct' ? `+${q.pointsEarned}` : '+0'} PTS</span>
+                                        <span className="log-pts">{q.pointsEarned > 0 ? `+${q.pointsEarned}` : `${q.pointsEarned}`} PTS</span>
                                     </div>
                                 );
                             })
@@ -351,7 +351,7 @@ const Practice = () => {
                             </div>
                             <div className="cmd-bar">
                                 <button className="cmd-btn primary" onClick={handleSubmit} disabled={isAnswered}><Icons.Check /> SUBMIT_DATA</button>
-                                <button className="cmd-btn" onClick={handleHint} disabled={isAnswered || isHintUsed}><Icons.Bulb /> HINT [-10]</button>
+                                <button className="cmd-btn" onClick={handleHint} disabled={isAnswered || isHintUsed}><Icons.Bulb /> HINT</button>
                                 <button className="cmd-btn" onClick={handleReveal} disabled={isAnswered}><Icons.Book /> ABORT</button>
                             </div>
                             <div className="nav-row">

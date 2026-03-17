@@ -8,18 +8,18 @@ import API_BASE_URL from '../../utils/config';
 
 // --- ICONS ---
 const Icons = {
-    User:     () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-    Activity: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-    Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 4.6a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 .33 1.65 1.65 0 0 0 10.51 0H11a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-    Edit:     () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-    Shield:   () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-    Target:   () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>,
-    Crosshair:() => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>,
-    Logout:   () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-    Score:    () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
-    Zap:      () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-    Check:    () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
-    Star:     () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+    User: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+    Activity: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
+    Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+    Edit: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>,
+    Shield: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+    Target: () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" /><path d="M2 12h20" /><path d="M12 2v20" /></svg>,
+    Crosshair: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="22" y1="12" x2="18" y2="12" /><line x1="6" y1="12" x2="2" y2="12" /><line x1="12" y1="6" x2="12" y2="2" /><line x1="12" y1="22" x2="12" y2="18" /></svg>,
+    Logout: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>,
+    Score: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>,
+    Zap: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>,
+    Check: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>,
+    Star: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
 };
 
 // --- SVG MATH HELPERS ---
@@ -63,7 +63,21 @@ const SkillWheel = ({ topics }) => {
             (Number(current.progress) || 0) > (Number(arr[maxIdx].progress) || 0) ? idx : maxIdx, 0
         );
     });
+    // Popup is only visible after an explicit click; hidden when mouse leaves the container
+    const [popupVisible, setPopupVisible] = useState(false);
 
+    const handleSegmentClick = (i) => {
+        if (activeIndex === i && popupVisible) {
+            setPopupVisible(false); // toggle off if clicking same segment
+        } else {
+            setActiveIndex(i);
+            setPopupVisible(true);
+        }
+    };
+
+    const handleContainerLeave = () => {
+        setPopupVisible(false);
+    };
     // Tech Palette
     const colors = ['#2ea043', '#3b82f6', '#a855f7', '#d29922', '#f85149', '#06b6d4', '#eab308', '#ec4899'];
 
@@ -92,7 +106,7 @@ const SkillWheel = ({ topics }) => {
     const isRightSide = activeItem ? (activeItem.midAngle >= 0 && activeItem.midAngle < 180) : true;
 
     return (
-        <div className="skill-wheel-container">
+        <div className="skill-wheel-container" onMouseLeave={handleContainerLeave}>
             <div className="wheel-wrapper">
                 <svg viewBox="0 0 200 200" className="skill-svg">
                     {/* Background Ring - Thinner for Bento */}
@@ -110,7 +124,7 @@ const SkillWheel = ({ topics }) => {
 
                         return (
                             <g key={i}
-                                onClick={() => setActiveIndex(i)}
+                                onClick={() => handleSegmentClick(i)}
                                 onMouseEnter={() => setActiveIndex(i)}
                                 className="wheel-segment"
                                 style={{ cursor: 'pointer' }}
@@ -144,7 +158,7 @@ const SkillWheel = ({ topics }) => {
                 </div>
 
                 {/* BENTO POPUP */}
-                {activeItem && (
+                {activeItem && popupVisible && (
                     <div className={`stat-popup ${isRightSide ? 'popup-right' : 'popup-left'}`} style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                         <div className="popup-header" style={{ color: activeColor }}>
                             {activeItem.name}
@@ -178,7 +192,7 @@ const SkillWheel = ({ topics }) => {
                             borderColor: activeIndex === i ? slice.color : 'rgba(255,255,255,0.05)'
                         }}
                         onMouseEnter={() => setActiveIndex(i)}
-                        onClick={() => setActiveIndex(i)}
+                        onClick={() => handleSegmentClick(i)}
                     >
                         <span className="dot" style={{ background: slice.color }}></span>
                         {slice.name.split(' ')[0]}
@@ -295,10 +309,201 @@ const StreakCalendar = ({ data }) => {
     );
 };
 
+// --- AVATAR EDITOR MODAL ---
+const AvatarEditorModal = ({ currentAvatar, editorImage, onFileSelect, onUpload, onClose, uploading }) => {
+    const canvasRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const imgRef = useRef(null);
+    const dragRef = useRef({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 });
+
+    const CANVAS_SIZE = 300;
+    const [zoom, setZoom] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
+
+    // Load image into ref when editorImage changes
+    useEffect(() => {
+        if (!editorImage) { setImageLoaded(false); return; }
+        const img = new Image();
+        img.onload = () => {
+            imgRef.current = img;
+            // Auto-fit: scale to fill the circle
+            const scale = Math.max(CANVAS_SIZE / img.width, CANVAS_SIZE / img.height);
+            setZoom(scale);
+            setOffset({ x: 0, y: 0 });
+            setImageLoaded(true);
+        };
+        img.src = editorImage;
+    }, [editorImage]);
+
+    // Redraw canvas whenever zoom/offset/image changes
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !imgRef.current || !imageLoaded) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+        // Clip to circle
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE / 2, 0, Math.PI * 2);
+        ctx.clip();
+
+        const img = imgRef.current;
+        const w = img.width * zoom;
+        const h = img.height * zoom;
+        const x = (CANVAS_SIZE - w) / 2 + offset.x;
+        const y = (CANVAS_SIZE - h) / 2 + offset.y;
+        ctx.drawImage(img, x, y, w, h);
+        ctx.restore();
+
+        // Draw circle border
+        ctx.beginPath();
+        ctx.arc(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 1, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(46,160,67,0.7)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }, [zoom, offset, imageLoaded]);
+
+    // Mouse drag handlers
+    const onMouseDown = (e) => {
+        dragRef.current = { active: true, startX: e.clientX, startY: e.clientY, originX: offset.x, originY: offset.y };
+    };
+    const onMouseMove = (e) => {
+        if (!dragRef.current.active) return;
+        setOffset({
+            x: dragRef.current.originX + (e.clientX - dragRef.current.startX),
+            y: dragRef.current.originY + (e.clientY - dragRef.current.startY),
+        });
+    };
+    const onMouseUp = () => { dragRef.current.active = false; };
+
+    // Touch drag handlers
+    const onTouchStart = (e) => {
+        const t = e.touches[0];
+        dragRef.current = { active: true, startX: t.clientX, startY: t.clientY, originX: offset.x, originY: offset.y };
+    };
+    const onTouchMove = (e) => {
+        if (!dragRef.current.active) return;
+        const t = e.touches[0];
+        setOffset({
+            x: dragRef.current.originX + (t.clientX - dragRef.current.startX),
+            y: dragRef.current.originY + (t.clientY - dragRef.current.startY),
+        });
+    };
+
+    // Scroll wheel zoom
+    const onWheel = (e) => {
+        e.preventDefault();
+        setZoom(z => Math.min(5, Math.max(0.3, z - e.deltaY * 0.001)));
+    };
+
+    const handleDropZone = (e) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const file = e.dataTransfer?.files?.[0];
+        if (file) onFileSelect(file);
+    };
+
+    const handleSave = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        // Output at 400x400 for quality
+        const out = document.createElement('canvas');
+        out.width = 400; out.height = 400;
+        const ctx = out.getContext('2d');
+        ctx.drawImage(canvas, 0, 0, 400, 400);
+        out.toBlob((blob) => onUpload(blob), 'image/jpeg', 0.92);
+    };
+
+    return (
+        <div className="ae-backdrop" onClick={onClose}>
+            <div className="ae-panel" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="ae-header">
+                    <span className="ae-title">AVATAR_EDITOR</span>
+                    <button className="ae-close" onClick={onClose}>✕</button>
+                </div>
+
+                {!editorImage ? (
+                    /* Drop Zone */
+                    <div
+                        className={`ae-dropzone ${isDragOver ? 'drag-over' : ''}`}
+                        onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
+                        onDragLeave={() => setIsDragOver(false)}
+                        onDrop={handleDropZone}
+                        onClick={() => fileInputRef.current.click()}
+                    >
+                        <div className="ae-current-preview">
+                            <img src={currentAvatar} alt="current" className="ae-current-img" />
+                        </div>
+                        <div className="ae-drop-hint">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                            <span>Drag & drop or <strong>click to browse</strong></span>
+                            <span className="ae-drop-sub">PNG, JPG, WEBP · Max 5MB</span>
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={e => onFileSelect(e.target.files[0])}
+                        />
+                    </div>
+                ) : (
+                    /* Editor */
+                    <div className="ae-editor-body">
+                        <p className="ae-tip">🖱 Drag to pan · Scroll or slider to zoom</p>
+                        <div className="ae-canvas-wrap"
+                            onMouseDown={onMouseDown}
+                            onMouseMove={onMouseMove}
+                            onMouseUp={onMouseUp}
+                            onMouseLeave={onMouseUp}
+                            onTouchStart={onTouchStart}
+                            onTouchMove={onTouchMove}
+                            onTouchEnd={onMouseUp}
+                            onWheel={onWheel}
+                            style={{ cursor: 'grab' }}
+                        >
+                            <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="ae-canvas" />
+                        </div>
+
+                        {/* Zoom Slider */}
+                        <div className="ae-zoom-row">
+                            <span className="ae-zoom-label">🔍</span>
+                            <input
+                                type="range"
+                                min="0.3"
+                                max="5"
+                                step="0.01"
+                                value={zoom}
+                                onChange={e => setZoom(parseFloat(e.target.value))}
+                                className="ae-slider"
+                            />
+                            <span className="ae-zoom-val">{Math.round(zoom * 100)}%</span>
+                        </div>
+
+                        <div className="ae-actions">
+                            <button className="ae-btn secondary" onClick={() => { onFileSelect(null); setImageLoaded(false); imgRef.current = null; fileInputRef.current && (fileInputRef.current.value = ''); }}>
+                                ← CHANGE IMAGE
+                            </button>
+                            <button className="ae-btn primary" onClick={handleSave} disabled={uploading}>
+                                {uploading ? 'UPLOADING...' : 'SAVE AVATAR'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // --- MAIN PROFILE COMPONENT ---
+
 const Profile = () => {
     const navigate = useNavigate();
-    const toast    = useToast();
+    const toast = useToast();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
@@ -308,6 +513,7 @@ const Profile = () => {
     const [saveStatus, setSaveStatus] = useState('');
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [editorImage, setEditorImage] = useState(null);
     const fileInputRef = useRef(null);
 
     useEffect(() => { fetchProfileData(); }, []);
@@ -349,19 +555,35 @@ const Profile = () => {
         } catch (err) { setSaveStatus('>> NETWORK ERROR'); }
     };
 
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const formData = new FormData();
-        formData.append('avatar', file);
+    const handleFileSelect = (file) => {
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setEditorImage(ev.target.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleUploadCroppedBlob = async (blob) => {
+        const fd = new FormData();
+        fd.append('avatar', blob, 'avatar.jpg');
         setUploading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/user/avatar`, { method: 'POST', body: formData, credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/api/user/avatar`, { method: 'POST', body: fd, credentials: 'include' });
             if (res.ok) {
                 const json = await res.json();
                 setData(prev => ({ ...prev, profile: { ...prev.profile, profile_pic: json.url } }));
+                toast.success('Avatar updated!');
+                setShowAvatarModal(false);
+                setEditorImage(null);
+            } else {
+                toast.error('Upload failed.');
             }
-        } catch (err) { alert('Upload failed'); } finally { setUploading(false); }
+        } catch (err) {
+            toast.error('Network error.');
+        } finally {
+            setUploading(false);
+        }
     };
 
     if (loading) return <div className="loading-spinner">SHIELD_LINK_ESTABLISHING...</div>;
@@ -437,7 +659,7 @@ const Profile = () => {
                         </div>
                         <div className="console-card stat-card" style={{ '--card-accent': '#f59e0b' }}>
                             <span className="stat-icon" style={{ color: '#f59e0b' }}><Icons.Zap /></span>
-                            <span className="stat-value" style={{ color: '#f59e0b' }}>🔥 {stats.streak}</span>
+                            <span className="stat-value" style={{ color: '#f59e0b' }}>{stats.streak}</span>
                             <span className="stat-label">DAY STREAK</span>
                         </div>
                         <div className="console-card stat-card" style={{ '--card-accent': '#a855f7' }}>
@@ -493,7 +715,7 @@ const Profile = () => {
                 {/* SETTINGS TAB */}
                 {activeTab === 'settings' && (
                     <div className="bento-grid">
-                        <div className="console-card card-half">
+                        <div className="console-card card-wide">
                             <div className="section-label">&gt;&gt; SYSTEM_PREFERENCES</div>
                             <div className="preference-item">
                                 <div>
@@ -514,7 +736,7 @@ const Profile = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="console-card card-half">
+                        <div className="console-card card-wide">
                             <div className="section-label">&gt;&gt; EDIT_PROFILE_DATA</div>
                             <form onSubmit={handleUpdateProfile}>
                                 <div className="form-group">
@@ -522,8 +744,18 @@ const Profile = () => {
                                     <input type="text" className="form-input" value={formData.user_name} onChange={(e) => setFormData({ ...formData, user_name: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label>&gt;&gt; BIO_DATA</label>
-                                    <textarea className="form-textarea" value={formData.bio} onChange={(e) => setFormData({ ...formData, bio: e.target.value })} />
+                                    <div className="bio-label-row">
+                                        <label>&gt;&gt; BIO_DATA</label>
+                                        <span className="bio-char-count" style={{ color: formData.bio.length >= 140 ? '#f85149' : '#7d8590' }}>
+                                            {formData.bio.length}/150
+                                        </span>
+                                    </div>
+                                    <textarea
+                                        className="form-textarea"
+                                        value={formData.bio}
+                                        maxLength={150}
+                                        onChange={(e) => setFormData({ ...formData, bio: e.target.value.slice(0, 150) })}
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label>&gt;&gt; EMAIL_ID [LOCKED]</label>
@@ -537,20 +769,16 @@ const Profile = () => {
                 )}
             </div>
 
-            {/* IMAGE MODAL */}
+            {/* AVATAR EDITOR MODAL */}
             {showAvatarModal && (
-                <div className="modal-backdrop" onClick={() => setShowAvatarModal(false)}>
-                    <div className="modal-glass-panel" onClick={e => e.stopPropagation()}>
-                        <img src={avatarUrl} alt="Zoomed Profile" className="modal-avatar-img" />
-                        <div className="modal-actions">
-                            <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} accept="image/*" />
-                            <button className="btn-action" onClick={() => fileInputRef.current.click()}>
-                                {uploading ? 'UPLOADING...' : 'UPLOAD NEW'}
-                            </button>
-                            <button className="btn-action logout" onClick={() => setShowAvatarModal(false)}>CLOSE</button>
-                        </div>
-                    </div>
-                </div>
+                <AvatarEditorModal
+                    currentAvatar={avatarUrl}
+                    editorImage={editorImage}
+                    onFileSelect={handleFileSelect}
+                    onUpload={handleUploadCroppedBlob}
+                    onClose={() => { setShowAvatarModal(false); setEditorImage(null); }}
+                    uploading={uploading}
+                />
             )}
         </div>
     );

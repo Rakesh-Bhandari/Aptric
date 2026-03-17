@@ -8,14 +8,13 @@ import { PreferencesProvider, usePreferences } from './context/PreferencesContex
 
 import Navbar from './components/Navbar/Navbar';
 import Dock from './components/Dock/Dock';
-// import Footer from './components/Footer/Footer';
+import Footer from './components/Footer/Footer';
 import { useLocation } from 'react-router-dom';
 import Auth from './components/Auth/Auth';
 import Admin from './pages/Admin/Admin';
 import Home from './pages/Home/Home';
 import Practice from './pages/Practice/Practice';
 import Profile from './pages/Profile/Profile';
-import Progress from './pages/Progress/Progress';
 import Leaderboard from './pages/Leaderboard/Leaderboard';
 import About from './pages/About/About';
 import Feedback from './pages/Feedback/Feedback';
@@ -176,6 +175,7 @@ const AppContent = () => {
         </Routes>
       </main>
       <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setIsAuthenticated={setIsAuthenticated} />
+      <Footer />
     </>
   );
 };
