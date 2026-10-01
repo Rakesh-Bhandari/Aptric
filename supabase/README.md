@@ -180,6 +180,26 @@ The migration backfills badges already earned (not XP).
 
 **Other RPCs.** `get_player_profile(handle?)`: level and XP progress, rating, streaks, league tier, solve stats per section and badges (freeze counts only for yourself; banned players are hidden). `get_daily_result(daily_set_id?)`: the share card for today's set (or any set you played): per-question outcome (`correct`/`hinted`/`wrong`/`gave_up`/`unanswered`), score, XP earned, rating change, streak and league rank; never questions or answers.
 
+## Learner app
+
+`20261001000015_learner_app.sql`. Tests: `tests/database/learner_app.test.sql`.
+
+**Onboarding fields.** `profiles.exam_goal` (an exam tag slug), `daily_target` (questions per day, default 10) and `onboarded_at` are user-editable. Existing players with a handle were backfilled as onboarded.
+
+**Placement.** `start_placement()` serves 10 servable questions (3 easy, 4 medium, 3 hard, spread across sections, never ones the player already met in a placement), resuming an unfinished test from the last day; a new test is refused (`55000`) within 7 days of the last one. `finish_placement(test_id, answers)` grades everything server-side (weights easy 1 / medium 2 / hard 3), records `assessment` attempts (no XP), and sets `profiles.placement_level`: score ≥ 0.85 → band 5, ≥ 0.70 → 4, ≥ 0.50 → 3, ≥ 0.30 → 2, else 1. `private.today_set_for` now uses `greatest(band from XP level, placement_level)`, so placement is a floor on the daily-set band and never grants XP.
+
+**Practice.** A question is *servable* when it is published, has an answer key and 2+ options, sits under active taxonomy, and is not in a contest that hasn't ended. `get_practice_tree()` returns sections → topics → subtopics with the number of servable questions the player hasn't practised, their attempts/correct (all contexts) and mastery stars: 0 under 3 attempts; 3 at 20+ attempts and ≥ 85%; 2 at 10+ and ≥ 70%; 1 at ≥ 50%. A subtopic is *weak* at 3+ attempts and < 60%. `get_practice_questions(subtopic_ids, prefer_difficulty, mode, question_limit)` serves unpractised questions (never-seen first, preferred difficulty first); `mode => 'weak'` draws from the 5 weakest subtopics. `get_mistakes()` lists wrong answers and give-ups (latest per question) with the key and explanation, flagging ones fixed since. `get_activity(days)` returns per-day counts in the player's timezone, today's count against the daily target, and recent daily sets.
+
+**Contests.** Admins create `contests` (a published window `starts_at`–`ends_at`) and `contest_items` directly (RLS) or in the dashboard; there is no admin UI for them yet. Items are hidden from players: `get_contest()` shows questions to entrants while live and to everyone once ended (with answers and explanations). `join_contest()` registers (upcoming or live), `submit_contest_answer()` scores once per question while live (easy 10 / medium 20 / hard 30, no XP), `get_contest_standings()` ranks by score, then total time, then last answer. `list_contests()` returns live, upcoming and last-30-days contests.
+
+```sql
+insert into public.contests (slug, title, starts_at, ends_at, is_published)
+values ('friday-sprint', 'Friday Sprint', '2026-10-09 14:30+00', '2026-10-09 15:30+00', true) returning id;
+insert into public.contest_items (contest_id, question_id, position)
+select '<id>', id, (row_number() over ()) - 1
+from (select id from public.questions where status = 'published' order by random() limit 10) q;
+```
+
 ## Admin area
 
 `frontend/src/pages/Admin` (`/admin/*`), for `profiles.role = 'admin'` only. The UI's role check is cosmetic: reads go through RLS and writes through RLS or the `admin_*` functions (`20261001000013_admin.sql`), which check `private.is_admin()` themselves. Every write lands in `audit_log`.
