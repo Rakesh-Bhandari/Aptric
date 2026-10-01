@@ -108,60 +108,96 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
     }
 });
 
+// Shared guard for the scoring endpoints. Must run inside a transaction.
+// Looks the question up by qid (the client's questionId is never trusted),
+// rejects questions the user already attempted on an earlier date, and locks
+// today's attempt row (FOR UPDATE) so parallel requests can't both score.
+// Allowed questions are today's daily-log questions and never-attempted
+// topic-practice questions; both cases reduce to "no attempt on an earlier date".
+// Returns { error: [status, message] } or { question, existing }.
+async function lockAttempt(conn, userId, qid, today, columns) {
+    const [[question]] = await conn.query(`SELECT question_id, ${columns} FROM questions WHERE qid = ?`, [qid]);
+    if (!question) return { error: [404, 'Question not found'] };
+
+    const [[prior]] = await conn.query(
+        'SELECT attempt_id FROM user_attempts WHERE user_id = ? AND qid = ? AND attempt_date <> ? LIMIT 1',
+        [userId, qid, today]
+    );
+    if (prior) return { error: [403, 'Already attempted on an earlier date'] };
+
+    const [[existing]] = await conn.query(
+        'SELECT * FROM user_attempts WHERE user_id = ? AND qid = ? AND attempt_date = ? FOR UPDATE',
+        [userId, qid, today]
+    );
+    return { question, existing };
+}
+
+// A parallel request that lost the race on the (user_id, attempt_date, qid) unique key.
+const isRaceError = (err) => err && (err.code === 'ER_DUP_ENTRY' || err.code === 'ER_LOCK_DEADLOCK');
+
 // --- Submit Answer ---
+// Scoring: correct = +100, wrong = -20, awarded once per question.
+// A hint taken earlier was already charged (-10) by /use-hint and is NOT charged again,
+// so correct + hint = +90 total and wrong + hint = -30 total.
+// points_earned on the attempt row stores the net total for the question.
 router.post('/submit-answer', isLoggedIn, async (req, res) => {
-    const { questionId, qid, selectedAnswerIndex } = req.body;
+    const { qid, selectedAnswerIndex } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
 
     if (selectedAnswerIndex === undefined || !qid) return res.status(400).json({ error: 'Missing data' });
+    if (!Number.isInteger(selectedAnswerIndex)) return res.status(400).json({ error: 'Invalid answer index' });
 
     let conn;
     try {
         conn = await dbPool.getConnection();
         await conn.beginTransaction();
 
-        const [existing] = await conn.query(
-            'SELECT * FROM user_attempts WHERE user_id = ? AND qid = ? AND attempt_date = ?',
-            [userId, qid, today]
-        );
-        if (existing.length > 0 && existing[0].status !== 'pending' && existing[0].status !== 'hint_used') {
+        const { error, question, existing } = await lockAttempt(conn, userId, qid, today, 'options, correct_answer_index, explanation, hint');
+        if (error) { await conn.rollback(); return res.status(error[0]).json({ error: error[1] }); }
+
+        if (existing && existing.status !== 'pending' && existing.status !== 'hint_used') {
             await conn.rollback();
             return res.status(403).json({ error: 'Already answered' });
         }
 
-        const [[qData]] = await conn.query('SELECT correct_answer_index, explanation, hint FROM questions WHERE qid = ?', [qid]);
-        if (!qData) { await conn.rollback(); return res.status(404).json({ error: 'Question not found' }); }
+        const options = typeof question.options === 'string' ? JSON.parse(question.options) : question.options;
+        if (selectedAnswerIndex < 0 || selectedAnswerIndex >= (options?.length || 0)) {
+            await conn.rollback();
+            return res.status(400).json({ error: 'Invalid answer index' });
+        }
 
-        const isCorrect = parseInt(selectedAnswerIndex) === qData.correct_answer_index;
-        const hadHint = existing.length > 0 && existing[0].status === 'hint_used';
-        let points = isCorrect ? POINTS_CORRECT : POINTS_WRONG;
-        if (hadHint) points += (existing[0]?.points_earned || POINTS_HINT);
+        const isCorrect = selectedAnswerIndex === question.correct_answer_index;
+        const awarded = isCorrect ? POINTS_CORRECT : POINTS_WRONG;
+        const hintPoints = existing && existing.status === 'hint_used' ? (existing.points_earned || 0) : 0;
+        const points = awarded + hintPoints;
 
         const status = isCorrect ? 'correct' : 'wrong';
 
-        if (existing.length > 0) {
+        if (existing) {
             await conn.query(
                 'UPDATE user_attempts SET selected_answer_index = ?, status = ?, points_earned = ? WHERE attempt_id = ?',
-                [selectedAnswerIndex, status, points, existing[0].attempt_id]
+                [selectedAnswerIndex, status, points, existing.attempt_id]
             );
         } else {
             await conn.query(
                 'INSERT INTO user_attempts (user_id, qid, question_id, selected_answer_index, status, points_earned, attempt_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [userId, qid, questionId, selectedAnswerIndex, status, points, today]
+                [userId, qid, question.question_id, selectedAnswerIndex, status, points, today]
             );
         }
 
-        await updateGameStats(userId, points, conn);
+        await updateGameStats(userId, awarded, conn);
         await conn.query(
             `UPDATE users SET answered_qids = JSON_ARRAY_APPEND(COALESCE(answered_qids, '[]'), '$', ?) WHERE user_id = ?`,
             [qid, userId]
         );
 
         await conn.commit();
-        res.json({ status, pointsEarned: points, ...qData });
+        const { correct_answer_index, explanation, hint } = question;
+        res.json({ status, pointsEarned: points, correct_answer_index, explanation, hint });
     } catch (err) {
         if (conn) await conn.rollback();
+        if (isRaceError(err)) return res.status(409).json({ error: 'Already answered' });
         console.error('[submit-answer]', err);
         res.status(500).json({ error: 'Server error' });
     } finally {
@@ -170,46 +206,46 @@ router.post('/submit-answer', isLoggedIn, async (req, res) => {
 });
 
 // --- Use Hint ---
+// Scoring: -10, charged once per question, only while it is still unanswered.
+// Asking again (or after answering) returns the hint for 0 points.
 router.post('/use-hint', isLoggedIn, async (req, res) => {
-    const { questionId, qid } = req.body;
+    const { qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
+    if (!qid) return res.status(400).json({ error: 'Missing data' });
     let conn;
 
     try {
         conn = await dbPool.getConnection();
         await conn.beginTransaction();
 
-        const [existing] = await conn.query(
-            'SELECT * FROM user_attempts WHERE user_id = ? AND qid = ? AND attempt_date = ?',
-            [userId, qid, today]
-        );
+        const { error, question, existing } = await lockAttempt(conn, userId, qid, today, 'hint');
+        if (error) { await conn.rollback(); return res.status(error[0]).json({ error: error[1] }); }
 
-        if (existing.length > 0 && existing[0].status !== 'pending') {
-            const [[q]] = await conn.query('SELECT hint FROM questions WHERE qid = ?', [qid]);
+        if (existing && existing.status !== 'pending') {
             await conn.rollback();
-            return res.json({ hint: q.hint, pointsEarned: 0 });
+            return res.json({ hint: question.hint, pointsEarned: 0 });
         }
 
-        const [[qData]] = await conn.query('SELECT hint FROM questions WHERE qid = ?', [qid]);
-
-        if (existing.length === 0) {
+        if (!existing) {
             await conn.query(
                 'INSERT INTO user_attempts (user_id, qid, question_id, status, points_earned, attempt_date) VALUES (?, ?, ?, ?, ?, ?)',
-                [userId, qid, questionId, 'hint_used', POINTS_HINT, today]
+                [userId, qid, question.question_id, 'hint_used', POINTS_HINT, today]
             );
         } else {
             await conn.query(
                 'UPDATE user_attempts SET status = ?, points_earned = ? WHERE attempt_id = ?',
-                ['hint_used', POINTS_HINT, existing[0].attempt_id]
+                ['hint_used', POINTS_HINT, existing.attempt_id]
             );
         }
 
         await updateGameStats(userId, POINTS_HINT, conn);
         await conn.commit();
-        res.json({ hint: qData.hint, pointsEarned: POINTS_HINT });
+        res.json({ hint: question.hint, pointsEarned: POINTS_HINT });
     } catch (err) {
         if (conn) await conn.rollback();
+        if (isRaceError(err)) return res.status(409).json({ error: 'Hint already used' });
+        console.error('[use-hint]', err);
         res.status(500).json({ error: 'Error' });
     } finally {
         if (conn) conn.release();
@@ -217,52 +253,55 @@ router.post('/use-hint', isLoggedIn, async (req, res) => {
 });
 
 // --- Give Up ---
+// Scoring: +10, awarded once per question. A hint taken earlier was already
+// charged (-10) by /use-hint and is NOT charged again, so give-up + hint = 0 total.
 router.post('/give-up', isLoggedIn, async (req, res) => {
-    const { questionId, qid } = req.body;
+    const { qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
+    if (!qid) return res.status(400).json({ error: 'Missing data' });
     let conn;
 
     try {
         conn = await dbPool.getConnection();
         await conn.beginTransaction();
 
-        const [existing] = await conn.query(
-            'SELECT * FROM user_attempts WHERE user_id = ? AND qid = ? AND attempt_date = ?',
-            [userId, qid, today]
-        );
+        const { error, question, existing } = await lockAttempt(conn, userId, qid, today, 'correct_answer_index, explanation, hint');
+        if (error) { await conn.rollback(); return res.status(error[0]).json({ error: error[1] }); }
 
-        if (existing.length > 0 && existing[0].status !== 'pending' && existing[0].status !== 'hint_used') {
+        if (existing && existing.status !== 'pending' && existing.status !== 'hint_used') {
             await conn.rollback();
             return res.status(403).json({ error: 'Already done' });
         }
 
-        const [[qData]] = await conn.query('SELECT correct_answer_index, explanation, hint FROM questions WHERE qid = ?', [qid]);
-        const hadHint = existing.length > 0 && existing[0].status === 'hint_used';
-        const points = POINTS_GIVEUP + (hadHint ? POINTS_HINT : 0);
+        const hintPoints = existing && existing.status === 'hint_used' ? (existing.points_earned || 0) : 0;
+        const points = POINTS_GIVEUP + hintPoints;
 
-        if (existing.length > 0) {
+        if (existing) {
             await conn.query(
                 'UPDATE user_attempts SET status = ?, points_earned = ?, selected_answer_index = NULL WHERE attempt_id = ?',
-                ['gave_up', points, existing[0].attempt_id]
+                ['gave_up', points, existing.attempt_id]
             );
         } else {
             await conn.query(
                 'INSERT INTO user_attempts (user_id, qid, question_id, status, points_earned, attempt_date) VALUES (?, ?, ?, ?, ?, ?)',
-                [userId, qid, questionId, 'gave_up', points, today]
+                [userId, qid, question.question_id, 'gave_up', points, today]
             );
         }
 
-        await updateGameStats(userId, points, conn);
+        await updateGameStats(userId, POINTS_GIVEUP, conn);
         await conn.query(
             `UPDATE users SET answered_qids = JSON_ARRAY_APPEND(COALESCE(answered_qids, '[]'), '$', ?) WHERE user_id = ?`,
             [qid, userId]
         );
 
         await conn.commit();
-        res.json({ status: 'gave_up', pointsEarned: points, ...qData });
+        const { correct_answer_index, explanation, hint } = question;
+        res.json({ status: 'gave_up', pointsEarned: points, correct_answer_index, explanation, hint });
     } catch (err) {
         if (conn) await conn.rollback();
+        if (isRaceError(err)) return res.status(409).json({ error: 'Already done' });
+        console.error('[give-up]', err);
         res.status(500).json({ error: 'Error' });
     } finally {
         if (conn) conn.release();
