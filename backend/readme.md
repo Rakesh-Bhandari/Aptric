@@ -70,6 +70,11 @@ OPEN_ROUTER_API_KEY=
 CRON_SECRET=
 QUESTION_BANK_MIN_UNUSED=50   # cron tops up a difficulty below this many unattempted questions
 QUESTION_BANK_MAX_PER_RUN=20  # max questions generated per difficulty per cron run
+
+# Rate limiting (Upstash Redis) — optional but recommended in production.
+# Without these, limits fall back to in-memory counters per serverless instance.
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 ```
 
 ## Scripts

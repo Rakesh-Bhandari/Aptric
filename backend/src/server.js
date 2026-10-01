@@ -18,6 +18,10 @@ dotenv.config();
 const app = express();
 const isProd = process.env.VITE_NODE_ENV === 'production';
 
+// Behind Vercel's proxy: take the client IP from X-Forwarded-For (one hop) so
+// req.ip — and the per-IP rate limits — see the real caller, not the edge.
+app.set('trust proxy', 1);
+
 // ── CORS ──────────────────────────────────────────────────────
 // Exact allow-list: production frontend + local dev ports.
 const ALLOWED_ORIGINS = [

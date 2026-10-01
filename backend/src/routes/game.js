@@ -3,6 +3,7 @@ import dbPool from '../config/db.js';
 import { isLoggedIn } from '../middleware/auth.js';
 import { getOrAssignDailyLog } from '../services/questionBank.js';
 import { getTodayDate, calculateLevel, POINTS_CORRECT, POINTS_WRONG, POINTS_HINT, POINTS_GIVEUP } from '../utils/helpers.js';
+import { submitAnswerLimiter, useHintLimiter, giveUpLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -136,7 +137,7 @@ const isRaceError = (err) => err && (err.code === 'ER_DUP_ENTRY' || err.code ===
 // A hint taken earlier was already charged (-10) by /use-hint and is NOT charged again,
 // so correct + hint = +90 total and wrong + hint = -30 total.
 // points_earned on the attempt row stores the net total for the question.
-router.post('/submit-answer', isLoggedIn, async (req, res) => {
+router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, async (req, res) => {
     const { qid, selectedAnswerIndex } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
@@ -200,7 +201,7 @@ router.post('/submit-answer', isLoggedIn, async (req, res) => {
 // --- Use Hint ---
 // Scoring: -10, charged once per question, only while it is still unanswered.
 // Asking again (or after answering) returns the hint for 0 points.
-router.post('/use-hint', isLoggedIn, async (req, res) => {
+router.post('/use-hint', isLoggedIn, useHintLimiter, async (req, res) => {
     const { qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
@@ -247,7 +248,7 @@ router.post('/use-hint', isLoggedIn, async (req, res) => {
 // --- Give Up ---
 // Scoring: +10, awarded once per question. A hint taken earlier was already
 // charged (-10) by /use-hint and is NOT charged again, so give-up + hint = 0 total.
-router.post('/give-up', isLoggedIn, async (req, res) => {
+router.post('/give-up', isLoggedIn, giveUpLimiter, async (req, res) => {
     const { qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
