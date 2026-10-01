@@ -23,6 +23,7 @@ CREATE TABLE `users` (
   `user_id` VARCHAR(12) NOT NULL,
   `google_id` VARCHAR(255) DEFAULT NULL,
   `user_name` VARCHAR(255) NOT NULL,
+  `handle` VARCHAR(40) NOT NULL COMMENT 'Public profile slug; user_id is never exposed',
   `email` VARCHAR(255) NOT NULL,
   `password_hash` VARCHAR(255) DEFAULT NULL,
   `verification_token` VARCHAR(255) DEFAULT NULL,
@@ -36,6 +37,8 @@ CREATE TABLE `users` (
   `level` VARCHAR(20) DEFAULT 'Beginner',
   `day_streak` INT DEFAULT '0',
   `last_streak_date` DATE DEFAULT NULL COMMENT 'Last Asia/Kolkata day the user answered a daily question',
+  `questions_solved` INT NOT NULL DEFAULT 0 COMMENT 'Attempts with status correct',
+  `questions_attempted` INT NOT NULL DEFAULT 0 COMMENT 'Attempts with status correct or wrong',
   `last_login` DATETIME DEFAULT NULL,
   `answered_qids` JSON DEFAULT (JSON_ARRAY()),
   `premium_level` VARCHAR(20) DEFAULT 'free',
@@ -47,7 +50,9 @@ CREATE TABLE `users` (
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `google_id` (`google_id`),
-  KEY `idx_verification_token` (`verification_token`)
+  UNIQUE KEY `handle` (`handle`),
+  KEY `idx_verification_token` (`verification_token`),
+  KEY `idx_score` (`score`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 

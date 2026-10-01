@@ -4,7 +4,7 @@ import { z } from 'zod';
 import dbPool from '../config/db.js';
 import { avatarUpload } from '../config/cloudinary.js';
 import { isLoggedIn, getUserFromCookie } from '../middleware/auth.js';
-import { validate, displayName, bio, userIdParams } from '../middleware/validate.js';
+import { validate, displayName, bio, handleParams } from '../middleware/validate.js';
 import { ALL_CATEGORIES } from '../utils/helpers.js';
 
 const router = Router();
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 
         res.json({
             authenticated: true,
-            user: { id: u.user_id, name: u.user_name, email: u.email, score: u.score, level: u.level, streak: u.day_streak, lastLogin: u.last_login, role: u.role }
+            user: { id: u.user_id, handle: u.handle, name: u.user_name, email: u.email, score: u.score, level: u.level, streak: u.day_streak, lastLogin: u.last_login, role: u.role }
         });
     } catch (err) {
         console.error('[GET /api/user]', err.message);
@@ -104,12 +104,13 @@ router.put('/update', isLoggedIn, validate({ body: updateProfileSchema }), async
 });
 
 // ── Public profile ─────────────────────────────────────────────
-router.get('/:id/public', validate({ params: userIdParams }), async (req, res) => {
+router.get('/:handle/public', validate({ params: handleParams }), async (req, res) => {
     let conn;
     try {
         conn = await dbPool.getConnection();
         const [users] = await conn.query(
-            'SELECT user_name, bio, profile_pic, score, level, day_streak, created_at FROM users WHERE user_id=?', [req.params.id]
+            `SELECT user_id, user_name, bio, profile_pic, score, level, day_streak, questions_solved, questions_attempted, created_at
+             FROM users WHERE handle=?`, [req.valid.params.handle]
         );
         if (!users.length) { return res.status(404).json({ error: 'Not found' }); }
         const u = users[0];
@@ -118,11 +119,7 @@ router.get('/:id/public', validate({ params: userIdParams }), async (req, res) =
             `SELECT q.category, COUNT(ua.attempt_id) AS total_attempted,
              SUM(CASE WHEN ua.status='correct' THEN 1 ELSE 0 END) AS total_correct
              FROM user_attempts ua JOIN questions q ON ua.question_id=q.question_id
-             WHERE ua.user_id=? AND ua.status IN ('correct','wrong') GROUP BY q.category`, [req.params.id]
-        );
-        const [totals] = await conn.query(
-            `SELECT COUNT(*) as total, SUM(CASE WHEN status='correct' THEN 1 ELSE 0 END) as correct
-             FROM user_attempts WHERE user_id=? AND status IN ('correct','wrong')`, [req.params.id]
+             WHERE ua.user_id=? AND ua.status IN ('correct','wrong') GROUP BY q.category`, [u.user_id]
         );
 
         const topics = ALL_CATEGORIES.map(cat => {
@@ -135,8 +132,8 @@ router.get('/:id/public', validate({ params: userIdParams }), async (req, res) =
             name: u.user_name, bio: u.bio, profilePic: u.profile_pic,
             stats: {
                 score: u.score, level: u.level, streak: u.day_streak,
-                solved: totals[0].correct || 0,
-                accuracy: totals[0].total > 0 ? ((totals[0].correct / totals[0].total) * 100).toFixed(0) : 0,
+                solved: u.questions_solved,
+                accuracy: u.questions_attempted > 0 ? ((u.questions_solved / u.questions_attempted) * 100).toFixed(0) : 0,
                 joined: u.created_at
             },
             topics

@@ -50,9 +50,9 @@ const SolveQuestion = () => {
 
     const fetchCategoryQuestions = (category) => {
         if (categoryQuestions.length > 0 && categoryQuestions[0].category === category) return;
-        fetch(`${API_BASE_URL}/api/category?category=${encodeURIComponent(category)}`, { credentials: 'include' })
+        fetch(`${API_BASE_URL}/api/category?category=${encodeURIComponent(category)}&limit=100`, { credentials: 'include' })
             .then(res => res.json())
-            .then(list => { if (Array.isArray(list)) setCategoryQuestions(list); })
+            .then(data => { if (Array.isArray(data?.questions)) setCategoryQuestions(data.questions); })
             .catch(console.error);
     };
 

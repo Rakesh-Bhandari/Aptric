@@ -225,7 +225,7 @@ router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, validate({ body: 
             );
         }
 
-        await updateGameStats(userId, awarded, conn);
+        await updateGameStats(userId, awarded, conn, { solved: isCorrect ? 1 : 0, attempted: 1 });
         await recordStreakDay(conn, userId, question.question_id, today);
 
         await conn.commit();

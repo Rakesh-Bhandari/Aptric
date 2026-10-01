@@ -9,6 +9,7 @@ import dbPool from '../config/db.js';
 import transporter from '../config/mailer.js';
 import { getOrAssignDailyLog } from '../services/questionBank.js';
 import { isLoggedIn } from '../middleware/auth.js';
+import { makeHandle } from '../utils/helpers.js';
 import { setAuthCookie, clearAuthCookie } from '../utils/jwt.js';
 import {
     loginLimiter, signupLimiter, resendVerificationLimiter, forgotPasswordLimiter, resetPasswordLimiter,
@@ -161,7 +162,7 @@ router.post('/signup', signupLimiter, validate({ body: signupSchema }), async (r
     const newUserId = nanoid(12);
 
     await dbPool.query('INSERT INTO users SET ?', {
-      user_id: newUserId, user_name: name, email,
+      user_id: newUserId, user_name: name, handle: makeHandle(name), email,
       password_hash: hashedPassword,
       verification_token: token,
       verification_expires: new Date(Date.now() + VERIFICATION_TTL_MS),
