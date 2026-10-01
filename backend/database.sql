@@ -26,6 +26,7 @@ CREATE TABLE `users` (
   `email` VARCHAR(255) NOT NULL,
   `password_hash` VARCHAR(255) DEFAULT NULL,
   `verification_token` VARCHAR(255) DEFAULT NULL,
+  `verification_expires` DATETIME DEFAULT NULL,
   `is_verified` BOOLEAN DEFAULT FALSE,
   `otp_code` VARCHAR(6) DEFAULT NULL,
   `otp_expires` DATETIME DEFAULT NULL,
