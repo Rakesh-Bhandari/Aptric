@@ -106,7 +106,7 @@ AI generation never runs inside a user or admin request:
 
 1. An admin bulk request (`POST /api/admin/generate-bulk`) or the daily top-up
    (`/api/cron/question-bank`) inserts a row into `question_generation_jobs`.
-2. `/api/cron/generation-jobs` (every 5 minutes) claims a job with a short lease and
+2. `/api/cron/generation-jobs` (daily at 23:45 UTC, 15 minutes after the top-up) claims a job with a short lease and
    processes it one batch of up to 10 questions at a time. The admin Questions tab
    shows each job's progress.
 3. Each generated question is checked against a zod schema (4 distinct non-empty
@@ -116,8 +116,10 @@ AI generation never runs inside a user or admin request:
 4. Survivors are saved with `status = 'draft'`. Only `published` questions are served
    to users; admins approve or reject drafts from the Questions tab.
 
-Sub-daily cron schedules need a Vercel Pro plan; on Hobby, `/api/cron/generation-jobs`
-runs once a day unless it is triggered some other way (with the `CRON_SECRET` bearer token).
+Vercel Hobby only allows daily crons, so `/api/cron/generation-jobs` runs once a day and
+works through as many batches as fit in `GENERATION_JOB_BUDGET_MS`. To drain jobs faster,
+call it more often from an external scheduler with the `CRON_SECRET` bearer token
+(`Authorization: Bearer $CRON_SECRET`), or move to Vercel Pro and set the schedule to `*/5 * * * *`.
 
 Existing databases need `migrations/006_question_review_and_jobs.sql`.
 
