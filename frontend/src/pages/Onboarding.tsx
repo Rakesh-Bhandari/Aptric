@@ -16,7 +16,7 @@ import * as api from '@/lib/api';
 import { errorCode, friendlyError } from '@/lib/errors';
 import { DAILY_TARGETS, DIFFICULTY_LABEL, HANDLE_RE } from '@/lib/game';
 import { invalidateProgress, keys, queryClient, useExamTags } from '@/lib/queries';
-import { safeNext } from '@/lib/supabase';
+import { safeNext } from '@/lib/auth';
 import type { PlacementAnswer, PlacementResult, PlacementStart } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { SolveSkeleton } from './solve/SolveSkeleton';
@@ -46,8 +46,8 @@ const StepFrame = ({ step, total, title, description, children }: {
 const HandleStep = ({ onDone }: { onDone: () => void }) => {
   const { user, setProfile } = useSession();
   const profile = useProfile();
-  const [handle, setHandle] = useState(() => suggestHandle(user?.user_metadata?.user_name ?? user?.user_metadata?.full_name ?? user?.email?.split('@')[0]));
-  const [name, setName] = useState(() => profile.display_name ?? user?.user_metadata?.full_name ?? '');
+  const [handle, setHandle] = useState(() => suggestHandle(profile.display_name ?? user?.email?.split('@')[0]));
+  const [name, setName] = useState(() => profile.display_name ?? '');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const toast = useToast();
@@ -61,7 +61,7 @@ const HandleStep = ({ onDone }: { onDone: () => void }) => {
     setError('');
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      setProfile(await api.updateProfile(profile.id, {
+      setProfile(await api.updateProfile({
         handle: value, display_name: name.trim() || null, ...(profile.timezone === 'UTC' && tz ? { timezone: tz } : {}),
       }));
       onDone();
@@ -111,7 +111,7 @@ const GoalStep = ({ onDone }: { onDone: () => void }) => {
     e.preventDefault();
     setBusy(true);
     try {
-      setProfile(await api.updateProfile(profile.id, { exam_goal: goal || null, daily_target: target }));
+      setProfile(await api.updateProfile({ exam_goal: goal || null, daily_target: target }));
       onDone();
     } catch (err) {
       toast.error(friendlyError(err, "We couldn't save that. Please try again."));
@@ -321,7 +321,7 @@ const Onboarding = () => {
 
   const skip = async () => {
     try {
-      setProfile(await api.updateProfile(profile.id, { onboarded_at: new Date().toISOString() }));
+      setProfile(await api.updateProfile({ onboarded_at: new Date().toISOString() }));
       toast.info('You can take the placement test any time from Settings.');
       navigate(next, { replace: true });
     } catch (err) {

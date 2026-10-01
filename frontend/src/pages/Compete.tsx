@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, CalendarClock, ChevronRight, Crown, Medal, Radio, Swords, Trophy, Users } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
@@ -9,9 +9,8 @@ import { Page, PageHeader } from '@/components/ui/page';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { subscribeToLeague } from '@/lib/api';
 import { displayName, formatDateTime, formatRelative, plural } from '@/lib/format';
-import { keys, queryClient, useContests, useLeaderboard, useMyLeague } from '@/lib/queries';
+import { useContests, useLeaderboard, useMyLeague } from '@/lib/queries';
 import type { Board, ContestSummary, LeaderboardEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -43,22 +42,8 @@ const PlayerLink = ({ handle, name, avatar }: { handle: string | null; name: str
 // League -------------------------------------------------------------------
 
 const LeagueTab = () => {
-  const league = useMyLeague();
-  const leagueId = league.data?.league_id ?? null;
-
-  // Live standings: refetch (at most every 2 s) when anyone in the league gains XP.
-  useEffect(() => {
-    if (!leagueId) return;
-    let timer: number | undefined;
-    const unsubscribe = subscribeToLeague(leagueId, () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => void queryClient.invalidateQueries({ queryKey: keys.league }), 2000);
-    });
-    return () => {
-      window.clearTimeout(timer);
-      unsubscribe();
-    };
-  }, [leagueId]);
+  // Live standings: poll while the tab is open.
+  const league = useMyLeague({ live: true });
 
   if (league.isError) return <ErrorState error={league.error} onRetry={() => void league.refetch()} />;
   if (!league.data) return <ListSkeleton />;

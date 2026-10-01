@@ -1,6 +1,6 @@
-# Aptric – Supabase
+# Aptric – Supabase (database)
 
-Postgres schema, RLS and generated types for Aptric, managed with the Supabase CLI.
+Postgres schema, RLS and generated types for Aptric, managed with the Supabase CLI. Supabase is used **only as the database**: the Node API in [`backend/`](../backend/README.md) owns accounts, sessions, email links, Google sign-in and AI generation, and is the only thing that connects to Postgres. Supabase Auth, the Data API, Realtime and Edge Functions are not used by the app.
 
 ```bash
 npx supabase start          # local stack (Docker)
@@ -12,16 +12,34 @@ npx supabase db push        # apply migrations to the linked remote project
 
 Regenerate `types/database.types.ts` after every migration.
 
-Auth flows and the exact dashboard settings (SMTP, providers, rate limits, email templates) are in [AUTH.md](AUTH.md).
+### How the API talks to Postgres
+
+The API connects with the database connection string (role `postgres`). For anything done on a player's behalf it opens a transaction and runs
+
+```sql
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"<user id>","role":"authenticated"}', true),
+       set_config('request.jwt.claim.sub', '<user id>', true);
+```
+
+so `auth.uid()`, every RLS policy, column grant and `SECURITY DEFINER` rule below apply exactly as they did behind PostgREST. Server-side work (auth tables, AI generation, rate limits) runs as the connection role.
+
+### Accounts (`20261002000001_backend_auth.sql`)
+
+- `private.accounts`: one row per user: lower-cased `email`, bcrypt `password_hash` (null for Google/magic-link-only accounts), `email_verified_at`, `google_sub`, sign-up `metadata`, `banned_until`, `last_sign_in_at`. Inserting a row creates the `public.profiles` row (trigger `on_account_created` → `private.handle_new_user()`, same rules as before). `profiles.id` references `private.accounts(id)` with `on delete cascade`.
+- `private.sessions`: refresh tokens, stored as sha256 only, rotated on every refresh, 30 days.
+- `private.auth_tokens`: single-use email links (`signup`, `magiclink`, `recovery`) and the 2-minute Google hand-off (`oauth`), sha256 only.
+- The migration copied every existing `auth.users` row (same ids, emails, bcrypt hashes, confirmation, bans, Google identities), so existing players keep their accounts and passwords.
+- None of these tables is readable by `anon`/`authenticated`. `aptric-purge-auth-tokens` (daily) deletes expired sessions and links.
 
 ## Access model
 
 | Who | Can |
 | --- | --- |
 | `anon` | nothing |
-| authenticated user | read active taxonomy and tag catalog, published questions/options/tags (plus questions they've attempted), released daily sets, levels, league tiers, track sections; read the badge catalog; read own profile, attempts, xp_events, reports, feedback, streak freeze uses/awards, league memberships, rating events, badges; update own `handle`, `display_name`, `avatar_url`, `bio`, `timezone`, `track_id`; insert reports/feedback; play via `get_today_set`, `submit_answer`, `use_hint`, `give_up`; standings via `get_my_league`, `get_leaderboard`, `get_player_profile`, `get_daily_result`; receive their own league's Realtime channel |
-| admin (`profiles.role = 'admin'`) | everything above + full CRUD on content tables, read all profiles/attempts/xp/reports/feedback/audit_log/`question_generation_jobs`, update report/feedback status; the `generate-questions` Edge Function; `admin_get_question_answer`, `admin_upsert_question_answer`, `admin_set_user_role`, `admin_set_user_ban`, `admin_list_users`, `admin_get_question`, `admin_save_question`, `admin_set_question_status` RPCs (see [Admin area](#admin-area)) |
-| `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` or write `attempts`, `xp_events`, `hint_uses`, league tables, `streak_freeze_uses`/`_awards`, `rating_events`, `user_badges`, `question_generation_jobs` and `profiles.role/level/xp/rating/streak*/league_tier`; read the leaderboard materialized views |
+| authenticated user | read active taxonomy and tag catalog, published questions/options/tags (plus questions they've attempted), released daily sets, levels, league tiers, track sections; read the badge catalog; read own profile, attempts, xp_events, reports, feedback, streak freeze uses/awards, league memberships, rating events, badges; update own `handle`, `display_name`, `avatar_url`, `bio`, `timezone`, `track_id`; insert reports/feedback; play via `get_today_set`, `submit_answer`, `use_hint`, `give_up`; standings via `get_my_league`, `get_leaderboard`, `get_player_profile`, `get_daily_result` |
+| admin (`profiles.role = 'admin'`) | everything above + full CRUD on content tables, read all profiles/attempts/xp/reports/feedback/audit_log/`question_generation_jobs`, update report/feedback status; AI generation (`POST /admin/generate-questions` in the API); `admin_get_question_answer`, `admin_upsert_question_answer`, `admin_set_user_role`, `admin_set_user_ban`, `admin_list_users`, `admin_get_question`, `admin_save_question`, `admin_set_question_status` RPCs (see [Admin area](#admin-area)) |
+| connection role (the API's server-side work) / `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` or write `attempts`, `xp_events`, `hint_uses`, league tables, `streak_freeze_uses`/`_awards`, `rating_events`, `user_badges`, `question_generation_jobs` and `profiles.role/level/xp/rating/streak*/league_tier`; read the leaderboard materialized views |
 
 Notes:
 
@@ -29,10 +47,10 @@ Notes:
 - Column-level privileges (not RLS) protect the game columns on `profiles`, so the rule holds for admins too.
 - `xp_events`, `rating_events` and `audit_log` are append-only: updates, direct deletes and truncates raise errors even for `service_role`. Rows still go away when a user is deleted (FK cascade).
 - Attempt uniqueness is `(user_id, question_id, context, daily_set_id)` with `NULLS NOT DISTINCT`, so a user gets one practice attempt per question and one attempt per question per daily set.
-- `questions.content_hash` is a lowercase sha256 hex digest the writer computes over the normalised stem + options: lower-case each, turn every run of characters other than `[a-z0-9]` into one space, trim; then hash the stem, a newline, and the options sorted and newline-joined (so reordered options still collide). `private.content_hash()` computes it in the database and `contentHash()` in `functions/generate-questions/dedup.ts` in the Edge Function; both are tested against the same digests.
+- `questions.content_hash` is a lowercase sha256 hex digest the writer computes over the normalised stem + options: lower-case each, turn every run of characters other than `[a-z0-9]` into one space, trim; then hash the stem, a newline, and the options sorted and newline-joined (so reordered options still collide). `private.content_hash()` computes it in the database and `contentHash()` in `backend/src/generation/dedup.js` in the API; both are tested against the same digests.
 - `question_tags.tag` must name a row in `tags` (the catalog; `kind` is `exam` or `general`).
 - Content changes (taxonomy, tags, questions, options, answers, question tags, daily sets and their items) are written to `audit_log` by trigger, with `actor_id = auth.uid()`; so are admin updates/deletes of reports and feedback. Role, ban and question status changes are logged by the RPCs that make them, and generation jobs by trigger (actor = `created_by` / `cancelled_by`).
-- Banned users (`profiles.banned_at`) can't play (every gameplay RPC goes through `private.require_uid()`), file reports or feedback, or edit their profile; the ban also sets `auth.users.banned_until` and ends their sessions.
+- Banned users (`profiles.banned_at`) can't play (every gameplay RPC goes through `private.require_uid()`), file reports or feedback, or edit their profile; the ban also sets `private.accounts.banned_until` (no sign-in or token refresh) and deletes their sessions.
 
 ## Taxonomy and tags
 
@@ -50,46 +68,40 @@ Exam tags (`tags.kind = 'exam'`): `tcs-nqt`, `infosys`, `amcat`, `cat`, `gate`, 
 
 ## AI question generation (`generate-questions`)
 
-An admin-only Edge Function (`functions/generate-questions`). A **job** is one subtopic + difficulty + count (1–50). Each call works through **one batch** of up to 5 questions (`GENERATE_BATCH_SIZE`, max 10), so no invocation gets near the Edge Function time limit; the caller repeats `run` while the job is `queued` or `running`. Every response is `{ job, batch? }`, where `job` is the `question_generation_jobs` row.
+Admin only, in the API: `POST /admin/generate-questions` (`backend/src/generation`). A **job** is one subtopic + difficulty + count (1–50). Each call works through **one batch** of up to 5 questions (`GENERATE_BATCH_SIZE`, max 10), so no request gets near the serverless time limit; the caller repeats `run` while the job is `queued` or `running`. Every response is `{ job, batch? }`, where `job` is the `question_generation_jobs` row.
 
 ```js
-const call = (body) => supabase.functions.invoke('generate-questions', { body });
-let { data } = await call({ action: 'create', subtopic_id, difficulty: 'medium', count: 20 }); // runs the first batch
+const call = (body) => api('POST', '/admin/generate-questions', body); // frontend/src/lib/http.ts
+let data = await call({ action: 'create', subtopic_id, difficulty: 'medium', count: 20 }); // runs the first batch
 while (data.job.status === 'queued' || data.job.status === 'running') {
-  ({ data } = await call({ action: 'run', job_id: data.job.id }));
+  data = await call({ action: 'run', job_id: data.job.id });
 }
 // also: { action: 'status', job_id } and { action: 'cancel', job_id }
 ```
 
 Errors: `401` no/invalid session, `403` not an admin, `400` bad body, `404` unknown job/subtopic, `409` a batch of that job is already running (`retry_after_seconds`), `429` rate limited (`Retry-After`).
 
-**One batch** (`pipeline.ts`); anything that fails a step is dropped and counted on the job, never repaired:
+**One batch** (`pipeline.js`); anything that fails a step is dropped and counted on the job, never repaired:
 
-1. Embed (Supabase's built-in `gte-small`, 384-d) up to 10 existing questions in the subtopic that have no embedding yet (imports, hand-written questions, edited stems), so they count for step 4.
-2. Generate with `QUESTION_MODEL` using structured output: the JSON schema is derived from the zod schemas in `schemas.ts`, and every item is validated with zod (4 distinct options, key index, explanation, hint, `est_seconds`, `computation`) → `dropped_invalid`.
+1. Embed (`EMBEDDING_MODEL` through any OpenAI-compatible `/embeddings` API, 384 dimensions; default `openai/text-embedding-3-small` with `dimensions: 384`) up to 10 existing questions in the subtopic that have no embedding yet (imports, hand-written questions, edited stems), so they count for step 4.
+2. Generate with `QUESTION_MODEL` using structured output: the JSON schema is derived from the zod schemas in `schemas.js`, and every item is validated with zod (4 distinct options, key index, explanation, hint, `est_seconds`, `computation`) → `dropped_invalid`.
 3. Exact duplicates by `content_hash`, within the batch and against the bank → `dropped_duplicate_hash`.
 4. Near duplicates: cosine similarity of stem + options embeddings **> 0.92** to another question in the batch or any non-retired question → `dropped_duplicate_similar`.
-5. Computed check, for Quantitative Aptitude questions whose options are all numbers (`₹1,250`, `12.5%`, `3/4`, `45 km/h`): the generator must give `computation`, an arithmetic expression (numbers, `+ - * / ^`, `sqrt`, `nCr`, `fact`, …; no variables) that `numeric.ts` evaluates without `eval`. It must equal the keyed option and no other option → `dropped_computed`. Integers, one-decimal values and fractions must match exactly; options shown with 2+ decimals, or any option when the stem says "approximately", match anything that rounds to them.
+5. Computed check, for Quantitative Aptitude questions whose options are all numbers (`₹1,250`, `12.5%`, `3/4`, `45 km/h`): the generator must give `computation`, an arithmetic expression (numbers, `+ - * / ^`, `sqrt`, `nCr`, `fact`, …; no variables) that `numeric.js` evaluates without `eval`. It must equal the keyed option and no other option → `dropped_computed`. Integers, one-decimal values and fractions must match exactly; options shown with 2+ decimals, or any option when the stem says "approximately", match anything that rounds to them.
 6. Independent solve with `QUESTION_VERIFY_MODEL` (by default a different vendor's model), temperature 0, options shuffled, never shown the key or explanation. It must choose the keyed option → `dropped_solver` (a failed or timed-out solve counts as a disagreement). If it gives a computation for a numeric question, that must match too → `dropped_computed`.
 7. Insert through `gen_insert_question`: one transaction that, under an advisory lock, re-checks the hash and similarity (so concurrent jobs can't both insert a question) and the job's quota, then writes the question as **`status = 'in_review'`, `source = 'ai'`**, its options in a fresh random order, the answer key, and the embedding.
 
-**Provenance.** Every generated question has `model` (the generator), `prompt_version` (`PROMPT_VERSION` in `prompts.ts`; bump it whenever a prompt, schema or check changes) and `generation_job_id`; the job also records `solver_model` and `created_by`. A check constraint requires `model` and `prompt_version` on every `source = 'ai'` question.
+**Provenance.** Every generated question has `model` (the generator), `prompt_version` (`PROMPT_VERSION` in `prompts.js`; bump it whenever a prompt, schema or check changes) and `generation_job_id`; the job also records `solver_model` and `created_by`. A check constraint requires `model` and `prompt_version` on every `source = 'ai'` question.
 
-**Jobs.** `gen_claim_job` takes a 170 s lease (`locked_until`), so two calls never run the same job at once; a call that dies mid-batch leaves a lease that simply expires, and the next `run` resumes the job. A job finishes `done` once it has inserted `requested` questions, or after `3 × ceil(requested / batch size)` batches: `done` if it inserted anything, `failed` if not. `last_error` holds the latest batch's error (bad API key, timeouts, malformed output). Admins can read jobs; only the function (`service_role`) writes them.
+**Jobs.** `gen_claim_job` takes a 170 s lease (`locked_until`), so two calls never run the same job at once; a call that dies mid-batch leaves a lease that simply expires, and the next `run` resumes the job. A job finishes `done` once it has inserted `requested` questions, or after `3 × ceil(requested / batch size)` batches: `done` if it inserted anything, `failed` if not. `last_error` holds the latest batch's error (bad API key, timeouts, malformed output). Admins can read jobs; only the API (server-side) writes them.
 
 **Limits per admin** (fixed windows in `private.rate_limits`): 20 requests a minute, 10 new jobs an hour, 300 requested questions per 24 h (`GENERATE_REQUESTS_PER_MINUTE`, `GENERATE_JOBS_PER_HOUR`, `GENERATE_QUESTIONS_PER_DAY`).
 
-**Embeddings** live in `private.question_embeddings` (HNSW, cosine), outside the Data API and `audit_log`. Editing a question's stem drops its embedding; it is re-embedded the next time a job runs in that subtopic. The similarity check covers every embedded question, but only subtopics that have had a job are backfilled.
+**Embeddings** live in `private.question_embeddings` (HNSW, cosine), outside the Data API and `audit_log`. Editing a question's stem drops its embedding; it is re-embedded the next time a job runs in that subtopic. Embeddings made with another model than the current `EMBEDDING_MODEL` (e.g. the old Edge Function's `gte-small`) are dropped at the start of a batch and re-made the same way. The similarity check covers every embedded question, but only subtopics that have had a job are backfilled.
 
 **Setup.**
 
-```bash
-npx supabase secrets set OPEN_ROUTER_API_KEY=sk-or-...
-# optional: QUESTION_MODEL (default google/gemini-2.0-flash-001), QUESTION_VERIFY_MODEL (default openai/gpt-4o-mini),
-# LLM_BASE_URL (any OpenAI-compatible API with json_schema response_format; default OpenRouter), SITE_URL, GENERATE_*
-npx supabase functions deploy generate-questions
-deno test --allow-read --config supabase/functions/generate-questions/deno.json supabase/functions/generate-questions   # unit tests
-```
+Set `OPEN_ROUTER_API_KEY` in the API's environment (`backend/.env`, or the Vercel project). Optional: `QUESTION_MODEL` (default `google/gemini-2.0-flash-001`), `QUESTION_VERIFY_MODEL` (default `openai/gpt-4o-mini`), `LLM_BASE_URL` (any OpenAI-compatible API with `json_schema` response_format; default OpenRouter), `EMBEDDING_MODEL` / `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY`, `SITE_URL`, `GENERATE_*`. Unit tests: `cd backend && npm test`.
 
 Review queue: `select q.*, j.solver_model from public.questions q join public.question_generation_jobs j on j.id = q.generation_job_id where q.status = 'in_review';`
 
@@ -117,7 +129,7 @@ Plain SQL in `20261001000009_scheduled_jobs.sql`; nothing calls an AI model. pg_
 
 ## Gameplay RPCs
 
-All four are `SECURITY DEFINER` with `search_path = ''`, callable by `authenticated` only, and the only path to grading. Call them with `supabase.rpc` (see `frontend/src/lib/game.js`).
+All four are `SECURITY DEFINER` with `search_path = ''`, callable by `authenticated` only, and the only path to grading. The API exposes them as `POST /rpc/<name>` (`backend/src/routes/rpc.js`, a whitelist of functions and argument types); the frontend calls them through `frontend/src/lib/api.ts`.
 
 | RPC | Does |
 | --- | --- |
@@ -160,7 +172,7 @@ The migration backfills badges already earned (not XP).
 
 **Leaderboards.** `private.leaderboard_all_time` (XP rank, and rating rank among rated players) and `private.leaderboard_weekly` (this league week's XP) are materialized views outside the Data API, refreshed concurrently every 5 minutes, without banned players. Read them with `get_leaderboard(board => 'all_time' | 'rating' | 'weekly', page_size => 50, page_offset => 0)`, which returns `{ board, refreshed_at, total, entries, me }` (`me` is the caller's own row, even off-page).
 
-**Live league board.** Every `league_members` XP change is broadcast (Realtime Broadcast from the database, `realtime.send`) on the private channel `league:<league_id>`, event `member_xp`, payload `{ league_id, user_id, xp, last_xp_at, joined }`. A policy on `realtime.messages` lets only that league's members receive it; a broadcast failure is logged and never blocks scoring. Client: `subscribeToLeague()` in `frontend/src/lib/game.js` (`supabase.channel('league:<id>', { config: { private: true } })`), which refetches standings after a reconnect.
+**League board.** The Compete page polls `get_my_league()` every 20 seconds while it is open. (The earlier Realtime broadcast of league XP changes was removed in `20261002000001_backend_auth.sql`.)
 
 **Other RPCs.** `get_player_profile(handle?)`: level and XP progress, rating, streaks, league tier, solve stats per section and badges (freeze counts only for yourself; banned players are hidden). `get_daily_result(daily_set_id?)`: the share card for today's set (or any set you played): per-question outcome (`correct`/`hinted`/`wrong`/`gave_up`/`unanswered`), score, XP earned, rating change, streak and league rank; never questions or answers.
 
@@ -186,7 +198,7 @@ from (select id from public.questions where status = 'published' order by random
 
 ## Admin area
 
-`frontend/src/pages/Admin` (`/admin/*`), for `profiles.role = 'admin'` only. The UI's role check is cosmetic: reads go through RLS and writes through RLS or the `admin_*` functions (`20261001000013_admin.sql`), which check `private.is_admin()` themselves. Every write lands in `audit_log`.
+`frontend/src/admin` (`/admin/*`, lists and searches through the API's `/admin/*` routes), for `profiles.role = 'admin'` only. The UI's role check is cosmetic: reads go through RLS and writes through RLS or the `admin_*` functions (`20261001000013_admin.sql`), which check `private.is_admin()` themselves. Every write lands in `audit_log`.
 
 | Page | Does | Backed by |
 | --- | --- | --- |
@@ -194,7 +206,7 @@ from (select id from public.questions where status = 'published' order by random
 | Questions | search stem (trigram index) or id; filter by section/topic/subtopic, difficulty, status, source, job; bulk status changes; per-question page with reports and full history | `questions` via RLS, `audit_log.question_ref` |
 | Users | search handle/name/email/id; change role; ban/unban with a reason; attempts | `admin_list_users`, `admin_set_user_role`, `admin_set_user_ban`, `attempts` via RLS |
 | Reports | open → triaged → resolved/dismissed with a note, linked to the question | `reports` via RLS (`reports_audit` trigger) |
-| Generation jobs | start jobs, drive them batch by batch with progress, resume, cancel | `generate-questions` Edge Function |
+| Generation jobs | start jobs, drive them batch by batch with progress, resume, cancel | `POST /admin/generate-questions` (API) |
 | Audit log | filter by entity, action, actor, entity id or question; field-level diffs | `audit_log` via RLS |
 
 - `admin_save_question` saves stem, subtopic, difficulty, time, options, answer key, explanation, hint and tags in one transaction and recomputes `content_hash` in SQL (`private.content_hash`, tested against the JS reference). Options are matched by position, so edited options keep their ids and past attempts stay valid; an option a player picked can't be removed. A hash collision with another question is refused (`23505`).

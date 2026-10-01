@@ -11,7 +11,7 @@ insert into public.tracks (id, slug, name) values
   ('60000000-0000-0000-0000-000000000001', 'cat', 'CAT'),
   ('60000000-0000-0000-0000-000000000002', 'tz-test', 'Timezone test');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into private.accounts (id, email, metadata) values
   ('00000000-0000-0000-0000-0000000000a1', 'alice@example.com', '{"handle":"alice","timezone":"Asia/Kolkata"}'),
   ('00000000-0000-0000-0000-0000000000c1', 'carol@example.com', '{"handle":"carol","timezone":"UTC"}'),
   ('00000000-0000-0000-0000-0000000000e1', 'kiri@example.com',  '{"handle":"kiri","timezone":"Pacific/Kiritimati"}'),

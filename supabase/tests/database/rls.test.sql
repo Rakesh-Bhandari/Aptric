@@ -1,12 +1,12 @@
 -- Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(42);
+select plan(43);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
 -- ---------------------------------------------------------------------------
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into private.accounts (id, email, metadata) values
   ('00000000-0000-0000-0000-00000000000a', 'admin@example.com', '{"full_name":"Ada Admin"}'),
   ('00000000-0000-0000-0000-00000000000b', 'bob@example.com',   '{"handle":"Bob!!", "timezone":"Asia/Kolkata"}'),
   ('00000000-0000-0000-0000-00000000000c', 'bob@other.com',     '{"handle":"bob", "timezone":"Not/AZone"}');
@@ -140,8 +140,13 @@ reset role;
 select ok(
   (select bool_and(before is null and after is null) from public.audit_log where entity_type = 'question_answers'),
   'audit log never stores answer contents');
-select lives_ok($$delete from auth.users where id = '00000000-0000-0000-0000-00000000000b'$$,
+select lives_ok($$delete from private.accounts where id = '00000000-0000-0000-0000-00000000000b'$$,
   'deleting a user cascades through attempts and the append-only xp ledger');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+select throws_ok($$select * from private.accounts$$, '42501', null, 'authenticated users cannot read accounts');
+reset role;
 
 select * from finish();
 rollback;

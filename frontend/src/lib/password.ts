@@ -1,4 +1,4 @@
-// Client-side hint only. Supabase Auth enforces the real password policy.
+// Client-side hint only. The API enforces the real password policy (8+ characters, letters and digits).
 export const passwordStrength = (pwd: string) => {
   let points = 0;
   if (pwd.length >= 8) points++;

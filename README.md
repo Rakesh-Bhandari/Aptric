@@ -8,7 +8,7 @@
 
 ## 📖 Overview
 
-Aptric is a React + TypeScript single-page app on top of **Supabase** (Postgres, Auth, Realtime, Edge Functions, pg_cron). Every game rule (grading, hints, XP, streaks, levels, ratings, leagues, placement, contests) lives in Postgres as RLS policies and `SECURITY DEFINER` RPCs, so the browser never sees an answer key before it has spent its one scoring attempt.
+Aptric is a React + TypeScript single-page app with a **Node.js (Express) API**, deployable to Vercel, on a **Supabase Postgres** database (Supabase is used only as the database). The API owns sign-in (email + password, email links, Google), sessions and AI question generation. Every game rule (grading, hints, XP, streaks, levels, ratings, leagues, placement, contests) lives in Postgres as RLS policies and `SECURITY DEFINER` functions that the API runs as the signed-in user, so the browser never sees an answer key before it has spent its one scoring attempt.
 
 ---
 
@@ -19,11 +19,11 @@ Aptric is a React + TypeScript single-page app on top of **Supabase** (Postgres,
 - **Today**: a daily set per track and level, released at local midnight, with streak, daily goal ring, level and league position
 - **Solve**: one question at a time, timer, keyboard shortcuts (`1`–`4`, `Enter`), paid hints, "Give up & see answer", explanations
 - **Practice**: section → topic → subtopic with mastery stars, search, preferred difficulty and a weak-areas mode
-- **Compete**: live weekly leagues (Bronze → Diamond, via Realtime), weekly / all-time / rating leaderboards, contests
+- **Compete**: weekly leagues (Bronze → Diamond, standings refresh every 20 s), weekly / all-time / rating leaderboards, contests
 - **Progress**: skill radar, activity heatmap, recent daily sets and a mistakes-to-review list
 - **Onboarding**: pick a username, exam goal and daily target, then a 10-question placement test sets your starting level
 - **Profile**: public profile at `/u/:handle`, badges, share card, time zone, theme (light / dark / device), reduced motion
-- Email + password, magic link and Google sign-in (Supabase Auth)
+- Email + password, magic link and Google sign-in (handled by the API)
 
 ### Admins
 
@@ -35,7 +35,7 @@ Aptric is a React + TypeScript single-page app on top of **Supabase** (Postgres,
 
 Five sections: Quantitative Aptitude, Logical Reasoning, Verbal Ability, Data Interpretation and Technical Aptitude, split into topics and subtopics, with exam tags (`tcs-nqt`, `infosys`, `amcat`, `cat`, `gate`, `bank-po`, `ssc`) and easy / medium / hard difficulty. Questions support Markdown and KaTeX math.
 
-AI-generated questions go through the `generate-questions` Edge Function. Each one is schema-validated, de-duplicated by hash and embedding similarity, arithmetic-checked where the options are numeric, and independently solved by a second model before it reaches the review queue. Nothing is published without an admin's approval.
+AI-generated questions go through the API's generation pipeline (`backend/src/generation`). Each one is schema-validated, de-duplicated by hash and embedding similarity, arithmetic-checked where the options are numeric, and independently solved by a second model before it reaches the review queue. Nothing is published without an admin's approval.
 
 ---
 
@@ -44,10 +44,11 @@ AI-generated questions go through the `generate-questions` Edge Function. Each o
 | Layer | Technologies |
 | --- | --- |
 | Frontend | React 19, TypeScript, Vite, TanStack Query, React Router 7, Tailwind CSS v4, Radix UI, KaTeX, Marked |
-| Backend | Supabase: Postgres 17 (RLS, RPCs, pg_cron, pgvector, pg_trgm), Auth, Realtime, Edge Functions (Deno) |
-| AI | OpenRouter (or any OpenAI-compatible API) for generation and verification; Supabase `gte-small` embeddings |
-| Tests | Vitest + Testing Library (frontend), pgTAP (`supabase test db`), `deno test` (Edge Function) |
-| Hosting | Vercel (frontend), Supabase (database and functions) |
+| Backend | Node.js 22, Express 5, `pg`, bcrypt, JWT, Nodemailer (SMTP), Google OAuth |
+| Database | Supabase Postgres 17 (RLS, SQL functions, pg_cron, pgvector, pg_trgm) |
+| AI | OpenRouter (or any OpenAI-compatible API) for generation, verification and embeddings |
+| Tests | Vitest + Testing Library (frontend), `node --test` (backend), pgTAP (`supabase test db`) |
+| Hosting | Vercel (frontend and API), Supabase (database) |
 
 ---
 
@@ -55,24 +56,28 @@ AI-generated questions go through the `generate-questions` Edge Function. Each o
 
 ```text
 .
-├── frontend/                 # web app (React + TypeScript)
+├── frontend/                 # web app (React + TypeScript), deployed to Vercel
 │   ├── src/
 │   │   ├── pages/            # Today, Solve, Practice, Compete, Progress, Profile, Onboarding, …
 │   │   ├── admin/            # admin area
 │   │   ├── components/       # UI, layout, charts, markdown, solve
 │   │   ├── context/          # session, preferences, toasts, auth dialog
-│   │   └── lib/              # supabase client, typed RPC wrappers (api.ts), queries
+│   │   └── lib/              # API client + session (http.ts), auth.ts, typed wrappers (api.ts), queries
 │   └── .env.example
 │
-├── supabase/                 # backend
-│   ├── migrations/           # schema, RLS, RPCs, cron jobs, seeds (applied in order)
-│   ├── functions/
-│   │   └── generate-questions/   # AI question generation Edge Function
+├── backend/                  # API (Node.js + Express), deployed to Vercel
+│   ├── api/index.js          # Vercel entry
+│   ├── src/                  # routes (auth, rpc, me, admin), auth, db, AI generation
+│   ├── test/                 # node --test
+│   ├── vercel.json
+│   ├── .env.example
+│   └── README.md             # setup, deploy, auth flows, API reference
+│
+├── supabase/                 # database only
+│   ├── migrations/           # schema, RLS, SQL functions, cron jobs, seeds (applied in order)
 │   ├── tests/database/       # pgTAP tests
 │   ├── types/                # generated database.types.ts
-│   ├── templates/            # auth email templates
-│   ├── README.md             # schema, access model, RPCs, jobs
-│   └── AUTH.md               # auth dashboard settings
+│   └── README.md             # schema, access model, functions, jobs
 │
 └── README.md
 ```
@@ -84,34 +89,36 @@ AI-generated questions go through the `generate-questions` Edge Function. Each o
 ```text
  ┌──────────────────────────────┐
  │  React SPA (Vercel)          │
- │  supabase-js + TanStack Query│
- └──────┬──────────────┬────────┘
-        │ Auth / RPC   │ Realtime (league channel)
-        ▼              ▼
- ┌──────────────────────────────────────────────┐
- │  Supabase                                    │
- │  ┌────────────┐  ┌─────────────────────────┐ │
- │  │ Auth       │  │ Postgres                │ │
- │  └────────────┘  │  RLS + SECURITY DEFINER │ │
- │                  │  RPCs (game rules)      │ │
- │  ┌────────────┐  │  pg_cron jobs           │ │
- │  │ Edge Fn:   │─▶│  pgvector embeddings    │ │
- │  │ generate-  │  └─────────────────────────┘ │
- │  │ questions  │──▶ OpenRouter (generate +    │
- │  └────────────┘    independent solve)        │
- └──────────────────────────────────────────────┘
+ │  TanStack Query + fetch      │
+ └──────────────┬───────────────┘
+                │ HTTPS, Bearer access token
+                ▼
+ ┌──────────────────────────────┐      ┌──────────────────────┐
+ │  Aptric API (Vercel)         │─────▶│ OpenRouter (generate,│
+ │  Express: auth, sessions,    │      │ solve, embeddings)   │
+ │  /rpc, /admin, AI generation │      └──────────────────────┘
+ └──────────────┬───────────────┘
+                │ pg (Supabase pooler), runs SQL as the signed-in user
+                ▼
+ ┌──────────────────────────────┐
+ │  Supabase Postgres           │
+ │  RLS + SECURITY DEFINER      │
+ │  functions (game rules),     │
+ │  accounts, pg_cron, pgvector │
+ └──────────────────────────────┘
 ```
 
-Scheduled jobs (pg_cron, UTC): daily set generation, hourly streak settlement with streak freezes, weekly league rollover, rating updates and leaderboard refreshes. See [supabase/README.md](supabase/README.md#scheduled-jobs-pg_cron).
+Scheduled jobs (pg_cron, UTC): daily set generation, hourly streak settlement with streak freezes, weekly league rollover, rating updates, leaderboard refreshes and expired-session cleanup. See [supabase/README.md](supabase/README.md#scheduled-jobs-pg_cron).
 
 ---
 
 ## 📋 Prerequisites
 
-- Node.js 20+ and npm
+- Node.js 22+ and npm
 - A Supabase project (or Docker for the local stack)
 - Supabase CLI (`npx supabase`)
-- Deno (only to run the Edge Function tests)
+- An SMTP provider for sign-up / sign-in emails (e.g. Resend; optional locally)
+- A Google OAuth client (only for Google sign-in)
 - An OpenRouter API key (only for AI question generation)
 
 ---
@@ -141,27 +148,29 @@ npx supabase link --project-ref <project-ref>
 npx supabase db push          # applies any migrations the project doesn't have yet
 ```
 
-Then configure Auth (site URL, redirect URLs, Google provider, SMTP, email templates) as described in [supabase/AUTH.md](supabase/AUTH.md).
+`20261002000001_backend_auth.sql` moves accounts off Supabase Auth: existing users are copied into `private.accounts` with their passwords. Afterwards turn off sign-ups in Supabase Auth and disable the Data API (see [backend/README.md](backend/README.md#lock-down-the-supabase-project)).
 
-### 3. AI question generation (optional)
+### 3. API (backend)
 
 ```bash
-npx supabase secrets set OPEN_ROUTER_API_KEY=sk-or-...
-npx supabase functions deploy generate-questions
+cd backend
+cp .env.example .env          # DATABASE_URL, JWT_SECRET, FRONTEND_URL, API_URL, SMTP_*, GOOGLE_* ...
+npm install
+npm run dev                   # http://localhost:5000
 ```
 
-Optional secrets: `QUESTION_MODEL`, `QUESTION_VERIFY_MODEL`, `LLM_BASE_URL`, `SITE_URL`, `GENERATE_*` (see [supabase/README.md](supabase/README.md#ai-question-generation-generate-questions)).
+For the local stack use `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres` and `DATABASE_SSL=false`. Without SMTP settings the sign-up / sign-in links are printed in this terminal. AI generation needs `OPEN_ROUTER_API_KEY` (see [backend/.env.example](backend/.env.example)).
 
 ### 4. Frontend
 
 ```bash
 cd frontend
-cp .env.example .env.local    # set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY
+cp .env.example .env.local    # set VITE_API_URL=http://localhost:5000
 npm install
 npm run dev                   # http://localhost:6969
 ```
 
-Only the publishable (anon) key goes in the frontend. Never put the `service_role` key there.
+The frontend only knows the API's URL; no keys or database credentials go there.
 
 ### 5. Make yourself an admin
 
@@ -179,11 +188,11 @@ update public.profiles set role = 'admin' where handle = '<your-handle>';
 # frontend
 cd frontend && npm run lint && npm run typecheck && npm test
 
+# API
+cd backend && npm test
+
 # database (local stack running)
 npx supabase test db
-
-# Edge Function
-deno test --allow-read --config supabase/functions/generate-questions/deno.json supabase/functions/generate-questions
 ```
 
 After changing the schema, regenerate the types:
@@ -196,16 +205,16 @@ npx supabase gen types typescript --local --schema public > supabase/types/datab
 
 ## 🌐 Deployment
 
-- **Frontend**: deploy `frontend/` to Vercel (`frontend/vercel.json`) with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` set.
 - **Database**: `npx supabase db push` to the linked project. The pg_cron schedules are created by the migrations.
-- **Edge Function**: `npx supabase functions deploy generate-questions`.
+- **API**: a Vercel project with Root Directory `backend/` (`backend/vercel.json`) and the variables from `backend/.env.example` (`DATABASE_URL` = the Supabase transaction pooler string). Details in [backend/README.md](backend/README.md#deploy-to-vercel).
+- **Frontend**: a Vercel project with Root Directory `frontend/` (`frontend/vercel.json`) and `VITE_API_URL` set to the API's URL.
 
 ---
 
 ## 📚 Further reading
 
-- [supabase/README.md](supabase/README.md): access model, taxonomy, gameplay RPCs, progression, leagues, learner app, admin area, scheduled jobs
-- [supabase/AUTH.md](supabase/AUTH.md): auth flows and dashboard settings
+- [backend/README.md](backend/README.md): API setup, Vercel deploy, auth flows, routes
+- [supabase/README.md](supabase/README.md): access model, accounts, taxonomy, gameplay functions, progression, leagues, learner app, admin area, AI generation, scheduled jobs
 - [frontend/README.md](frontend/README.md): screens, conventions, theming and accessibility
 
 ---

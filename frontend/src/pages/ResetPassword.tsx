@@ -6,13 +6,13 @@ import { FieldHint, Input, Label } from '@/components/ui/input';
 import { useAuthDialog } from '@/context/AuthDialogContext';
 import { useSession } from '@/context/SessionContext';
 import { useToast } from '@/context/ToastContext';
+import { updatePassword } from '@/lib/auth';
 import { authErrorMessage } from '@/lib/errors';
 import { passwordStrength } from '@/lib/password';
-import { supabase } from '@/lib/supabase';
 import { PageSkeleton } from '@/components/layout/PageSkeleton';
 
 // Reached from the reset email via /auth/callback, which has already signed
-// the user in with a short-lived recovery session.
+// the user in with a fresh session (fresh sessions may set a new password).
 const ResetPassword = () => {
   const { status } = useSession();
   const { openAuth } = useAuthDialog();
@@ -30,9 +30,14 @@ const ResetPassword = () => {
     if (passwordStrength(password).score < 2) { setError('Please choose a stronger password: at least 8 characters, mixing letters and numbers.'); return; }
     setBusy(true);
     setError('');
-    const { error: err } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (err) { setError(authErrorMessage(err)); return; }
+    try {
+      await updatePassword(password);
+    } catch (err) {
+      setError(authErrorMessage(err));
+      return;
+    } finally {
+      setBusy(false);
+    }
     toast.success('Your password has been changed.');
     navigate('/', { replace: true });
   };

@@ -1,16 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import type { Session, User } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import { fetchProfile } from '@/lib/api';
+import { signOut as endSession } from '@/lib/auth';
+import { getSession, onAuthChange, type AuthUser, type Session } from '@/lib/http';
 import { queryClient } from '@/lib/queries';
-import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
 
 interface SessionValue {
   status: 'loading' | 'signed_out' | 'signed_in';
   session: Session | null;
-  user: User | null;
+  user: AuthUser | null;
   profile: Profile | null;
   profileError: unknown;
   isAuthenticated: boolean;
@@ -26,29 +25,22 @@ const SessionContext = createContext<SessionValue | null>(null);
 
 export const profileKey = (id: string | null) => ['profile', id] as const;
 
-// Single source of truth for "who is signed in". Wraps supabase.auth (which
-// persists the session, refreshes tokens and syncs tabs) and loads the
-// matching public.profiles row so guards can check handle/onboarding/role.
+// Single source of truth for "who is signed in". Follows the API session in
+// lib/http (persisted in localStorage, refreshed on demand, synced across
+// tabs) and loads the matching public.profiles row so guards can check
+// handle/onboarding/role.
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
-  const navigate = useNavigate();
-  // undefined until supabase.auth reports INITIAL_SESSION.
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [session, setSession] = useState<Session | null>(getSession);
 
-  useEffect(() => {
-    // Keep this callback synchronous: awaiting other supabase calls inside
-    // onAuthStateChange can deadlock the auth client.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, next) => {
-      setSession(next);
-      if (event === 'SIGNED_OUT') queryClient.clear();
-      if (event === 'PASSWORD_RECOVERY') navigate('/auth/reset-password', { replace: true });
-    });
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  useEffect(() => onAuthChange((event, next) => {
+    setSession(next);
+    if (event === 'SIGNED_OUT') queryClient.clear();
+  }), []);
 
   const userId = session?.user?.id ?? null;
   const profileQuery = useQuery({
     queryKey: profileKey(userId),
-    queryFn: () => fetchProfile(userId as string),
+    queryFn: fetchProfile,
     enabled: !!userId,
     staleTime: 60_000,
   });
@@ -57,18 +49,15 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const { refetch } = profileQuery;
   const refreshProfile = useCallback(() => refetch(), [refetch]);
   // Ends this device's session only; other devices stay signed in.
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut({ scope: 'local' });
-  }, []);
+  const signOut = useCallback(() => endSession(), []);
 
   const value = useMemo<SessionValue>(() => {
     const profile = profileQuery.data && profileQuery.data.id === userId ? profileQuery.data : null;
-    let status: SessionValue['status'] = 'loading';
-    if (session === null) status = 'signed_out';
-    else if (session) status = profile || profileQuery.isError ? 'signed_in' : 'loading';
+    let status: SessionValue['status'] = 'signed_out';
+    if (session) status = profile || profileQuery.isError ? 'signed_in' : 'loading';
     return {
       status,
-      session: session ?? null,
+      session,
       user: session?.user ?? null,
       profile,
       profileError: profileQuery.isError ? profileQuery.error : null,

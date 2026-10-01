@@ -5,11 +5,15 @@ Thumbs.db
 # --- Dependencies ---
 node_modules/
 frontend/node_modules/
+backend/node_modules/
 
 # --- Environment Secrets (CRITICAL) ---
 .env
 .env.local
 .env.*.local
+
+# --- Vercel CLI ---
+.vercel/
 
 # --- Build Outputs ---
 dist/

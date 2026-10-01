@@ -1,16 +1,12 @@
-import { supabase } from '@/lib/supabase';
+import { api, qs } from '@/lib/http';
 
-// Data access for the admin area. Every call runs as the signed-in user, so
-// RLS and the admin_* functions' own is_admin() checks decide what an admin
-// may do; the UI's role check is only cosmetic. Writes are audited in
-// Postgres (row triggers or the admin_* functions), never from here.
+// Data access for the admin area, through the API's /admin and /rpc routes.
+// Every call runs as the signed-in user, so RLS and the admin_* functions'
+// own is_admin() checks decide what an admin may do; the UI's role check is
+// only cosmetic. Writes are audited in Postgres (row triggers or the admin_*
+// functions), never from here.
 
-const unwrap = ({ data, error, count }) => {
-    if (error) throw error;
-    return count === undefined || count === null ? data : { rows: data, count };
-};
-
-const rpc = async (fn, args) => unwrap(await supabase.rpc(fn, args));
+const rpc = (fn, args = {}) => api('POST', `/rpc/${fn}`, args);
 
 export const STATUSES = ['draft', 'in_review', 'published', 'retired'];
 export const DIFFICULTIES = ['easy', 'medium', 'hard'];
@@ -27,55 +23,17 @@ export const errorMessage = (error) => {
 
 // --- Taxonomy ---------------------------------------------------------------
 
-// Sections > topics > subtopics, including inactive ones (admins see all).
-export const loadTaxonomy = async () => {
-    const data = unwrap(await supabase
-        .from('sections')
-        .select('id, name, is_active, sort_order, topics(id, name, is_active, sort_order, subtopics(id, name, is_active, sort_order))')
-        .order('sort_order'));
-    const bySort = (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name);
-    return data.map((s) => ({
-        ...s,
-        topics: [...s.topics].sort(bySort).map((t) => ({ ...t, subtopics: [...t.subtopics].sort(bySort) })),
-    }));
-};
+// Sections > topics > subtopics, including inactive ones (admins see all), sorted.
+export const loadTaxonomy = () => api('GET', '/admin/taxonomy');
 
-export const loadTags = async () =>
-    unwrap(await supabase.from('tags').select('slug, name, kind, is_active').order('kind').order('sort_order'));
+export const loadTags = () => api('GET', '/admin/tags');
 
 // --- Questions ---------------------------------------------------------------
 
-const QUESTION_LIST_COLUMNS = `
-    id, stem, difficulty, status, source, model, created_at, updated_at, reviewed_at, review_note,
-    subtopic:subtopics!inner(id, name, topic:topics!inner(id, name, section:sections!inner(id, name))),
-    open_reports:reports(count)
-`;
-
 // filters: { search, sectionId, topicId, subtopicId, difficulty, status, source, jobId }
-export const searchQuestions = async (filters = {}, { page = 0, pageSize = 25, order = 'newest' } = {}) => {
-    let q = supabase.from('questions').select(QUESTION_LIST_COLUMNS, { count: 'exact' });
-    const search = filters.search?.trim();
-    if (search) {
-        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(search)) q = q.eq('id', search);
-        else q = q.ilike('stem', `%${search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
-    }
-    if (filters.subtopicId) q = q.eq('subtopic_id', filters.subtopicId);
-    else if (filters.topicId) q = q.eq('subtopic.topic_id', filters.topicId);
-    else if (filters.sectionId) q = q.eq('subtopic.topic.section_id', filters.sectionId);
-    if (filters.difficulty) q = q.eq('difficulty', filters.difficulty);
-    if (filters.status) q = q.eq('status', filters.status);
-    if (filters.source) q = q.eq('source', filters.source);
-    if (filters.jobId) q = q.eq('generation_job_id', filters.jobId);
-    // Only count open reports in the embedded aggregate.
-    q = q.in('open_reports.status', ['open', 'triaged']);
-    q = order === 'oldest' ? q.order('created_at', { ascending: true }) : q.order('created_at', { ascending: false });
-    q = q.order('id').range(page * pageSize, page * pageSize + pageSize - 1);
-    const { rows, count } = unwrap(await q);
-    return {
-        count,
-        rows: rows.map((r) => ({ ...r, open_reports: r.open_reports?.[0]?.count ?? 0 })),
-    };
-};
+// Resolves to { rows, count }; each row has subtopic.topic.section and open_reports.
+export const searchQuestions = (filters = {}, { page = 0, pageSize = 25, order = 'newest' } = {}) =>
+    api('GET', `/admin/questions${qs({ ...filters, search: filters.search?.trim(), page, pageSize, order })}`);
 
 export const getQuestion = (id) => rpc('admin_get_question', { target_question_id: id });
 
@@ -98,8 +56,7 @@ export const saveQuestion = (id, draft) => rpc('admin_save_question', {
 export const setQuestionStatus = (ids, status, { note = null, fromStatus = null } = {}) =>
     rpc('admin_set_question_status', { question_ids: ids, new_status: status, note, from_status: fromStatus });
 
-export const countByStatus = async (status) =>
-    unwrap(await supabase.from('questions').select('id', { count: 'exact', head: true }).eq('status', status)).count ?? 0;
+export const countByStatus = async (status) => (await api('GET', `/admin/questions/count${qs({ status })}`)).count;
 
 // --- Users -------------------------------------------------------------------
 
@@ -122,81 +79,45 @@ export const setUserRole = (id, role) => rpc('admin_set_user_role', { target_use
 export const setUserBan = (id, banned, reason = null) =>
     rpc('admin_set_user_ban', { target_user_id: id, banned, reason });
 
-export const listUserAttempts = async (userId, { page = 0, pageSize = 25 } = {}) => unwrap(await supabase
-    .from('attempts')
-    .select('id, context, is_correct, used_hint, xp_awarded, time_ms, created_at, question:questions(id, stem, difficulty, status)', { count: 'exact' })
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .range(page * pageSize, page * pageSize + pageSize - 1));
+export const listUserAttempts = (userId, { page = 0, pageSize = 25 } = {}) =>
+    api('GET', `/admin/users/${encodeURIComponent(userId)}/attempts${qs({ page, pageSize })}`);
 
 // --- Reports -----------------------------------------------------------------
 
-export const listReports = async ({ status = 'open', reason = '', questionId = '' } = {}, { page = 0, pageSize = 25 } = {}) => {
-    let q = supabase
-        .from('reports')
-        .select(`id, reason, details, status, resolution_note, created_at, resolved_at,
-                 reporter:profiles!reports_reporter_id_fkey(id, handle),
-                 resolver:profiles!reports_resolved_by_fkey(id, handle),
-                 question:questions(id, stem, status)`, { count: 'exact' });
-    if (status) q = q.eq('status', status);
-    if (reason) q = q.eq('reason', reason);
-    if (questionId) q = q.eq('question_id', questionId);
-    return unwrap(await q
-        .order('created_at', { ascending: status === 'open' || status === 'triaged' })
-        .range(page * pageSize, page * pageSize + pageSize - 1));
-};
+// status '' lists every status.
+export const listReports = ({ status = 'open', reason = '', questionId = '' } = {}, { page = 0, pageSize = 25 } = {}) =>
+    api('GET', `/admin/reports${qs({ status: status || 'all', reason, questionId, page, pageSize })}`);
 
 // Audited by the reports_audit trigger.
-export const updateReport = async (id, status, resolutionNote = null) => unwrap(await supabase
-    .from('reports')
-    .update({ status, resolution_note: resolutionNote?.trim() || null })
-    .eq('id', id)
-    .select('id')
-    .single());
+export const updateReport = (id, status, resolutionNote = null) =>
+    api('PATCH', `/admin/reports/${encodeURIComponent(id)}`, { status, resolution_note: resolutionNote?.trim() || null });
 
-export const countOpenReports = async () =>
-    unwrap(await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['open', 'triaged'])).count ?? 0;
+export const countOpenReports = async () => (await api('GET', '/admin/reports/open-count')).count;
+
+export const countActiveJobs = async () => (await api('GET', '/admin/jobs/active-count')).count;
 
 // --- Generation jobs -----------------------------------------------------------
 
-export const listJobs = async ({ page = 0, pageSize = 20 } = {}) => unwrap(await supabase
-    .from('question_generation_jobs')
-    .select(`*, creator:profiles!question_generation_jobs_created_by_fkey(handle),
-             subtopic:subtopics(id, name, topic:topics(name, section:sections(name)))`, { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(page * pageSize, page * pageSize + pageSize - 1));
+export const listJobs = ({ page = 0, pageSize = 20 } = {}) => api('GET', `/admin/jobs${qs({ page, pageSize })}`);
 
-// The generate-questions Edge Function. Each call runs at most one batch and
-// returns { job, batch? }; errors carry the HTTP status and body.
+// POST /admin/generate-questions. Each call runs at most one batch and
+// returns { job, batch? }; errors carry the HTTP status, Retry-After and job.
 export const callGenerator = async (body) => {
-    const { data, error } = await supabase.functions.invoke('generate-questions', { body });
-    if (error) {
-        let payload = {};
-        try { payload = await error.context?.json?.(); } catch { /* not JSON */ }
-        const err = new Error(payload?.error || error.message);
-        err.status = error.context?.status;
-        err.retryAfter = payload?.retry_after_seconds;
-        err.job = payload?.job;
+    try {
+        return await api('POST', '/admin/generate-questions', body);
+    } catch (error) {
+        const err = new Error(error.message);
+        err.status = error.status;
+        err.retryAfter = error.details?.retry_after_seconds;
+        err.job = error.details?.job;
         throw err;
     }
-    return data;
 };
 
 // --- Audit log -----------------------------------------------------------------
 
 // filters: { entityType, action, actorId, entityId, questionRef, since }
-export const listAudit = async (filters = {}, { page = 0, pageSize = 50 } = {}) => {
-    let q = supabase
-        .from('audit_log')
-        .select('id, action, entity_type, entity_id, question_ref, before, after, created_at, actor:profiles(id, handle)', { count: 'exact' });
-    if (filters.entityType) q = q.eq('entity_type', filters.entityType);
-    if (filters.action) q = q.eq('action', filters.action);
-    if (filters.actorId) q = q.eq('actor_id', filters.actorId);
-    if (filters.entityId) q = q.eq('entity_id', filters.entityId.trim());
-    if (filters.questionRef) q = q.eq('question_ref', filters.questionRef.trim());
-    if (filters.since) q = q.gte('created_at', filters.since);
-    return unwrap(await q
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: false })
-        .range(page * pageSize, page * pageSize + pageSize - 1));
-};
+export const listAudit = (filters = {}, { page = 0, pageSize = 50 } = {}) =>
+    api('GET', `/admin/audit${qs({
+        ...filters, entityId: filters.entityId?.trim(), questionRef: filters.questionRef?.trim(), page, pageSize,
+    })}`);

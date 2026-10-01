@@ -86,7 +86,8 @@ allowed_cidrs_v6 = ["::/0"]
 # enabled = true
 
 [realtime]
-enabled = true
+# Not used: the app polls league standings through the API.
+enabled = false
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
 # ip_version = "IPv6"
 # The maximum length in bytes of HTTP request headers. (default: 4096)
@@ -153,6 +154,10 @@ max_indexes = 5
 # Vector Buckets is available to Supabase Pro plan.
 # [storage.vector.buckets.documents-openai]
 
+# Supabase Auth is not used: accounts, sessions and email links live in the
+# Node API (backend/) and private.accounts. The Auth service stays on locally
+# only because its migrations provide the auth schema (auth.uid()) that the
+# SQL functions and pgTAP tests read; nobody can sign up through it.
 [auth]
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
@@ -174,7 +179,7 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
-enable_signup = true
+enable_signup = false
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
@@ -219,7 +224,7 @@ web3 = 30
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
-enable_signup = true
+enable_signup = false
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
@@ -243,23 +248,6 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
-
-# Email links point at /auth/callback with a token_hash (see supabase/AUTH.md).
-[auth.email.template.confirmation]
-subject = "Confirm your Aptric email"
-content_path = "./supabase/templates/confirmation.html"
-
-[auth.email.template.magic_link]
-subject = "Your Aptric sign-in link"
-content_path = "./supabase/templates/magic_link.html"
-
-[auth.email.template.recovery]
-subject = "Reset your Aptric password"
-content_path = "./supabase/templates/recovery.html"
-
-[auth.email.template.email_change]
-subject = "Confirm your new Aptric email"
-content_path = "./supabase/templates/email_change.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
@@ -347,7 +335,7 @@ skip_nonce_check = false
 # If enabled, it will allow the user to successfully authenticate when the provider does not return an email address.
 email_optional = false
 
-# Google sign-in. Off locally unless you export the two env vars below; see supabase/AUTH.md.
+# Google sign-in is handled by the Node API (backend/), not Supabase Auth.
 [auth.external.google]
 enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
@@ -395,7 +383,8 @@ authorization_url_path = "/oauth/consent"
 allow_dynamic_registration = false
 
 [edge_runtime]
-enabled = true
+# Not used: AI question generation runs in the Node API (backend/).
+enabled = false
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
 # `oneshot` — fallback mode if hot reload causes issues (e.g. in large repos or with symlinks).
@@ -407,13 +396,6 @@ deno_version = 2
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
-
-# Admin-only AI question generation (the function also checks the caller is an admin).
-[functions.generate-questions]
-enabled = true
-verify_jwt = true
-import_map = "./functions/generate-questions/deno.json"
-entrypoint = "./functions/generate-questions/index.ts"
 
 [analytics]
 enabled = true
