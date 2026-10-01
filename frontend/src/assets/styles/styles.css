@@ -833,7 +833,7 @@ h1 {
     }
 }
 
-/* MagicBento Setup */
+/* Card glow (driven by the spotlight effect in App.jsx) */
 .card,
 .topic-card,
 .stat-card,

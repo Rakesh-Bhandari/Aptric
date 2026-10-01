@@ -154,7 +154,6 @@ Each category contains questions classified into:
 │   └── vite.config.js
 │
 ├── env.txt
-├── package.json
 └── README.md
 ```
 
@@ -278,15 +277,7 @@ cd Aptric
 
 ---
 
-## 2. Install Root Dependencies
-
-```bash
-npm install
-```
-
----
-
-## 3. Install Backend Dependencies
+## 2. Install Backend Dependencies
 
 ```bash
 cd backend
@@ -296,7 +287,7 @@ npm install
 
 ---
 
-## 4. Install Frontend Dependencies
+## 3. Install Frontend Dependencies
 
 ```bash
 cd ../frontend
