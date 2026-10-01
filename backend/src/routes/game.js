@@ -3,7 +3,7 @@ import { z } from 'zod';
 import dbPool from '../config/db.js';
 import { isLoggedIn } from '../middleware/auth.js';
 import { getOrAssignDailyLog } from '../services/questionBank.js';
-import { getTodayDate, calculateLevel, POINTS_CORRECT, POINTS_WRONG, POINTS_HINT, POINTS_GIVEUP } from '../utils/helpers.js';
+import { getTodayDate, getYesterdayDate, calculateLevel, POINTS_CORRECT, POINTS_WRONG, POINTS_HINT, POINTS_GIVEUP } from '../utils/helpers.js';
 import { submitAnswerLimiter, useHintLimiter, giveUpLimiter } from '../middleware/rateLimit.js';
 import { validate, qid } from '../middleware/validate.js';
 
@@ -23,6 +23,28 @@ async function updateGameStats(userId, points, conn) {
     const [[{ score }]] = await conn.query('SELECT score FROM users WHERE user_id = ?', [userId]);
     const newLevel = calculateLevel(score);
     await conn.query('UPDATE users SET level = ? WHERE user_id = ?', [newLevel, userId]);
+}
+
+// Streak rule: a day counts once the user finishes (correct / wrong / give-up)
+// at least one of that day's daily questions. On the first such answer of the
+// day the streak continues if the last streak day was yesterday, otherwise it
+// restarts at 1; later answers the same day are no-ops (the WHERE clause).
+// Topic-practice answers don't count. Must run inside the scoring transaction.
+async function recordStreakDay(conn, userId, questionId, today) {
+    const [[inDailySet]] = await conn.query(
+        `SELECT 1 FROM user_daily_log
+         WHERE user_id = ? AND challenge_date = ? AND JSON_CONTAINS(question_ids_json, CAST(? AS JSON))`,
+        [userId, today, questionId]
+    );
+    if (!inDailySet) return;
+
+    await conn.query(
+        `UPDATE users
+         SET day_streak = CASE WHEN last_streak_date = ? THEN day_streak + 1 ELSE 1 END,
+             last_streak_date = ?
+         WHERE user_id = ? AND (last_streak_date IS NULL OR last_streak_date <> ?)`,
+        [getYesterdayDate(today), today, userId, today]
+    );
 }
 
 // Loads a daily log's questions in the order they were stored.
@@ -192,6 +214,7 @@ router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, validate({ body: 
         }
 
         await updateGameStats(userId, awarded, conn);
+        await recordStreakDay(conn, userId, question.question_id, today);
 
         await conn.commit();
         const { correct_answer_index, explanation, hint } = question;
@@ -289,6 +312,7 @@ router.post('/give-up', isLoggedIn, giveUpLimiter, validate({ body: qidSchema })
         }
 
         await updateGameStats(userId, POINTS_GIVEUP, conn);
+        await recordStreakDay(conn, userId, question.question_id, today);
 
         await conn.commit();
         const { correct_answer_index, explanation, hint } = question;

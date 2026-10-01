@@ -15,7 +15,7 @@
   "crons": [
     {
       "path": "/api/cron/streak-check",
-      "schedule": "0 0 * * *"
+      "schedule": "35 18 * * *"
     },
     {
       "path": "/api/cron/question-bank",

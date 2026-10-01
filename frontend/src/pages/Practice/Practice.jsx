@@ -4,6 +4,7 @@ import Markdown from '../../components/Markdown/Markdown';
 import API_BASE_URL from '../../utils/config';
 import { useToast } from '../../context/ToastContext';
 import useAntiCheat from '../../hooks/useAntiCheat';
+import { msUntilProductMidnight } from '../../utils/time';
 
 const Icons = {
     Target: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>,
@@ -130,9 +131,7 @@ const Practice = () => {
         init();
 
         const countdownInterval = setInterval(() => {
-            const now = new Date();
-            const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-            const diff = midnight.getTime() - now.getTime();
+            const diff = msUntilProductMidnight();
             if (diff <= 0) { setCountdownTime('00:00:00'); return; }
             const h = Math.floor(diff / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
