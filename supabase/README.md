@@ -20,8 +20,8 @@ Auth flows and the exact dashboard settings (SMTP, providers, rate limits, email
 | --- | --- |
 | `anon` | nothing |
 | authenticated user | read active taxonomy and tag catalog, published questions/options/tags (plus questions they've attempted), released daily sets, levels, league tiers, track sections; read own profile, attempts, xp_events, reports, feedback, streak freeze uses, league memberships; update own `handle`, `display_name`, `avatar_url`, `bio`, `timezone`, `track_id`; insert reports/feedback; play via `get_today_set`, `submit_answer`, `use_hint`, `give_up`; standings via `get_my_league` |
-| admin (`profiles.role = 'admin'`) | everything above + full CRUD on content tables, read all profiles/attempts/xp/reports/feedback/audit_log, update report/feedback status; `admin_get_question_answer`, `admin_upsert_question_answer`, `admin_set_user_role` RPCs |
-| `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` or write `attempts`, `xp_events`, `hint_uses`, league tables, `streak_freeze_uses` and `profiles.role/level/xp/rating/streak*/league_tier` |
+| admin (`profiles.role = 'admin'`) | everything above + full CRUD on content tables, read all profiles/attempts/xp/reports/feedback/audit_log/`question_generation_jobs`, update report/feedback status; the `generate-questions` Edge Function; `admin_get_question_answer`, `admin_upsert_question_answer`, `admin_set_user_role` RPCs |
+| `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` or write `attempts`, `xp_events`, `hint_uses`, league tables, `streak_freeze_uses`, `question_generation_jobs` and `profiles.role/level/xp/rating/streak*/league_tier` |
 
 Notes:
 
@@ -29,7 +29,7 @@ Notes:
 - Column-level privileges (not RLS) protect the game columns on `profiles`, so the rule holds for admins too.
 - `xp_events` and `audit_log` are append-only: updates, direct deletes and truncates raise errors even for `service_role`. Rows still go away when a user is deleted (FK cascade).
 - Attempt uniqueness is `(user_id, question_id, context, daily_set_id)` with `NULLS NOT DISTINCT`, so a user gets one practice attempt per question and one attempt per question per daily set.
-- `questions.content_hash` is a lowercase sha256 hex digest the writer computes over the normalised stem + options: lower-case each, turn every run of characters other than `[a-z0-9]` into one space, trim; then hash the stem, a newline, and the options sorted and newline-joined (so reordered options still collide). `contentHash()` in `scripts/import-v1-questions.mjs` is the reference implementation.
+- `questions.content_hash` is a lowercase sha256 hex digest the writer computes over the normalised stem + options: lower-case each, turn every run of characters other than `[a-z0-9]` into one space, trim; then hash the stem, a newline, and the options sorted and newline-joined (so reordered options still collide). `contentHash()` in `scripts/import-v1-questions.mjs` is the reference implementation (`functions/generate-questions/dedup.ts` is tested against it).
 - `question_tags.tag` must name a row in `tags` (the catalog; `kind` is `exam` or `general`).
 - Content changes (taxonomy, tags, questions, options, answers, daily sets) are written to `audit_log` by trigger, with `actor_id = auth.uid()`.
 
@@ -62,6 +62,51 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f v1-import.sql   # direct/session conn
 - Skipped: v1 `status = 'rejected'` (unless `--include-rejected`), unknown categories, fewer than 2 or more than 10 options, empty text/options, and exact content duplicates (the oldest copy wins). An unknown difficulty becomes `medium`. Stderr has the summary; `--report` writes a per-question CSV with the guessed subtopic and notes.
 - `private.v1_question_import` maps each v1 `question_id`/`qid` to its v2 question, with `outcome` (`inserted`, or `duplicate` of an existing v2 question with the same `content_hash`), `classified_by` and `notes`. Re-running skips v1 rows already there, so the script is safe to repeat with a newer export.
 - Review queue: `select q.*, m.classified_by, m.notes from public.questions q join private.v1_question_import m on m.question_id = q.id where q.status = 'in_review';`
+
+## AI question generation (`generate-questions`)
+
+An admin-only Edge Function (`functions/generate-questions`). A **job** is one subtopic + difficulty + count (1–50). Each call works through **one batch** of up to 5 questions (`GENERATE_BATCH_SIZE`, max 10), so no invocation gets near the Edge Function time limit; the caller repeats `run` while the job is `queued` or `running`. Every response is `{ job, batch? }`, where `job` is the `question_generation_jobs` row.
+
+```js
+const call = (body) => supabase.functions.invoke('generate-questions', { body });
+let { data } = await call({ action: 'create', subtopic_id, difficulty: 'medium', count: 20 }); // runs the first batch
+while (data.job.status === 'queued' || data.job.status === 'running') {
+  ({ data } = await call({ action: 'run', job_id: data.job.id }));
+}
+// also: { action: 'status', job_id } and { action: 'cancel', job_id }
+```
+
+Errors: `401` no/invalid session, `403` not an admin, `400` bad body, `404` unknown job/subtopic, `409` a batch of that job is already running (`retry_after_seconds`), `429` rate limited (`Retry-After`).
+
+**One batch** (`pipeline.ts`); anything that fails a step is dropped and counted on the job, never repaired:
+
+1. Embed (Supabase's built-in `gte-small`, 384-d) up to 10 existing questions in the subtopic that have no embedding yet (imports, hand-written questions, edited stems), so they count for step 4.
+2. Generate with `QUESTION_MODEL` using structured output: the JSON schema is derived from the zod schemas in `schemas.ts`, and every item is validated with zod (4 distinct options, key index, explanation, hint, `est_seconds`, `computation`) → `dropped_invalid`.
+3. Exact duplicates by `content_hash`, within the batch and against the bank → `dropped_duplicate_hash`.
+4. Near duplicates: cosine similarity of stem + options embeddings **> 0.92** to another question in the batch or any non-retired question → `dropped_duplicate_similar`.
+5. Computed check, for Quantitative Aptitude questions whose options are all numbers (`₹1,250`, `12.5%`, `3/4`, `45 km/h`): the generator must give `computation`, an arithmetic expression (numbers, `+ - * / ^`, `sqrt`, `nCr`, `fact`, …; no variables) that `numeric.ts` evaluates without `eval`. It must equal the keyed option and no other option → `dropped_computed`. Integers, one-decimal values and fractions must match exactly; options shown with 2+ decimals, or any option when the stem says "approximately", match anything that rounds to them.
+6. Independent solve with `QUESTION_VERIFY_MODEL` (by default a different vendor's model), temperature 0, options shuffled, never shown the key or explanation. It must choose the keyed option → `dropped_solver` (a failed or timed-out solve counts as a disagreement). If it gives a computation for a numeric question, that must match too → `dropped_computed`.
+7. Insert through `gen_insert_question`: one transaction that, under an advisory lock, re-checks the hash and similarity (so concurrent jobs can't both insert a question) and the job's quota, then writes the question as **`status = 'in_review'`, `source = 'ai'`**, its options in a fresh random order, the answer key, and the embedding.
+
+**Provenance.** Every generated question has `model` (the generator), `prompt_version` (`PROMPT_VERSION` in `prompts.ts`; bump it whenever a prompt, schema or check changes) and `generation_job_id`; the job also records `solver_model` and `created_by`. A check constraint requires `model` and `prompt_version` on every `source = 'ai'` question.
+
+**Jobs.** `gen_claim_job` takes a 170 s lease (`locked_until`), so two calls never run the same job at once; a call that dies mid-batch leaves a lease that simply expires, and the next `run` resumes the job. A job finishes `done` once it has inserted `requested` questions, or after `3 × ceil(requested / batch size)` batches: `done` if it inserted anything, `failed` if not. `last_error` holds the latest batch's error (bad API key, timeouts, malformed output). Admins can read jobs; only the function (`service_role`) writes them.
+
+**Limits per admin** (fixed windows in `private.rate_limits`): 20 requests a minute, 10 new jobs an hour, 300 requested questions per 24 h (`GENERATE_REQUESTS_PER_MINUTE`, `GENERATE_JOBS_PER_HOUR`, `GENERATE_QUESTIONS_PER_DAY`).
+
+**Embeddings** live in `private.question_embeddings` (HNSW, cosine), outside the Data API and `audit_log`. Editing a question's stem drops its embedding; it is re-embedded the next time a job runs in that subtopic. The similarity check covers every embedded question, but only subtopics that have had a job are backfilled.
+
+**Setup.**
+
+```bash
+npx supabase secrets set OPEN_ROUTER_API_KEY=sk-or-...
+# optional: QUESTION_MODEL (default google/gemini-2.0-flash-001), QUESTION_VERIFY_MODEL (default openai/gpt-4o-mini),
+# LLM_BASE_URL (any OpenAI-compatible API with json_schema response_format; default OpenRouter), SITE_URL, GENERATE_*
+npx supabase functions deploy generate-questions
+deno test --allow-read --config supabase/functions/generate-questions/deno.json supabase/functions/generate-questions   # unit tests
+```
+
+Review queue: `select q.*, j.solver_model from public.questions q join public.question_generation_jobs j on j.id = q.generation_job_id where q.status = 'in_review';`
 
 ## Tracks and daily sets
 

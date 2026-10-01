@@ -568,6 +568,96 @@ export type Database = {
           },
         ];
       };
+      question_generation_jobs: {
+        Row: {
+          batches: number;
+          created_at: string;
+          created_by: string | null;
+          difficulty: Database["public"]["Enums"]["question_difficulty"];
+          dropped_computed: number;
+          dropped_duplicate_hash: number;
+          dropped_duplicate_similar: number;
+          dropped_invalid: number;
+          dropped_solver: number;
+          finished_at: string | null;
+          id: string;
+          inserted: number;
+          last_error: string | null;
+          locked_until: string | null;
+          max_batches: number;
+          model: string;
+          prompt_version: string;
+          requested: number;
+          solver_model: string;
+          status: Database["public"]["Enums"]["generation_job_status"];
+          subtopic_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          batches?: number;
+          created_at?: string;
+          created_by?: string | null;
+          difficulty: Database["public"]["Enums"]["question_difficulty"];
+          dropped_computed?: number;
+          dropped_duplicate_hash?: number;
+          dropped_duplicate_similar?: number;
+          dropped_invalid?: number;
+          dropped_solver?: number;
+          finished_at?: string | null;
+          id?: string;
+          inserted?: number;
+          last_error?: string | null;
+          locked_until?: string | null;
+          max_batches: number;
+          model: string;
+          prompt_version: string;
+          requested: number;
+          solver_model: string;
+          status?: Database["public"]["Enums"]["generation_job_status"];
+          subtopic_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          batches?: number;
+          created_at?: string;
+          created_by?: string | null;
+          difficulty?: Database["public"]["Enums"]["question_difficulty"];
+          dropped_computed?: number;
+          dropped_duplicate_hash?: number;
+          dropped_duplicate_similar?: number;
+          dropped_invalid?: number;
+          dropped_solver?: number;
+          finished_at?: string | null;
+          id?: string;
+          inserted?: number;
+          last_error?: string | null;
+          locked_until?: string | null;
+          max_batches?: number;
+          model?: string;
+          prompt_version?: string;
+          requested?: number;
+          solver_model?: string;
+          status?: Database["public"]["Enums"]["generation_job_status"];
+          subtopic_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_generation_jobs_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "question_generation_jobs_subtopic_id_fkey";
+            columns: ["subtopic_id"];
+            isOneToOne: false;
+            referencedRelation: "subtopics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       question_options: {
         Row: {
           body: string;
@@ -644,7 +734,10 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["question_difficulty"];
           difficulty_rating: number;
           est_seconds: number;
+          generation_job_id: string | null;
           id: string;
+          model: string | null;
+          prompt_version: string | null;
           published_at: string | null;
           source: Database["public"]["Enums"]["question_source"];
           status: Database["public"]["Enums"]["question_status"];
@@ -659,7 +752,10 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["question_difficulty"];
           difficulty_rating?: number;
           est_seconds?: number;
+          generation_job_id?: string | null;
           id?: string;
+          model?: string | null;
+          prompt_version?: string | null;
           published_at?: string | null;
           source?: Database["public"]["Enums"]["question_source"];
           status?: Database["public"]["Enums"]["question_status"];
@@ -674,7 +770,10 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["question_difficulty"];
           difficulty_rating?: number;
           est_seconds?: number;
+          generation_job_id?: string | null;
           id?: string;
+          model?: string | null;
+          prompt_version?: string | null;
           published_at?: string | null;
           source?: Database["public"]["Enums"]["question_source"];
           status?: Database["public"]["Enums"]["question_status"];
@@ -688,6 +787,13 @@ export type Database = {
             columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "questions_generation_job_id_fkey";
+            columns: ["generation_job_id"];
+            isOneToOne: false;
+            referencedRelation: "question_generation_jobs";
             referencedColumns: ["id"];
           },
           {
@@ -1101,6 +1207,46 @@ export type Database = {
         };
         Returns: undefined;
       };
+      gen_claim_job: {
+        Args: { p_job_id: string; p_lease_seconds: number };
+        Returns: Database["public"]["Tables"]["question_generation_jobs"]["Row"];
+      };
+      gen_finish_batch: {
+        Args: { p_error?: string; p_job_id: string; p_stats: Json };
+        Returns: Database["public"]["Tables"]["question_generation_jobs"]["Row"];
+      };
+      gen_insert_question: {
+        Args: {
+          p_content_hash: string;
+          p_correct_index: number;
+          p_embedding: string;
+          p_embedding_model: string;
+          p_est_seconds: number;
+          p_explanation: string;
+          p_hint: string;
+          p_job_id: string;
+          p_options: string[];
+          p_similarity_threshold: number;
+          p_stem: string;
+        };
+        Returns: Json;
+      };
+      gen_nearest_question: {
+        Args: { p_embedding: string };
+        Returns: { question_id: string; similarity: number }[];
+      };
+      gen_questions_missing_embeddings: {
+        Args: { p_limit: number; p_subtopic_id: string };
+        Returns: { options: string[]; question_id: string; stem: string }[];
+      };
+      gen_rate_limit: {
+        Args: { p_bucket: string; p_max: number; p_subject: string; p_window_seconds: number };
+        Returns: { allowed: boolean; retry_after_seconds: number }[];
+      };
+      gen_store_embeddings: {
+        Args: { p_model: string; p_rows: Json };
+        Returns: number;
+      };
       get_my_league: { Args: never; Returns: Json };
       get_today_set: { Args: never; Returns: Json };
       give_up: {
@@ -1125,6 +1271,7 @@ export type Database = {
       attempt_context: "daily" | "practice" | "assessment";
       feedback_category: "general" | "bug" | "feature" | "content" | "other";
       feedback_status: "new" | "read" | "archived";
+      generation_job_status: "queued" | "running" | "done" | "failed" | "cancelled";
       league_outcome: "promoted" | "stayed" | "demoted";
       question_difficulty: "easy" | "medium" | "hard";
       question_source: "manual" | "ai" | "import";
@@ -1251,6 +1398,7 @@ export const Constants = {
       attempt_context: ["daily", "practice", "assessment"],
       feedback_category: ["general", "bug", "feature", "content", "other"],
       feedback_status: ["new", "read", "archived"],
+      generation_job_status: ["queued", "running", "done", "failed", "cancelled"],
       league_outcome: ["promoted", "stayed", "demoted"],
       question_difficulty: ["easy", "medium", "hard"],
       question_source: ["manual", "ai", "import"],
