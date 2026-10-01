@@ -1,5 +1,5 @@
 // Chat completions with structured (JSON schema) output against an
-// OpenAI-compatible API. Defaults to OpenRouter, like the v1 backend.
+// OpenAI-compatible API. Defaults to OpenRouter.
 
 export class LlmError extends Error {
   constructor(message: string, readonly status?: number) {

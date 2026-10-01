@@ -264,7 +264,7 @@ create extension if not exists pg_trgm with schema extensions;
 create index questions_stem_trgm_idx on public.questions using gin (stem extensions.gin_trgm_ops);
 
 -- content_hash as defined in supabase/README.md; must match contentHash() in
--- scripts/import-v1-questions.mjs. After normalising only [a-z0-9 ] remain, so
+-- functions/generate-questions/dedup.ts. After normalising only [a-z0-9 ] remain, so
 -- sorting with the "C" collation matches JavaScript's default sort.
 create or replace function private.normalise_text(s text)
 returns text

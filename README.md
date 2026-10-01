@@ -8,9 +8,7 @@
 
 ## 📖 Overview
 
-Aptric v2 is a React + TypeScript single-page app on top of **Supabase** (Postgres, Auth, Realtime, Edge Functions, pg_cron). Every game rule (grading, hints, XP, streaks, levels, ratings, leagues, placement, contests) lives in Postgres as RLS policies and `SECURITY DEFINER` RPCs, so the browser never sees an answer key before it has spent its one scoring attempt.
-
-The original v1 app (Express + TiDB/MySQL in `backend/`) is still in the repo and stays deployed until the v1 → v2 cutover in [supabase/MIGRATION.md](supabase/MIGRATION.md).
+Aptric is a React + TypeScript single-page app on top of **Supabase** (Postgres, Auth, Realtime, Edge Functions, pg_cron). Every game rule (grading, hints, XP, streaks, levels, ratings, leagues, placement, contests) lives in Postgres as RLS policies and `SECURITY DEFINER` RPCs, so the browser never sees an answer key before it has spent its one scoring attempt.
 
 ---
 
@@ -50,7 +48,6 @@ AI-generated questions go through the `generate-questions` Edge Function. Each o
 | AI | OpenRouter (or any OpenAI-compatible API) for generation and verification; Supabase `gte-small` embeddings |
 | Tests | Vitest + Testing Library (frontend), pgTAP (`supabase test db`), `deno test` (Edge Function) |
 | Hosting | Vercel (frontend), Supabase (database and functions) |
-| Legacy v1 | Express, TiDB/MySQL, Passport, Cloudinary, Nodemailer, Vercel Cron (`backend/`) |
 
 ---
 
@@ -58,7 +55,7 @@ AI-generated questions go through the `generate-questions` Edge Function. Each o
 
 ```text
 .
-├── frontend/                 # v2 web app (React + TypeScript)
+├── frontend/                 # web app (React + TypeScript)
 │   ├── src/
 │   │   ├── pages/            # Today, Solve, Practice, Compete, Progress, Profile, Onboarding, …
 │   │   ├── admin/            # admin area
@@ -67,19 +64,16 @@ AI-generated questions go through the `generate-questions` Edge Function. Each o
 │   │   └── lib/              # supabase client, typed RPC wrappers (api.ts), queries
 │   └── .env.example
 │
-├── supabase/                 # v2 backend
+├── supabase/                 # backend
 │   ├── migrations/           # schema, RLS, RPCs, cron jobs, seeds (applied in order)
 │   ├── functions/
 │   │   └── generate-questions/   # AI question generation Edge Function
 │   ├── tests/database/       # pgTAP tests
 │   ├── types/                # generated database.types.ts
-│   ├── scripts/              # v1 question / user import and rollback
 │   ├── templates/            # auth email templates
 │   ├── README.md             # schema, access model, RPCs, jobs
-│   ├── AUTH.md               # auth dashboard settings
-│   └── MIGRATION.md          # v1 → v2 user migration and cutover runbook
+│   └── AUTH.md               # auth dashboard settings
 │
-├── backend/                  # legacy v1 API (Express + TiDB), kept until cutover
 └── README.md
 ```
 
@@ -190,9 +184,6 @@ npx supabase test db
 
 # Edge Function
 deno test --allow-read --config supabase/functions/generate-questions/deno.json supabase/functions/generate-questions
-
-# v1 import scripts
-node --test supabase/scripts/*.test.mjs
 ```
 
 After changing the schema, regenerate the types:
@@ -208,14 +199,6 @@ npx supabase gen types typescript --local --schema public > supabase/types/datab
 - **Frontend**: deploy `frontend/` to Vercel (`frontend/vercel.json`) with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` set.
 - **Database**: `npx supabase db push` to the linked project. The pg_cron schedules are created by the migrations.
 - **Edge Function**: `npx supabase functions deploy generate-questions`.
-- **Legacy v1**: `backend/` deploys to Vercel with its own `.env` (see `backend/.env.example`) and Vercel Cron, until cutover.
-
----
-
-## 🔄 Migrating from v1
-
-- Questions: `supabase/scripts/import-v1-questions.mjs` turns a TiDB/MySQL export into one transactional SQL script ([details](supabase/README.md#importing-v1-questions)).
-- Users, scores, streaks, history and feedback: export, dry run, import, verify and the cutover/rollback checklist are in [supabase/MIGRATION.md](supabase/MIGRATION.md).
 
 ---
 
@@ -223,7 +206,6 @@ npx supabase gen types typescript --local --schema public > supabase/types/datab
 
 - [supabase/README.md](supabase/README.md): access model, taxonomy, gameplay RPCs, progression, leagues, learner app, admin area, scheduled jobs
 - [supabase/AUTH.md](supabase/AUTH.md): auth flows and dashboard settings
-- [supabase/MIGRATION.md](supabase/MIGRATION.md): v1 → v2 user migration and cutover
 - [frontend/README.md](frontend/README.md): screens, conventions, theming and accessibility
 
 ---

@@ -1,5 +1,5 @@
 // content_hash and embedding helpers. contentHash must stay identical to
-// contentHash() in supabase/scripts/import-v1-questions.mjs (see README).
+// private.content_hash() in the database (see supabase/README.md).
 
 // Lower-case, every run of characters other than [a-z0-9] becomes one space, trimmed.
 export function normalise(s: string): string {

@@ -40,7 +40,7 @@ insert into public.reports (id, reporter_id, question_id, reason, details) value
   ('60000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '30000000-0000-0000-0000-0000000000a3', 'typo', 'spelling');
 
 -- ---------------------------------------------------------------------------
--- content_hash matches the JavaScript reference (scripts/import-v1-questions.mjs)
+-- content_hash matches the TypeScript reference (functions/generate-questions/dedup.ts)
 -- ---------------------------------------------------------------------------
 select is(private.content_hash('  What is 25% of ₹1,200?  ', array['₹300', '₹250', '₹350', '₹400']),
   'a7a4d9ffbb29d2f03197d6a46449a2219063d2f2f1d9fa85434802927c17234a', 'content_hash matches JS: currency');
