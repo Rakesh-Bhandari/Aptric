@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Admin.css';
 import API_BASE_URL from '../../utils/config';
@@ -11,7 +11,7 @@ const Admin = () => {
     const [authStatus, setAuthStatus] = useState('loading'); // 'loading' | 'admin' | 'denied'
     const isAuthenticated = authStatus === 'admin';
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [stats, setStats] = useState({ users: 0, questions: 0, feedback: 0, reports: 0 });
+    const [stats, setStats] = useState({ users: 0, questions: 0, drafts: 0, feedback: 0, reports: 0 });
 
     // Data States
     const [users, setUsers] = useState([]);
@@ -22,6 +22,7 @@ const Admin = () => {
     // --- Bulk Generator State ---
     const [showGenModal, setShowGenModal] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [generationJobs, setGenerationJobs] = useState([]);
     const [globalSubTopic, setGlobalSubTopic] = useState(''); // Suggested Feature
 
     // Matrix State: { "Logic": { Easy: 0, Medium: 0, Hard: 0 }, ... }
@@ -45,6 +46,7 @@ const Admin = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('All');
     const [filterDifficulty, setFilterDifficulty] = useState('All');
+    const [filterStatus, setFilterStatus] = useState('All');
     const [sortOrder, setSortOrder] = useState('newest');
 
     // 2. Authentication Logic: admin access is based on the logged-in user's role
@@ -74,6 +76,7 @@ const Admin = () => {
             setStats({
                 users: data.total_users,
                 questions: data.total_questions,
+                drafts: data.draft_questions,
                 feedback: data.total_feedback,
                 reports: data.pending_reports
             });
@@ -84,7 +87,7 @@ const Admin = () => {
     useEffect(() => {
         if (isAuthenticated) {
             if (activeTab === 'users') loadUsers();
-            if (activeTab === 'questions') loadQuestions();
+            if (activeTab === 'questions') { loadQuestions(); loadGenerationJobs(); }
             if (activeTab === 'feedback') loadAllFeedback();
             if (activeTab === 'reports') loadReports();
         }
@@ -104,6 +107,34 @@ const Admin = () => {
         } catch (e) { console.error(e); }
     };
 
+    const loadGenerationJobs = useCallback(async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/generation-jobs`, { credentials: 'include' });
+            if (res.ok) setGenerationJobs(await res.json());
+        } catch (e) { console.error(e); }
+    }, []);
+
+    // Generation runs in the background (cron, in chunks). Poll while any job is
+    // unfinished, and refresh the question list each time one finishes.
+    const isActiveJob = (j) => j.status === 'queued' || j.status === 'running';
+    const hasActiveJob = generationJobs.some(isActiveJob);
+    useEffect(() => {
+        if (!isAuthenticated || !hasActiveJob) return;
+        const timer = setInterval(loadGenerationJobs, 5000);
+        return () => clearInterval(timer);
+    }, [isAuthenticated, hasActiveJob, loadGenerationJobs]);
+
+    const activeJobIds = useRef(new Set());
+    useEffect(() => {
+        const nowActive = new Set(generationJobs.filter(isActiveJob).map(j => j.job_id));
+        const someFinished = [...activeJobIds.current].some(id => !nowActive.has(id));
+        activeJobIds.current = nowActive;
+        if (someFinished && activeTab === 'questions') {
+            loadQuestions();
+            loadDashboardStats();
+        }
+    }, [generationJobs]);
+
     // --- NEW FILTER LOGIC ---
     const getFilteredQuestions = () => {
         let result = [...questions];
@@ -116,7 +147,11 @@ const Admin = () => {
         if (filterDifficulty !== 'All') {
             result = result.filter(q => q.difficulty === filterDifficulty);
         }
-        // 3. Search
+        // 3. Filter by Status
+        if (filterStatus !== 'All') {
+            result = result.filter(q => q.status === filterStatus);
+        }
+        // 4. Search
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
             result = result.filter(q =>
@@ -124,7 +159,7 @@ const Admin = () => {
                 (q.qid && q.qid.toLowerCase().includes(term))
             );
         }
-        // 4. Sort
+        // 5. Sort
         if (sortOrder === 'newest') {
             result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         } else {
@@ -161,7 +196,7 @@ const Admin = () => {
         const total = getTotalToGenerate();
 
         if (total === 0) return alert("Please select at least 1 question to generate.");
-        if (total > 100) return alert("Max 100 questions per batch to avoid timeouts.");
+        if (total > 100) return alert("Max 100 questions per batch.");
 
         setIsGenerating(true);
 
@@ -190,13 +225,14 @@ const Admin = () => {
             const data = await res.json();
 
             if (res.ok) {
-                alert(data.message);
+                toast.success(data.message);
                 setShowGenModal(false);
                 // Reset Matrix
                 setGenMatrix(categoriesList.reduce((acc, cat) => ({ ...acc, [cat]: { Easy: 0, Medium: 0, Hard: 0 } }), {}));
-                if (activeTab === 'questions') loadQuestions();
+                setActiveTab('questions');
+                loadGenerationJobs();
             } else {
-                alert(data.error || "Generation failed");
+                alert(data.error || "Failed to queue generation");
             }
         } catch (err) {
             console.error(err);
@@ -252,6 +288,20 @@ const Admin = () => {
             } else {
                 const data = await res.json();
                 alert(data.error || "Failed to delete question");
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    // Review Actions: approve publishes a draft, reject keeps it out of the bank
+    const handleReviewQuestion = async (id, verb) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/questions/${id}/${verb}`, { method: 'POST', credentials: 'include' });
+            const data = await res.json();
+            if (res.ok) {
+                setQuestions(prev => prev.map(q => q.question_id === id ? { ...q, status: data.status } : q));
+                loadDashboardStats();
+            } else {
+                toast.error(data.error || `Failed to ${verb} question`);
             }
         } catch (e) { console.error(e); }
     };
@@ -334,7 +384,8 @@ const Admin = () => {
                         <h2>Dashboard</h2>
                         <div className="admin-stats-grid">
                             <StatCard value={stats.users} label="Total Users" />
-                            <StatCard value={stats.questions} label="Total Questions" />
+                            <StatCard value={stats.questions} label="Published Questions" />
+                            <StatCard value={stats.drafts} label="Drafts to Review" />
                             <StatCard value={stats.feedback} label="Total Feedback" />
                             <StatCard value={stats.reports} label="Pending Reports" isDanger />
                         </div>
@@ -389,6 +440,15 @@ const Admin = () => {
                             </button>
                         </div>
 
+                        {/* GENERATION JOBS */}
+                        {generationJobs.length > 0 && (
+                            <div className="gen-jobs">
+                                {generationJobs.slice(0, 5).map(job => (
+                                    <GenerationJobRow key={job.job_id} job={job} />
+                                ))}
+                            </div>
+                        )}
+
                         {/* CONTROL BAR */}
                         <div style={{
                             background: 'var(--card-bg)',
@@ -426,6 +486,13 @@ const Admin = () => {
                                 <option>Hard</option>
                             </select>
 
+                            <select className="form-input" style={{ width: '120px', margin: 0 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                                <option value="All">All Statuses</option>
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+
                             <select className="form-input" style={{ width: '120px', margin: 0 }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
                                 <option value="newest">Newest</option>
                                 <option value="oldest">Oldest</option>
@@ -440,10 +507,10 @@ const Admin = () => {
                         {/* TABLE */}
                         <div className="admin-table-container">
                             <table className="admin-table">
-                                <thead><tr><th>QID</th><th>Text</th><th>Difficulty</th><th>Category</th><th>Actions</th></tr></thead>
+                                <thead><tr><th>QID</th><th>Text</th><th>Difficulty</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>
                                 <tbody>
                                     {filteredQuestions.length === 0 ? (
-                                        <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No questions match your filters.</td></tr>
+                                        <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>No questions match your filters.</td></tr>
                                     ) : (
                                         filteredQuestions.map(q => (
                                             <tr key={q.question_id}>
@@ -453,8 +520,25 @@ const Admin = () => {
                                                 </td>
                                                 <td><span className={`level-tag ${q.difficulty.toLowerCase()}`}>{q.difficulty}</span></td>
                                                 <td>{q.category}</td>
+                                                <td><span className={`status-tag ${q.status}`}>{q.status}</span></td>
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '5px' }}>
+                                                        {q.status !== 'published' && (
+                                                            <button
+                                                                className="admin-action-btn approve"
+                                                                onClick={() => handleReviewQuestion(q.question_id, 'approve')}
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                        )}
+                                                        {q.status === 'draft' && (
+                                                            <button
+                                                                className="admin-action-btn delete"
+                                                                onClick={() => handleReviewQuestion(q.question_id, 'reject')}
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        )}
                                                         <button
                                                             className="admin-action-btn view"
                                                             onClick={() => navigate(`/admin/question/${q.question_id}`)}
@@ -549,7 +633,7 @@ const Admin = () => {
                         {/* 1. Header (Fixed at top) */}
                         <div className="modal-header">
                             <h2>AI Question Generator</h2>
-                            <p>Distribute questions across categories. Max 100 per batch.</p>
+                            <p>Distribute questions across categories. Max 100 per batch. Generation runs in the background; new questions arrive as drafts for review.</p>
                             <button onClick={() => setShowGenModal(false)} className="close-modal-btn">×</button>
                         </div>
 
@@ -650,11 +734,11 @@ const Admin = () => {
                                     {isGenerating ? (
                                         <>
                                             <span className="loader-spin"></span>
-                                            <span>Generating...</span>
+                                            <span>Queuing...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <span>Generate Batch</span>
+                                            <span>Queue Batch</span>
                                             <span>→</span>
                                         </>
                                     )}
@@ -688,6 +772,26 @@ const Admin = () => {
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+const JOB_STATUS_LABELS = { queued: 'Queued', running: 'Running', done: 'Done', failed: 'Failed' };
+
+const GenerationJobRow = ({ job }) => {
+    const pct = job.total_requested > 0 ? Math.min(100, Math.round((job.total_saved / job.total_requested) * 100)) : 0;
+    return (
+        <div className="gen-job">
+            <div className="gen-job-head">
+                <span>Job #{job.job_id}{job.source === 'topup' ? ' (top-up)' : ''}</span>
+                <span className={`status-tag ${job.status}`}>{JOB_STATUS_LABELS[job.status] || job.status}</span>
+            </div>
+            <div className="gen-job-bar"><div style={{ width: `${pct}%` }} /></div>
+            <div className="gen-job-meta">
+                {job.total_saved} / {job.total_requested} drafts saved
+                {job.total_dropped > 0 && ` · ${job.total_dropped} dropped (invalid, duplicate or failed verification)`}
+                {job.error && ` · ${job.error}`}
+            </div>
         </div>
     );
 };

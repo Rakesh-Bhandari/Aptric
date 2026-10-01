@@ -151,11 +151,11 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
 // Looks the question up by qid (the client's questionId is never trusted),
 // rejects questions the user already attempted on an earlier date, and locks
 // today's attempt row (FOR UPDATE) so parallel requests can't both score.
-// Allowed questions are today's daily-log questions and never-attempted
-// topic-practice questions; both cases reduce to "no attempt on an earlier date".
+// Allowed questions are published ones: today's daily-log questions and
+// never-attempted topic-practice questions; both cases reduce to "no attempt on an earlier date".
 // Returns { error: [status, message] } or { question, existing }.
 async function lockAttempt(conn, userId, qid, today, columns) {
-    const [[question]] = await conn.query(`SELECT question_id, ${columns} FROM questions WHERE qid = ?`, [qid]);
+    const [[question]] = await conn.query(`SELECT question_id, ${columns} FROM questions WHERE qid = ? AND status = 'published'`, [qid]);
     if (!question) return { error: [404, 'Question not found'] };
 
     const [[prior]] = await conn.query(

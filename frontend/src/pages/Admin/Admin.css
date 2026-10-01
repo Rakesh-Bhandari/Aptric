@@ -339,6 +339,78 @@ select.form-input {
     color: var(--error);
 }
 
+/* Question review + generation job statuses */
+.status-tag.draft,
+.status-tag.queued,
+.status-tag.running {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.status-tag.published,
+.status-tag.done {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success);
+}
+
+.status-tag.rejected,
+.status-tag.failed {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--error);
+}
+
+.admin-action-btn.approve {
+    color: var(--success);
+    border-color: var(--success);
+}
+
+.admin-action-btn.approve:hover {
+    background-color: var(--success);
+    color: white;
+}
+
+/* Generation job progress */
+.gen-jobs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.gen-job {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+.gen-job-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.gen-job-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.gen-job-bar > div {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.4s ease;
+}
+
+.gen-job-meta {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
 /* --- 9. Login Overlay --- */
 .admin-login-overlay {
     position: fixed;

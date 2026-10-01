@@ -6,6 +6,7 @@ USE apti_db1;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- 3. Drop existing tables (Clean Slate)
+DROP TABLE IF EXISTS `question_generation_jobs`;
 DROP TABLE IF EXISTS `feedback_reports`;
 DROP TABLE IF EXISTS `user_feedback`;
 DROP TABLE IF EXISTS `user_attempts`;
@@ -61,16 +62,20 @@ CREATE TABLE `questions` (
   `question_id` INT NOT NULL AUTO_INCREMENT,
   `qid` VARCHAR(16) NOT NULL COMMENT 'Public ID like Q123ABC',
   `question_text` TEXT NOT NULL,
+  `question_hash` CHAR(64) DEFAULT NULL COMMENT 'SHA-256 hex of the normalised question_text',
   `options` JSON NOT NULL COMMENT '["A", "B", "C", "D"]',
   `correct_answer_index` INT NOT NULL,
   `explanation` TEXT,
   `hint` TEXT,
   `difficulty` VARCHAR(20) NOT NULL,
   `category` VARCHAR(50) NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'draft' COMMENT 'draft | published | rejected',
   `generated_for_date` DATE DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`question_id`),
   UNIQUE KEY `qid` (`qid`),
+  UNIQUE KEY `question_hash` (`question_hash`),
+  KEY `idx_status_difficulty` (`status`,`difficulty`),
   KEY `idx_generated_for_date` (`generated_for_date`),
   KEY `idx_difficulty_category` (`difficulty`,`category`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -143,4 +148,25 @@ CREATE TABLE `feedback_reports` (
   UNIQUE KEY `unique_report` (`feedback_id`,`reporter_user_id`),
   CONSTRAINT `fk_report_feedback` FOREIGN KEY (`feedback_id`) REFERENCES `user_feedback` (`feedback_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_report_user` FOREIGN KEY (`reporter_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- TABLE 8: Question Generation Jobs
+CREATE TABLE `question_generation_jobs` (
+  `job_id` INT NOT NULL AUTO_INCREMENT,
+  `created_by` VARCHAR(12) DEFAULT NULL COMMENT 'Admin user_id, NULL for the cron top-up',
+  `source` VARCHAR(20) NOT NULL DEFAULT 'admin' COMMENT 'admin | topup',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'queued' COMMENT 'queued | running | done | failed',
+  `items` JSON NOT NULL COMMENT '[{category, difficulty, subTopic, requested, saved, invalid, duplicate, unverified, calls}]',
+  `total_requested` INT NOT NULL DEFAULT 0,
+  `total_saved` INT NOT NULL DEFAULT 0,
+  `total_dropped` INT NOT NULL DEFAULT 0,
+  `error` TEXT DEFAULT NULL,
+  `locked_until` DATETIME DEFAULT NULL COMMENT 'Lease held by the worker processing a chunk',
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `finished_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`job_id`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `fk_generation_job_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

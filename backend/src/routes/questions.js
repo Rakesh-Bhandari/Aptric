@@ -52,7 +52,7 @@ router.get('/single/:qid', isLoggedIn, validate({ params: z.object({ qid }) }), 
     try {
         conn = await dbPool.getConnection();
 
-        const [[question]] = await conn.query('SELECT * FROM questions WHERE qid = ?', [qid]);
+        const [[question]] = await conn.query("SELECT * FROM questions WHERE qid = ? AND status = 'published'", [qid]);
         if (!question) { return res.status(404).json({ error: 'Question not found' }); }
 
         let attempt = null;
@@ -107,10 +107,10 @@ router.get('/category', isLoggedIn, validate({ query: z.object({ category, ...pa
 
         const [questions] = await conn.query(
             `SELECT question_id, qid, question_text, options, difficulty, category 
-             FROM questions WHERE category = ? ORDER BY created_at DESC, question_id DESC LIMIT ? OFFSET ?`,
+             FROM questions WHERE category = ? AND status = 'published' ORDER BY created_at DESC, question_id DESC LIMIT ? OFFSET ?`,
             [category, limit, offset]
         );
-        const [[{ total }]] = await conn.query('SELECT COUNT(*) AS total FROM questions WHERE category = ?', [category]);
+        const [[{ total }]] = await conn.query("SELECT COUNT(*) AS total FROM questions WHERE category = ? AND status = 'published'", [category]);
 
         const userId = req.user.user_id;
         const qids = questions.map(q => q.qid);
@@ -144,7 +144,7 @@ router.get('/topics/stats', topicStatsLimiter, async (req, res) => {
     let conn;
     try {
         conn = await dbPool.getConnection();
-        const [totalRows] = await conn.query(`SELECT category, COUNT(*) as total FROM questions GROUP BY category`);
+        const [totalRows] = await conn.query(`SELECT category, COUNT(*) as total FROM questions WHERE status = 'published' GROUP BY category`);
 
         // Build base stats from question bank (works for everyone)
         const stats = {};
