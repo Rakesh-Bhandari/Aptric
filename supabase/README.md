@@ -64,6 +64,10 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f v1-import.sql   # direct/session conn
 - `private.v1_question_import` maps each v1 `question_id`/`qid` to its v2 question, with `outcome` (`inserted`, or `duplicate` of an existing v2 question with the same `content_hash`), `classified_by` and `notes`. Re-running skips v1 rows already there, so the script is safe to repeat with a newer export.
 - Review queue: `select q.*, m.classified_by, m.notes from public.questions q join private.v1_question_import m on m.question_id = q.id where q.status = 'in_review';`
 
+## Importing v1 users
+
+`scripts/export-v1-users.sql` (TiDB, read-only) → `scripts/import-v1-users.mjs` (one transactional SQL script with `--dry-run` and `--verify` modes and a verification report) → `psql`. Users keep their bcrypt passwords; Google users relink by email on first sign-in; v1 score becomes starting XP as one `legacy_import` xp_event; streaks are recomputed from v1 daily-set history. `private.v1_user_import` maps v1 `user_id` to the auth user id. The runbook, cutover checklist and rollback plan are in [MIGRATION.md](MIGRATION.md).
+
 ## AI question generation (`generate-questions`)
 
 An admin-only Edge Function (`functions/generate-questions`). A **job** is one subtopic + difficulty + count (1–50). Each call works through **one batch** of up to 5 questions (`GENERATE_BATCH_SIZE`, max 10), so no invocation gets near the Edge Function time limit; the caller repeats `run` while the job is `queued` or `running`. Every response is `{ job, batch? }`, where `job` is the `question_generation_jobs` row.
