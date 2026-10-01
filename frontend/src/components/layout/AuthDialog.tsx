@@ -6,9 +6,11 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FieldHint, Input, Label } from '@/components/ui/input';
 import type { AuthMode } from '@/context/AuthDialogContext';
 import { useToast } from '@/context/ToastContext';
+import {
+  requestPasswordReset, resendConfirmation, sendMagicLink, signInWithGoogle, signInWithPassword, signUp as createAccount,
+} from '@/lib/auth';
 import { authErrorMessage, errorCode } from '@/lib/errors';
 import { passwordStrength } from '@/lib/password';
-import { authRedirectUrl, supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
 type Mode = AuthMode | 'sent';
@@ -67,8 +69,9 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
   };
 
   const signIn = run(async () => {
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-    if (err) {
+    try {
+      await signInWithPassword(email, password);
+    } catch (err) {
       setNeedsVerification(errorCode(err) === 'email_not_confirmed');
       throw err;
     }
@@ -81,53 +84,34 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
       setError('Please choose a stronger password: at least 8 characters, mixing letters and numbers.');
       return;
     }
-    const { error: err } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: authRedirectUrl(next),
-        data: { display_name: name.trim() || undefined, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-      },
-    });
-    if (err) throw err;
-    // Supabase answers the same way for registered emails, so the message
+    await createAccount({ email, password, displayName: name.trim() || undefined, next });
+    // The API answers the same way for registered emails, so the message
     // doesn't reveal which emails have accounts.
     setSentMessage(`If ${email} can be registered, we've sent a confirmation link. Open it to finish creating your account.`);
     setMode('sent');
   });
 
   const magicLink = run(async () => {
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: authRedirectUrl(next),
-        shouldCreateUser: true,
-        data: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-      },
-    });
-    if (err) throw err;
+    await sendMagicLink(email, next);
     setSentMessage(`We've sent a sign-in link to ${email}.`);
     setMode('sent');
   });
 
   const forgot = run(async () => {
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: authRedirectUrl('/auth/reset-password') });
-    if (err) throw err;
+    await requestPasswordReset(email);
     setSentMessage(`If there's an account for ${email}, a password reset link is on its way.`);
     setMode('sent');
   });
 
   const resend = run(async () => {
-    const { error: err } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: authRedirectUrl(next) } });
-    if (err) throw err;
+    await resendConfirmation(email, next);
     setNeedsVerification(false);
     toast.success('Confirmation email sent. Check your inbox.');
   });
 
+  // A full-page redirect to Google via the API; it returns to /auth/callback.
   const google = run(async () => {
-    const { error: err } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: authRedirectUrl(next) } });
-    // On success the browser is already on its way to Google.
-    if (err) throw err;
+    signInWithGoogle(next);
   });
 
   const emailField = (

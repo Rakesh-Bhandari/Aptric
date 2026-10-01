@@ -4,7 +4,7 @@
 -- Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(91);
+select plan(86);
 
 -- ---------------------------------------------------------------------------
 -- XP -> level (pure)
@@ -29,7 +29,7 @@ select results_eq(
 --   pat:   main player          quinn: one short of Centurion
 --   rae:   half-finished sets   ban:   banned     ada: admin
 -- ---------------------------------------------------------------------------
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into private.accounts (id, email, metadata) values
   ('00000000-0000-0000-0000-0000000a0001', 'pat@example.com',   '{"handle":"pat","timezone":"UTC"}'),
   ('00000000-0000-0000-0000-0000000a0002', 'quinn@example.com', '{"handle":"quinn","timezone":"UTC"}'),
   ('00000000-0000-0000-0000-0000000a0003', 'rae@example.com',   '{"handle":"rae","timezone":"UTC"}'),
@@ -281,32 +281,12 @@ select results_eq(
   $$values ('bronze', 5, 0), ('silver', 5, 5), ('gold', 5, 5), ('platinum', 5, 5), ('diamond', 0, 5)$$,
   'every tier promotes 5 and demotes 5 (none past the ends)');
 
-create temp table pat_league on commit drop as
-  select league_id from public.league_members
-  where user_id = '00000000-0000-0000-0000-0000000a0001' and week_start = private.league_week_start(now());
-grant select on pat_league to authenticated;
-
-select ok(exists (select 1 from pg_trigger where tgname = 'league_members_broadcast' and not tgisinternal),
-  'league XP changes are broadcast');
-select ok(exists (select 1 from pg_policies where schemaname = 'realtime' and tablename = 'messages'
-                  and policyname = 'league channels: members receive' and cmd = 'SELECT'),
-  'realtime.messages has the league channel policy');
-
-set local role authenticated;
-set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000a0001","role":"authenticated"}';
-select ok(private.is_league_member('league:' || (select league_id from pat_league)),
-  'a member may join their league''s channel');
-select ok(not private.is_league_member('league:not-a-uuid'), 'malformed topics are refused');
-select ok(not private.is_league_member('leaderboard'), 'other topics are refused');
-set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000a0005","role":"authenticated"}';
-select ok(not private.is_league_member('league:' || (select league_id from pat_league)),
-  'a non-member may not join that league''s channel');
-reset role;
-
--- A league XP change still succeeds even if broadcasting fails.
+-- Realtime is gone: standings are polled from get_my_league().
+select ok(not exists (select 1 from pg_trigger where tgname = 'league_members_broadcast' and not tgisinternal),
+  'league XP changes are no longer broadcast');
 select lives_ok(
   $$insert into public.xp_events (user_id, amount, reason) values ('00000000-0000-0000-0000-0000000a0001', 1, 'test')$$,
-  'xp is recorded alongside the broadcast');
+  'xp is recorded in the league');
 update public.profiles set xp = xp + 1 where id = '00000000-0000-0000-0000-0000000a0001';
 
 -- ---------------------------------------------------------------------------

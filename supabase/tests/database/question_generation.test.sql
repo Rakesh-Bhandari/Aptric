@@ -7,7 +7,7 @@ select plan(37);
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
 -- ---------------------------------------------------------------------------
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into private.accounts (id, email, metadata) values
   ('00000000-0000-0000-0000-0000000000a1', 'admin@example.com', '{"handle":"genadmin"}'),
   ('00000000-0000-0000-0000-0000000000b1', 'user@example.com',  '{"handle":"genuser"}');
 update public.profiles set role = 'admin' where id = '00000000-0000-0000-0000-0000000000a1';

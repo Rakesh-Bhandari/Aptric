@@ -19,7 +19,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
           markdown: ['katex', 'marked', 'dompurify'],
         },
       },
@@ -30,8 +29,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: false,
     env: {
-      VITE_SUPABASE_URL: 'http://localhost:54321',
-      VITE_SUPABASE_PUBLISHABLE_KEY: 'test-key',
+      VITE_API_URL: 'http://localhost:5000',
     },
   },
 });

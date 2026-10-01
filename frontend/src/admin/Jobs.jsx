@@ -55,7 +55,7 @@ const JobRow = ({ job, driving, highlighted, onResume, onCancel }) => {
     );
 };
 
-// AI generation jobs. The generate-questions Edge Function runs one batch per
+// AI generation jobs. POST /admin/generate-questions (the API) runs one batch per
 // call, so this page drives a job by calling `run` until it finishes. Closing
 // the tab just pauses the job; Resume (here or in another tab) continues it.
 const Jobs = () => {

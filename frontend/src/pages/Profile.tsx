@@ -125,7 +125,7 @@ const ProfileForm = () => {
     setBusy(true);
     setError('');
     try {
-      setProfile(await api.updateProfile(profile.id, { handle: h, display_name: name.trim() || null, bio: bio.trim() || null }));
+      setProfile(await api.updateProfile({ handle: h, display_name: name.trim() || null, bio: bio.trim() || null }));
       void queryClient.invalidateQueries({ queryKey: keys.player(null) });
       toast.success('Profile saved.');
     } catch (err) {
@@ -165,12 +165,12 @@ const GoalsForm = () => {
   const toast = useToast();
   const exams = useExamTags();
   const levels = useLevels();
-  const last = useQuery({ queryKey: keys.lastPlacement(profile.id), queryFn: () => api.getLastPlacement(profile.id) });
+  const last = useQuery({ queryKey: keys.lastPlacement(profile.id), queryFn: api.getLastPlacement });
   const ids = { goal: useId(), tz: useId() };
 
   const patch = async (p: api.ProfilePatch, message = 'Saved.') => {
     try {
-      setProfile(await api.updateProfile(profile.id, p));
+      setProfile(await api.updateProfile(p));
       toast.success(message);
     } catch (err) {
       toast.error(friendlyError(err, "We couldn't save that."));

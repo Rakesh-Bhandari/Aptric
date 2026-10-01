@@ -1,15 +1,17 @@
 -- Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(48);
+select plan(49);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
 -- ---------------------------------------------------------------------------
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into private.accounts (id, email, metadata) values
   ('00000000-0000-0000-0000-0000000000a1', 'ada@example.com',  '{"handle":"ada_admin"}'),
   ('00000000-0000-0000-0000-0000000000a2', 'alan@example.com', '{"handle":"alan_admin"}'),
   ('00000000-0000-0000-0000-0000000000b1', 'bob@example.com',  '{"handle":"bob_player"}');
+insert into private.sessions (account_id, token_hash, expires_at)
+values ('00000000-0000-0000-0000-0000000000b1', 'bob-session', now() + interval '30 days');
 update public.profiles set role = 'admin'
 where id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000a2');
 
@@ -182,8 +184,10 @@ select is((select after ->> 'banned_reason' from public.audit_log where action =
            and entity_id = '00000000-0000-0000-0000-0000000000b1'), 'spam', 'the ban is audited');
 
 reset role;
-select ok((select banned_until > now() + interval '50 years' from auth.users where id = '00000000-0000-0000-0000-0000000000b1'),
-  'the ban blocks sign-in in Supabase Auth');
+select ok((select banned_until = 'infinity' from private.accounts where id = '00000000-0000-0000-0000-0000000000b1'),
+  'the ban blocks sign-in and refresh');
+select is((select count(*) from private.sessions where account_id = '00000000-0000-0000-0000-0000000000b1'), 0::bigint,
+  'the ban ends every session');
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}';
@@ -196,8 +200,8 @@ set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a1","r
 select lives_ok($$select public.admin_set_user_ban('00000000-0000-0000-0000-0000000000b1', false)$$, 'admin unbans a user');
 
 reset role;
-select is((select banned_until from auth.users where id = '00000000-0000-0000-0000-0000000000b1'), null,
-  'unbanning clears the Auth ban');
+select is((select banned_until from private.accounts where id = '00000000-0000-0000-0000-0000000000b1'), null,
+  'unbanning clears the account ban');
 
 -- ---------------------------------------------------------------------------
 -- Generation jobs (written by service_role) name their admin in the audit log

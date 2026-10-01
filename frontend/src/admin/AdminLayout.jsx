@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/SessionContext';
-import { countByStatus, countOpenReports } from './api';
-import { supabase } from '@/lib/supabase';
+import { countActiveJobs, countByStatus, countOpenReports } from './api';
 import './Admin.css';
 
 const NAV = [
@@ -14,13 +13,6 @@ const NAV = [
     { to: 'jobs', label: 'Generation jobs', count: 'jobs' },
     { to: 'audit', label: 'Audit log' },
 ];
-
-const countActiveJobs = async () => {
-    const { count, error } = await supabase.from('question_generation_jobs')
-        .select('id', { count: 'exact', head: true }).in('status', ['queued', 'running']);
-    if (error) throw error;
-    return count ?? 0;
-};
 
 // /admin/*. Rendered inside <RequireAuth>, so the user is signed in here. The
 // role check only decides what to show: RLS and the admin_* functions refuse

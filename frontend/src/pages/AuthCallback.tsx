@@ -1,29 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, XCircle } from 'lucide-react';
-import type { EmailOtpType } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
+import { safeNext, verifyLink, type LinkType } from '@/lib/auth';
 import { authErrorMessage } from '@/lib/errors';
-import { safeNext, supabase } from '@/lib/supabase';
 
-const EMAIL_OTP_TYPES = new Set(['email', 'signup', 'magiclink', 'recovery', 'invite', 'email_change']);
-
-// Where to go afterwards: `next`, or the `next` inside `redirect_to` (the email
-// templates pass {{ .RedirectTo }} through as redirect_to).
-const readNext = (params: URLSearchParams) => {
-  if (params.has('next')) return safeNext(params.get('next'));
-  try {
-    return safeNext(new URL(params.get('redirect_to') ?? '').searchParams.get('next'));
-  } catch {
-    return '/';
-  }
-};
+const LINK_TYPES = new Set<LinkType>(['signup', 'magiclink', 'recovery', 'oauth']);
 
 /**
- * Landing page for every link Supabase Auth sends back:
- *   ?token_hash=…&type=…  email links (confirm sign-up, magic link, reset, email change)
- *   ?code=…               OAuth (Google) and PKCE links; supabase-js exchanges it on load
- *   ?error_description=…  expired link, cancelled consent, …
+ * Landing page for every link the API sends back:
+ *   ?token=…&type=signup|magiclink|recovery&next=…  email links (confirm sign-up, sign in, reset password)
+ *   ?token=…&type=oauth&next=…                      after Google sign-in
+ *   ?error_description=…                            cancelled consent, expired attempt, …
+ * The single-use token is traded for a session with POST /auth/verify.
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -35,33 +24,27 @@ const AuthCallback = () => {
     if (started.current) return;
     started.current = true;
     const params = new URLSearchParams(window.location.search);
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    const next = readNext(params);
+    const next = safeNext(params.get('next'));
 
     const finish = async () => {
-      const linkError = params.get('error_description') || hash.get('error_description');
+      const linkError = params.get('error_description');
       if (linkError) {
         setError(linkError);
         return;
       }
-      const tokenHash = params.get('token_hash');
-      const type = params.get('type');
-      if (tokenHash && type && EMAIL_OTP_TYPES.has(type)) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType });
-        if (verifyError) {
-          setError(authErrorMessage(verifyError));
-          return;
-        }
-        navigate(type === 'recovery' ? '/auth/reset-password' : next, { replace: true });
+      const token = params.get('token');
+      const type = params.get('type') as LinkType | null;
+      if (!token || !type || !LINK_TYPES.has(type)) {
+        setError('This link is invalid or has expired.');
         return;
       }
-      // getSession() waits for the client to finish exchanging ?code=.
-      const { data, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !data.session) {
-        setError(sessionError ? authErrorMessage(sessionError) : 'This link is invalid or has expired.');
+      try {
+        await verifyLink(token, type);
+      } catch (err) {
+        setError(authErrorMessage(err));
         return;
       }
-      navigate(next, { replace: true });
+      navigate(type === 'recovery' ? '/auth/reset-password' : next, { replace: true });
     };
     finish().catch(() => setError("We couldn't reach the sign-in service. Check your connection and try again."));
   }, [navigate]);

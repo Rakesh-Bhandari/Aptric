@@ -1,5 +1,5 @@
 import type { Database } from '@db/database.types';
-import { supabase } from './supabase';
+import { api } from './http';
 import type {
   Activity, AnswerResult, AttemptContext, Board, ContestAnswerResult, ContestDetail, ContestStandings,
   ContestSummary, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
@@ -9,18 +9,12 @@ import type {
 
 type Functions = Database['public']['Functions'];
 
-// Every game rule (grading, hints, XP, streaks, levels) lives in Postgres; these
+// Every game rule (grading, hints, XP, streaks, levels) lives in Postgres; the
+// API's POST /rpc/:name runs those SQL functions as the signed-in user. These
 // are thin typed wrappers. The client never sees an answer before it has spent
 // its one scoring attempt.
-async function rpc<T, F extends keyof Functions = keyof Functions>(fn: F, args?: Functions[F]['Args']): Promise<T> {
-  // supabase-js's overloads can't follow a generic function name, hence the casts.
-  const { data, error } = await (supabase.rpc as (f: string, a?: object) => ReturnType<typeof supabase.rpc>)(
-    fn as string,
-    args as object | undefined,
-  );
-  if (error) throw error;
-  return data as T;
-}
+const rpc = <T, F extends keyof Functions = keyof Functions>(fn: F, args?: Functions[F]['Args']): Promise<T> =>
+  api<T>('POST', `/rpc/${fn as string}`, args ?? {});
 
 // Daily challenge ----------------------------------------------------------
 export const getTodaySet = () => rpc<TodaySet>('get_today_set');
@@ -53,11 +47,8 @@ export const getMistakes = (pageSize = 20, offset = 0) =>
 export const getActivity = (days = 84) => rpc<Activity>('get_activity', { days });
 
 /** Subtopic of a question the player can read (published, or one they attempted). */
-export const getQuestionSubtopic = async (questionId: string): Promise<string | null> => {
-  const { data, error } = await supabase.from('questions').select('subtopic_id').eq('id', questionId).maybeSingle();
-  if (error) throw error;
-  return data?.subtopic_id ?? null;
-};
+export const getQuestionSubtopic = async (questionId: string): Promise<string | null> =>
+  (await api<{ subtopic_id: string | null }>('GET', `/questions/${encodeURIComponent(questionId)}/subtopic`)).subtopic_id;
 
 // Placement ------------------------------------------------------------------
 export const startPlacement = () => rpc<PlacementStart>('start_placement');
@@ -71,25 +62,6 @@ export const getLeaderboard = (board: Board, pageSize = 50, offset = 0) =>
 export const getPlayerProfile = (handle: string | null = null) =>
   rpc<PlayerProfile>('get_player_profile', handle ? { target_handle: handle } : {});
 
-/**
- * Live league standings: the database broadcasts every XP change on the
- * private channel `league:<id>` (members only). Returns an unsubscribe function.
- */
-export const subscribeToLeague = (leagueId: string, onUpdate: () => void) => {
-  const channel = supabase
-    .channel(`league:${leagueId}`, { config: { private: true } })
-    .on('broadcast', { event: 'member_xp' }, () => onUpdate());
-  let active = true;
-  // Private channels authorise with the user's JWT.
-  void supabase.realtime.setAuth().finally(() => {
-    if (active) channel.subscribe();
-  });
-  return () => {
-    active = false;
-    void supabase.removeChannel(channel);
-  };
-};
-
 // Contests -------------------------------------------------------------------
 export const listContests = () => rpc<ContestSummary[]>('list_contests');
 export const getContest = (id: string) => rpc<ContestDetail>('get_contest', { contest_id: id });
@@ -102,60 +74,31 @@ export const getContestStandings = (id: string, pageSize = 50, offset = 0) =>
   rpc<ContestStandings>('get_contest_standings', { contest_id: id, page_size: pageSize, page_offset: offset });
 
 // Profile and settings -------------------------------------------------------
-export const PROFILE_COLUMNS =
-  'id, handle, display_name, avatar_url, bio, role, timezone, exam_goal, daily_target, onboarded_at, placement_level, placed_at';
-
-export const fetchProfile = async (id: string): Promise<Profile> => {
-  const { data, error } = await supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', id).single();
-  if (error) throw error;
-  return data as Profile;
-};
+export const fetchProfile = (): Promise<Profile> => api<Profile>('GET', '/me/profile');
 
 export type ProfilePatch = Partial<
   Pick<Profile, 'handle' | 'display_name' | 'bio' | 'timezone' | 'exam_goal' | 'daily_target' | 'onboarded_at'>
 >;
 
-export const updateProfile = async (id: string, patch: ProfilePatch): Promise<Profile> => {
-  const { data, error } = await supabase.from('profiles').update(patch).eq('id', id).select(PROFILE_COLUMNS).single();
-  if (error) throw error;
-  return data as Profile;
-};
+export const updateProfile = (patch: ProfilePatch): Promise<Profile> => api<Profile>('PATCH', '/me/profile', patch);
 
-export const getExamTags = async (): Promise<ExamTag[]> => {
-  const { data, error } = await supabase.from('tags').select('slug, name').eq('kind', 'exam').order('sort_order');
-  if (error) throw error;
-  return data ?? [];
-};
+export const getExamTags = (): Promise<ExamTag[]> => api<ExamTag[]>('GET', '/catalog/exam-tags');
 
-export const getLastPlacement = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('placement_tests')
-    .select('completed_at, placed_level, correct, score')
-    .eq('user_id', userId)
-    .not('completed_at', 'is', null)
-    .order('completed_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
-};
+export const getLastPlacement = () =>
+  api<{ completed_at: string | null; placed_level: number | null; correct: number | null; score: number | null } | null>(
+    'GET', '/me/placement',
+  );
 
-export const getLevels = async () => {
-  const { data, error } = await supabase.from('levels').select('level, name, slug').order('level');
-  if (error) throw error;
-  return data ?? [];
-};
+export const getLevels = () => api<{ level: number; name: string; slug: string }[]>('GET', '/catalog/levels');
 
 export type ReportReason = Database['public']['Enums']['report_reason'];
 
 export const reportQuestion = async (questionId: string, reason: ReportReason, details: string) => {
-  const { error } = await supabase.from('reports').insert({ question_id: questionId, reason, details: details || null });
-  if (error) throw error;
+  await api('POST', '/reports', { question_id: questionId, reason, details: details || null });
 };
 
 export type FeedbackCategory = Database['public']['Enums']['feedback_category'];
 
 export const sendFeedback = async (category: FeedbackCategory, message: string, page: string) => {
-  const { error } = await supabase.from('feedback').insert({ category, message, page });
-  if (error) throw error;
+  await api('POST', '/feedback', { category, message, page });
 };

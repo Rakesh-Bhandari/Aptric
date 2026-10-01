@@ -8,8 +8,8 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       refetchOnWindowFocus: true,
-      // Don't retry permission / not-found errors from the SQL functions.
-      retry: (count, error) => !['42501', 'P0002', '22023', '55000', 'PGRST116'].includes(errorCode(error) ?? '') && count < 2,
+      // Don't retry permission / not-found / validation errors from the API.
+      retry: (count, error) => !['42501', 'P0002', '22023', '55000', '401', 'bad_request', 'over_request_rate_limit'].includes(errorCode(error) ?? '') && count < 2,
     },
   },
 });
@@ -42,7 +42,8 @@ export const useTodaySet = () => useQuery({ queryKey: keys.today, queryFn: api.g
 export const useDailyResult = (id: string | null, enabled = true) =>
   useQuery({ queryKey: keys.dailyResult(id), queryFn: () => api.getDailyResult(id), enabled });
 export const useActivity = (days = 84) => useQuery({ queryKey: keys.activity(days), queryFn: () => api.getActivity(days) });
-export const useMyLeague = () => useQuery({ queryKey: keys.league, queryFn: api.getMyLeague });
+export const useMyLeague = ({ live = false } = {}) =>
+  useQuery({ queryKey: keys.league, queryFn: api.getMyLeague, refetchInterval: live ? 20_000 : false });
 export const useLeaderboard = (board: Board, offset = 0) =>
   useQuery({ queryKey: keys.leaderboard(board, offset), queryFn: () => api.getLeaderboard(board, 50, offset), placeholderData: (prev) => prev });
 export const usePlayer = (handle: string | null = null) =>

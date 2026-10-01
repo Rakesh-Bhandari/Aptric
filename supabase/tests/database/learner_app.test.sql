@@ -8,7 +8,7 @@ select plan(71);
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
 -- ---------------------------------------------------------------------------
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into private.accounts (id, email, metadata) values
   ('00000000-0000-0000-0000-0000000000a1', 'alice@example.com', '{"handle":"alice","timezone":"UTC"}'),
   ('00000000-0000-0000-0000-0000000000b1', 'bob@example.com',   '{"handle":"bob","timezone":"UTC"}'),
   ('00000000-0000-0000-0000-0000000000d1', 'dee@example.com',   '{"timezone":"UTC"}');

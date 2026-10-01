@@ -11,8 +11,8 @@ select set_eq(
   $$select jobname, schedule from cron.job where jobname like 'aptric-%'$$,
   $$values ('aptric-daily-sets', '0 18 * * *'), ('aptric-streaks', '5 * * * *'),
            ('aptric-league-rollover', '35 18 * * 0'), ('aptric-ratings', '15 * * * *'),
-           ('aptric-leaderboards', '*/5 * * * *')$$,
-  'five cron jobs are scheduled (UTC)');
+           ('aptric-leaderboards', '*/5 * * * *'), ('aptric-purge-auth-tokens', '40 3 * * *')$$,
+  'six cron jobs are scheduled (UTC)');
 
 -- ---------------------------------------------------------------------------
 -- Daily set fixtures
@@ -196,7 +196,7 @@ select is((select count(*)::int from public.daily_set_items i join public.daily_
 -- ---------------------------------------------------------------------------
 -- Players see their own level's set (today_set_for)
 -- ---------------------------------------------------------------------------
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into private.accounts (id, email, metadata) values
   ('00000000-0000-0000-0000-00000000c001', 'lv1@example.com', '{"handle":"lv1","timezone":"UTC"}'),
   ('00000000-0000-0000-0000-00000000c002', 'lv2@example.com', '{"handle":"lv2","timezone":"UTC"}'),
   ('00000000-0000-0000-0000-00000000c003', 'lv3@example.com', '{"handle":"lv3","timezone":"UTC"}'),
@@ -237,7 +237,7 @@ select is(private.level_for(6), 3::smallint, 'level_for(6) = advanced');
 -- ---------------------------------------------------------------------------
 -- Streaks
 -- ---------------------------------------------------------------------------
-insert into auth.users (id, email, raw_user_meta_data)
+insert into private.accounts (id, email, metadata)
 select ('00000000-0000-0000-0000-00000000d00' || n)::uuid, 's' || n || '@example.com',
        jsonb_build_object('handle', 'streaker' || n, 'timezone', case when n = 7 then 'Pacific/Kiritimati' else 'UTC' end)
 from generate_series(1, 7) n;
@@ -299,7 +299,7 @@ select private.league_week_start(now()) as this_week,
 
 -- Last week: 14 silver players (xp 10..140, sv10 ties sv11 at 110 but got
 -- there first), 1 bronze, 3 diamond.
-insert into auth.users (id, email, raw_user_meta_data)
+insert into private.accounts (id, email, metadata)
 select ('00000000-0000-0000-0000-0000000e' || lpad(n::text, 4, '0'))::uuid, 'lg' || n || '@example.com',
        jsonb_build_object('handle', 'lg' || n)
 from generate_series(1, 18) n;
@@ -325,7 +325,7 @@ select is((select xp from public.league_members where user_id = '00000000-0000-0
   'later XP in the same week adds up');
 
 -- This week: 31 bronze players fill a cohort of 30, then start a second.
-insert into auth.users (id, email, raw_user_meta_data)
+insert into private.accounts (id, email, metadata)
 select ('00000000-0000-0000-0000-0000000f' || lpad(n::text, 4, '0'))::uuid, 'br' || n || '@example.com',
        jsonb_build_object('handle', 'br' || n)
 from generate_series(1, 31) n;
