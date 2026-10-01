@@ -118,6 +118,39 @@ export type Database = {
           },
         ];
       };
+      badges: {
+        Row: {
+          created_at: string;
+          description: string;
+          icon: string;
+          name: string;
+          per_topic: boolean;
+          slug: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description: string;
+          icon: string;
+          name: string;
+          per_topic?: boolean;
+          slug: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          icon?: string;
+          name?: string;
+          per_topic?: boolean;
+          slug?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       daily_set_items: {
         Row: {
           daily_set_id: string;
@@ -850,6 +883,66 @@ export type Database = {
           },
         ];
       };
+      rating_events: {
+        Row: {
+          answered: number;
+          created_at: string;
+          daily_set_id: string;
+          expected: number;
+          id: number;
+          k_factor: number;
+          questions: number;
+          rating_after: number;
+          rating_before: number;
+          score: number;
+          set_date: string;
+          user_id: string;
+        };
+        Insert: {
+          answered: number;
+          created_at?: string;
+          daily_set_id: string;
+          expected: number;
+          id?: never;
+          k_factor: number;
+          questions: number;
+          rating_after: number;
+          rating_before: number;
+          score: number;
+          set_date: string;
+          user_id: string;
+        };
+        Update: {
+          answered?: number;
+          created_at?: string;
+          daily_set_id?: string;
+          expected?: number;
+          id?: never;
+          k_factor?: number;
+          questions?: number;
+          rating_after?: number;
+          rating_before?: number;
+          score?: number;
+          set_date?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rating_events_daily_set_id_fkey";
+            columns: ["daily_set_id"];
+            isOneToOne: false;
+            referencedRelation: "daily_sets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "rating_events_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       reports: {
         Row: {
           created_at: string;
@@ -946,6 +1039,35 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      streak_freeze_awards: {
+        Row: {
+          created_at: string;
+          granted: boolean;
+          user_id: string;
+          xp_milestone: number;
+        };
+        Insert: {
+          created_at?: string;
+          granted: boolean;
+          user_id: string;
+          xp_milestone: number;
+        };
+        Update: {
+          created_at?: string;
+          granted?: boolean;
+          user_id?: string;
+          xp_milestone?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "streak_freeze_awards_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       streak_freeze_uses: {
         Row: {
@@ -1166,6 +1288,52 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_badges: {
+        Row: {
+          awarded_at: string;
+          badge: string;
+          id: number;
+          topic_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          awarded_at?: string;
+          badge: string;
+          id?: never;
+          topic_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          awarded_at?: string;
+          badge?: string;
+          id?: never;
+          topic_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_fkey";
+            columns: ["badge"];
+            isOneToOne: false;
+            referencedRelation: "badges";
+            referencedColumns: ["slug"];
+          },
+          {
+            foreignKeyName: "user_badges_topic_id_fkey";
+            columns: ["topic_id"];
+            isOneToOne: false;
+            referencedRelation: "topics";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       xp_events: {
         Row: {
           amount: number;
@@ -1293,21 +1461,13 @@ export type Database = {
         };
         Returns: number;
       };
-      admin_set_user_ban: {
-        Args: { banned: boolean; reason?: string; target_user_id: string };
-        Returns: undefined;
-      };
+      admin_set_user_ban: { Args: { banned: boolean; reason?: string; target_user_id: string }; Returns: undefined };
       admin_set_user_role: {
         Args: { new_role: Database["public"]["Enums"]["user_role"]; target_user_id: string };
         Returns: undefined;
       };
       admin_upsert_question_answer: {
-        Args: {
-          correct_option_id: string;
-          explanation: string;
-          hint?: string;
-          target_question_id: string;
-        };
+        Args: { correct_option_id: string; explanation: string; hint?: string; target_question_id: string };
         Returns: undefined;
       };
       gen_claim_job: {
@@ -1417,7 +1577,10 @@ export type Database = {
         }[];
       };
       gen_store_embeddings: { Args: { p_model: string; p_rows: Json }; Returns: number };
+      get_daily_result: { Args: { target_set_id?: string }; Returns: Json };
+      get_leaderboard: { Args: { board?: string; page_offset?: number; page_size?: number }; Returns: Json };
       get_my_league: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_player_profile: { Args: { target_handle?: string }; Returns: Json };
       get_today_set: { Args: Record<PropertyKey, never>; Returns: Json };
       give_up: {
         Args: { context?: Database["public"]["Enums"]["attempt_context"]; question_id: string };
@@ -1487,9 +1650,7 @@ export type Tables<
     : never;
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
@@ -1510,9 +1671,7 @@ export type TablesInsert<
     : never;
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
@@ -1533,9 +1692,7 @@ export type TablesUpdate<
     : never;
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
