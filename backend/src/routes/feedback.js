@@ -31,7 +31,7 @@ router.post('/', isLoggedIn, validate({ body: feedbackSchema }), async (req, res
 router.get('/', async (req, res) => {
     try {
         const [rows] = await dbPool.query(`
-            SELECT f.feedback_id, f.rating, f.comment, f.created_at, u.user_name, f.user_id 
+            SELECT f.feedback_id, f.rating, f.comment, f.created_at, u.user_name, u.handle
             FROM user_feedback f
             JOIN users u ON f.user_id = u.user_id
             ORDER BY f.created_at DESC

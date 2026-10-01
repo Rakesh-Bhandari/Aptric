@@ -18,8 +18,14 @@ const submitAnswerSchema = z.object({
         .min(0, 'Invalid answer index'),
 });
 
-async function updateGameStats(userId, points, conn) {
-    await conn.query('UPDATE users SET score = score + ? WHERE user_id = ?', [points, userId]);
+// solved/attempted bump the users.questions_solved / questions_attempted
+// counters the leaderboard reads (attempted = correct + wrong answers).
+async function updateGameStats(userId, points, conn, { solved = 0, attempted = 0 } = {}) {
+    await conn.query(
+        `UPDATE users SET score = score + ?, questions_solved = questions_solved + ?,
+         questions_attempted = questions_attempted + ? WHERE user_id = ?`,
+        [points, solved, attempted, userId]
+    );
     const [[{ score }]] = await conn.query('SELECT score FROM users WHERE user_id = ?', [userId]);
     const newLevel = calculateLevel(score);
     await conn.query('UPDATE users SET level = ? WHERE user_id = ?', [newLevel, userId]);
@@ -213,7 +219,7 @@ router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, validate({ body: 
             );
         }
 
-        await updateGameStats(userId, awarded, conn);
+        await updateGameStats(userId, awarded, conn, { solved: isCorrect ? 1 : 0, attempted: 1 });
         await recordStreakDay(conn, userId, question.question_id, today);
 
         await conn.commit();

@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { nanoid } from 'nanoid';
 import dbPool from '../config/db.js';
+import { makeHandle } from '../utils/helpers.js';
 
 export function configurePassport() {
     passport.use(new GoogleStrategy({
@@ -34,9 +35,9 @@ export function configurePassport() {
                 if (existing.length === 0) {
                     // Google has verified the email, so new accounts start verified
                     await conn.query(`
-                        INSERT INTO users (user_id, google_id, user_name, email, last_login, level, answered_qids, is_verified)
-                        VALUES (?, ?, ?, ?, ?, 'Beginner', JSON_ARRAY(), true)
-                    `, [nanoid(12), id, displayName, email, now]);
+                        INSERT INTO users (user_id, google_id, user_name, handle, email, last_login, level, answered_qids, is_verified)
+                        VALUES (?, ?, ?, ?, ?, ?, 'Beginner', JSON_ARRAY(), true)
+                    `, [nanoid(12), id, displayName, makeHandle(displayName), email, now]);
                 } else if (!existing[0].is_verified) {
                     // Unverified email/password row may have been registered by someone else.
                     // Google has proven ownership: drop the unproven credentials before linking.

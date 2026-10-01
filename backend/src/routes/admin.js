@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import { nanoid } from 'nanoid';
 import dbPool from '../config/db.js';
 import { isAdmin } from '../middleware/auth.js';
-import { logActivity } from '../utils/helpers.js';
+import { logActivity, makeHandle } from '../utils/helpers.js';
 import { generateQuestions, topUpQuestionBank } from '../services/questionBank.js';
 import { bulkGenerateLimiter } from '../middleware/rateLimit.js';
 import {
@@ -88,7 +88,7 @@ router.post('/users', isAdmin, validate({ body: createUserSchema }), async (req,
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUserId = nanoid(12);
         const newUser = {
-            user_id: newUserId, user_name: name, email,
+            user_id: newUserId, user_name: name, handle: makeHandle(name), email,
             password_hash: hashedPassword, is_verified: true, level: 'Beginner', role, created_at: new Date()
         };
         await dbPool.query('INSERT INTO users SET ?', newUser);
@@ -238,12 +238,30 @@ router.put('/questions/:id', isAdmin, validate({ params: numericIdParams, body: 
 });
 
 router.delete('/questions/:id', isAdmin, validate({ params: numericIdParams }), async (req, res) => {
+    let conn;
     try {
-        await dbPool.query('DELETE FROM questions WHERE question_id = ?', [req.params.id]);
+        conn = await dbPool.getConnection();
+        await conn.beginTransaction();
+        // The delete cascades to user_attempts; take those answers back out of the
+        // users.questions_solved / questions_attempted counters first.
+        await conn.query(
+            `UPDATE users u JOIN (
+                SELECT user_id, SUM(status = 'correct') AS solved, SUM(status IN ('correct', 'wrong')) AS attempted
+                FROM user_attempts WHERE question_id = ? GROUP BY user_id
+             ) a ON a.user_id = u.user_id
+             SET u.questions_solved = GREATEST(u.questions_solved - a.solved, 0),
+                 u.questions_attempted = GREATEST(u.questions_attempted - a.attempted, 0)`,
+            [req.params.id]
+        );
+        await conn.query('DELETE FROM questions WHERE question_id = ?', [req.params.id]);
+        await conn.commit();
         await logActivity(dbPool, req.user.user_id, 'Admin Delete Question', `Deleted question ${req.params.id}`);
         res.json({ message: 'Question deleted' });
     } catch (err) {
+        if (conn) await conn.rollback();
         res.status(500).json({ error: 'Error deleting question' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 

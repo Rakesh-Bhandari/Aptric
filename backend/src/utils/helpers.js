@@ -1,3 +1,5 @@
+import { customAlphabet } from 'nanoid';
+
 // --- Game Constants ---
 export const POINTS_CORRECT = 100;
 export const POINTS_GIVEUP = 10;
@@ -44,6 +46,20 @@ export async function logActivity(pool, userId, action, details) {
     } catch (e) {
         console.error('Logging failed', e);
     }
+}
+
+// --- Public handles ---
+// users.handle: "<name slug, max 24>-<8 random chars>", e.g. "priya-sharma-3f9k2x7q".
+// Used in public URLs/responses instead of user_id. Set once at signup and not
+// changed on rename, so shared profile links keep working.
+// Same shape as the backfill in migrations/005_user_counters_handle.sql.
+const handleSuffix = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 8);
+
+export function makeHandle(name) {
+    const slug = String(name || '').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+        .slice(0, 24).replace(/-+$/, '');
+    return `${slug || 'user'}-${handleSuffix()}`;
 }
 
 // --- All topic categories ---

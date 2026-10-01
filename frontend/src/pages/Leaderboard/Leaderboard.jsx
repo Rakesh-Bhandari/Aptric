@@ -112,11 +112,11 @@ const Leaderboard = () => {
         fetchData();
     }, []);
 
-    const handleUserClick = async (userId) => {
+    const handleUserClick = async (handle) => {
         setProfileLoading(true);
         setSelectedProfile(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/user/${userId}/public`);
+            const res = await fetch(`${API_BASE_URL}/api/user/${encodeURIComponent(handle)}/public`);
             if (res.ok) {
                 const data = await res.json();
                 setSelectedProfile(data);
@@ -144,9 +144,9 @@ const Leaderboard = () => {
 
             <div className="bento-leaderboard-grid">
                 {leaders.map((player) => {
-                    const isMe = currentUser && player.userId === currentUser.id;
+                    const isMe = currentUser && player.handle === currentUser.handle;
                     return (
-                        <div key={player.rank} className={`bento-item ${isMe ? 'is-me' : ''}`} onClick={() => handleUserClick(player.userId)}>
+                        <div key={player.rank} className={`bento-item ${isMe ? 'is-me' : ''}`} onClick={() => handleUserClick(player.handle)}>
                             <div className="bento-rank">#{player.rank}</div>
                             <div className="bento-user-core">
                                 <img src={getAvatarUrl(player.profilePic, player.user)} alt="Avatar" className="bento-avatar" />

@@ -110,5 +110,17 @@ export const qid = z.string({ error: 'Question id is required' }).regex(/^Q[A-Za
 // AUTO_INCREMENT INT keys (question_id, feedback_id, report_id)
 export const numericId = z.string().regex(/^[1-9]\d{0,9}$/, 'Invalid id');
 
+// users.handle: see makeHandle() in utils/helpers.js
+export const handle = z.string().regex(/^[a-z0-9-]{1,40}$/, 'Invalid handle');
+export const handleParams = z.object({ handle });
+
+// limit/offset paging for list endpoints
+export const pageQuery = (defaultLimit = 50, maxLimit = 100) => ({
+    limit: z.coerce.number({ error: 'Limit must be a number' }).int('Limit must be a whole number')
+        .min(1, 'Limit must be at least 1').max(maxLimit, `Limit must be at most ${maxLimit}`).default(defaultLimit),
+    offset: z.coerce.number({ error: 'Offset must be a number' }).int('Offset must be a whole number')
+        .min(0, 'Offset must be 0 or more').max(100000, 'Offset is too large').default(0),
+});
+
 export const userIdParams = z.object({ id: userId });
 export const numericIdParams = z.object({ id: numericId });

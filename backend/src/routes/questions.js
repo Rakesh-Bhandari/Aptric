@@ -4,33 +4,37 @@ import dbPool from '../config/db.js';
 import { isLoggedIn, getUserFromCookie } from '../middleware/auth.js';
 import { getTodayDate, ALL_CATEGORIES } from '../utils/helpers.js';
 import { leaderboardLimiter, topicStatsLimiter } from '../middleware/rateLimit.js';
-import { validate, qid, category } from '../middleware/validate.js';
+import { validate, qid, category, pageQuery } from '../middleware/validate.js';
 
 const router = Router();
 
 // --- Leaderboard (public) ---
+// Reads the users.questions_solved / questions_attempted counters (kept by the
+// answer transactions) and the idx_score index. Cached 60 s at the Vercel edge.
 router.get('/leaderboard', leaderboardLimiter, async (req, res) => {
     try {
         const [rows] = await dbPool.query(
-            `SELECT user_id, user_name, profile_pic, score, level, day_streak,
-             (SELECT COUNT(*) FROM user_attempts WHERE user_id = u.user_id AND status = 'correct') as questions_solved,
-             (SELECT COUNT(*) FROM user_attempts WHERE user_id = u.user_id AND status IN ('correct', 'wrong')) as total_attempted
-             FROM users u
+            `SELECT handle, user_name, profile_pic, score, level, questions_solved, questions_attempted
+             FROM users
              ORDER BY score DESC
              LIMIT 100`
         );
 
         const leaderboard = rows.map((row, index) => ({
             rank: index + 1,
-            userId: row.user_id,
+            handle: row.handle,
             user: row.user_name,
             profilePic: row.profile_pic,
             score: row.score,
             level: row.level,
             questionsSolved: row.questions_solved,
-            accuracy: row.total_attempted > 0 ? ((row.questions_solved / row.total_attempted) * 100).toFixed(0) : 0
+            accuracy: row.questions_attempted > 0 ? ((row.questions_solved / row.questions_attempted) * 100).toFixed(0) : 0
         }));
 
+        // Vary: Origin so the edge never serves one origin's CORS headers to another
+        // (cors only adds it when the request carries an Origin).
+        res.vary('Origin');
+        res.set('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=30');
         res.json(leaderboard);
     } catch (err) {
         console.error('Leaderboard error:', err);
@@ -92,8 +96,10 @@ router.get('/single/:qid', isLoggedIn, validate({ params: z.object({ qid }) }), 
 });
 
 // --- Get questions by category ---
-router.get('/category', isLoggedIn, validate({ query: z.object({ category }) }), async (req, res) => {
-    const { category } = req.valid.query;
+// Newest first, paged with ?limit= (1-100, default 50) and ?offset= (default 0).
+// Responds { questions, total, limit, offset, hasMore }.
+router.get('/category', isLoggedIn, validate({ query: z.object({ category, ...pageQuery(50, 100) }) }), async (req, res) => {
+    const { category, limit, offset } = req.valid.query;
     let conn;
 
     try {
@@ -101,9 +107,10 @@ router.get('/category', isLoggedIn, validate({ query: z.object({ category }) }),
 
         const [questions] = await conn.query(
             `SELECT question_id, qid, question_text, options, difficulty, category 
-             FROM questions WHERE category = ? ORDER BY created_at DESC LIMIT 50`,
-            [category]
+             FROM questions WHERE category = ? ORDER BY created_at DESC, question_id DESC LIMIT ? OFFSET ?`,
+            [category, limit, offset]
         );
+        const [[{ total }]] = await conn.query('SELECT COUNT(*) AS total FROM questions WHERE category = ?', [category]);
 
         const userId = req.user.user_id;
         const qids = questions.map(q => q.qid);
@@ -117,7 +124,11 @@ router.get('/category', isLoggedIn, validate({ query: z.object({ category }) }),
             attemptsMap = new Map(attempts.map(a => [a.qid, a.status]));
         }
 
-        res.json(questions.map(q => ({ ...q, status: attemptsMap.get(q.qid) || 'unattempted' })));
+        res.json({
+            questions: questions.map(q => ({ ...q, status: attemptsMap.get(q.qid) || 'unattempted' })),
+            total, limit, offset,
+            hasMore: offset + questions.length < total
+        });
     } catch (err) {
         console.error('Category fetch error:', err);
         res.status(500).json({ error: 'Server error' });

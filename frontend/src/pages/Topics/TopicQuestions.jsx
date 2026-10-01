@@ -10,6 +10,8 @@ const Icons = {
     Play: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
 };
 
+const PAGE_SIZE = 50;
+
 const TopicQuestions = () => {
     const [searchParams] = useSearchParams();
     const category = searchParams.get('topic');
@@ -17,28 +19,37 @@ const TopicQuestions = () => {
     useAntiCheat();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [solvedIds, setSolvedIds] = useState([]);
+
+    const fetchPage = async (offset) => {
+        const res = await fetch(`${API_BASE_URL}/api/category?category=${encodeURIComponent(category)}&limit=${PAGE_SIZE}&offset=${offset}`, { credentials: 'include' });
+        const data = await res.json();
+        return { list: Array.isArray(data?.questions) ? data.questions : [], hasMore: !!data?.hasMore };
+    };
 
     useEffect(() => {
         if (!category) return;
 
         const fetchData = async () => {
             try {
-                const qRes = await fetch(`${API_BASE_URL}/api/category?category=${encodeURIComponent(category)}`, { credentials: 'include' });
-                const qData = await qRes.json();
+                const page = await fetchPage(0);
 
                 const uRes = await fetch(`${API_BASE_URL}/api/user`, { credentials: 'include' });
-                let solvedIds = [];
+                let solved = [];
                 if (uRes.ok) {
                     const uData = await uRes.json();
                     try {
-                        solvedIds = typeof uData.user.answered_qids === 'string'
+                        solved = typeof uData.user.answered_qids === 'string'
                             ? JSON.parse(uData.user.answered_qids)
                             : (uData.user.answered_qids || []);
-                    } catch (e) { solvedIds = []; }
+                    } catch (e) { solved = []; }
                 }
 
-                const merged = qData.map(q => ({ ...q, isSolved: solvedIds.includes(q.qid) }));
-                setQuestions(merged);
+                setSolvedIds(solved);
+                setQuestions(page.list.map(q => ({ ...q, isSolved: solved.includes(q.qid) })));
+                setHasMore(page.hasMore);
             } catch (err) {
                 console.error("Data load error", err);
             } finally {
@@ -48,6 +59,22 @@ const TopicQuestions = () => {
 
         fetchData();
     }, [category]);
+
+    const loadMore = async () => {
+        setLoadingMore(true);
+        try {
+            const page = await fetchPage(questions.length);
+            setQuestions(prev => {
+                const seen = new Set(prev.map(q => q.qid));
+                return [...prev, ...page.list.filter(q => !seen.has(q.qid)).map(q => ({ ...q, isSolved: solvedIds.includes(q.qid) }))];
+            });
+            setHasMore(page.hasMore);
+        } catch (err) {
+            console.error("Load more error", err);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
 
     if (loading) return (
         <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -116,6 +143,13 @@ const TopicQuestions = () => {
                     })
                 )}
             </div>
+            {hasMore && (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
+                    <button className="solve-btn" style={{ width: 'auto', padding: '0.8rem 2rem' }} onClick={loadMore} disabled={loadingMore}>
+                        {loadingMore ? 'LOADING...' : 'LOAD_MORE'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

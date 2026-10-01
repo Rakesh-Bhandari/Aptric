@@ -241,7 +241,7 @@ const Feedback = () => {
                                         {/* Dropdown */}
                                         {activeMenuId === item.feedback_id && (
                                             <div className="cmd-menu" onClick={(e) => e.stopPropagation()}>
-                                                {currentUser && currentUser.id === item.user_id ? (
+                                                {currentUser && currentUser.handle === item.handle ? (
                                                     <>
                                                         <button className="cmd-option" onClick={() => startEditing(item)}>
                                                             <Icons.Edit /> EDIT
