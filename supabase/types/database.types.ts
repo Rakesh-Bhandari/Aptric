@@ -627,6 +627,13 @@ export type Database = {
             referencedRelation: "questions";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "question_tags_tag_fkey";
+            columns: ["tag"];
+            isOneToOne: false;
+            referencedRelation: "tags";
+            referencedColumns: ["slug"];
+          },
         ];
       };
       questions: {
@@ -859,6 +866,42 @@ export type Database = {
           },
         ];
       };
+      tags: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_active: boolean;
+          kind: Database["public"]["Enums"]["tag_kind"];
+          name: string;
+          slug: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          kind?: Database["public"]["Enums"]["tag_kind"];
+          name: string;
+          slug: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          kind?: Database["public"]["Enums"]["tag_kind"];
+          name?: string;
+          slug?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       topics: {
         Row: {
           created_at: string;
@@ -1088,6 +1131,7 @@ export type Database = {
       question_status: "draft" | "in_review" | "published" | "retired";
       report_reason: "wrong_answer" | "ambiguous" | "typo" | "duplicate" | "offensive" | "other";
       report_status: "open" | "triaged" | "resolved" | "dismissed";
+      tag_kind: "exam" | "general";
       user_role: "user" | "admin";
     };
     CompositeTypes: {
@@ -1213,6 +1257,7 @@ export const Constants = {
       question_status: ["draft", "in_review", "published", "retired"],
       report_reason: ["wrong_answer", "ambiguous", "typo", "duplicate", "offensive", "other"],
       report_status: ["open", "triaged", "resolved", "dismissed"],
+      tag_kind: ["exam", "general"],
       user_role: ["user", "admin"],
     },
   },
