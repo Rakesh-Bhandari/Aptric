@@ -1,6 +1,6 @@
-# Aptric v2 – Supabase
+# Aptric – Supabase
 
-Postgres schema, RLS and generated types for Aptric v2, managed with the Supabase CLI.
+Postgres schema, RLS and generated types for Aptric, managed with the Supabase CLI.
 
 ```bash
 npx supabase start          # local stack (Docker)
@@ -29,7 +29,7 @@ Notes:
 - Column-level privileges (not RLS) protect the game columns on `profiles`, so the rule holds for admins too.
 - `xp_events`, `rating_events` and `audit_log` are append-only: updates, direct deletes and truncates raise errors even for `service_role`. Rows still go away when a user is deleted (FK cascade).
 - Attempt uniqueness is `(user_id, question_id, context, daily_set_id)` with `NULLS NOT DISTINCT`, so a user gets one practice attempt per question and one attempt per question per daily set.
-- `questions.content_hash` is a lowercase sha256 hex digest the writer computes over the normalised stem + options: lower-case each, turn every run of characters other than `[a-z0-9]` into one space, trim; then hash the stem, a newline, and the options sorted and newline-joined (so reordered options still collide). `contentHash()` in `scripts/import-v1-questions.mjs` is the reference implementation (`functions/generate-questions/dedup.ts` is tested against it).
+- `questions.content_hash` is a lowercase sha256 hex digest the writer computes over the normalised stem + options: lower-case each, turn every run of characters other than `[a-z0-9]` into one space, trim; then hash the stem, a newline, and the options sorted and newline-joined (so reordered options still collide). `private.content_hash()` computes it in the database and `contentHash()` in `functions/generate-questions/dedup.ts` in the Edge Function; both are tested against the same digests.
 - `question_tags.tag` must name a row in `tags` (the catalog; `kind` is `exam` or `general`).
 - Content changes (taxonomy, tags, questions, options, answers, question tags, daily sets and their items) are written to `audit_log` by trigger, with `actor_id = auth.uid()`; so are admin updates/deletes of reports and feedback. Role, ban and question status changes are logged by the RPCs that make them, and generation jobs by trigger (actor = `created_by` / `cancelled_by`).
 - Banned users (`profiles.banned_at`) can't play (every gameplay RPC goes through `private.require_uid()`), file reports or feedback, or edit their profile; the ban also sets `auth.users.banned_until` and ends their sessions.
@@ -47,26 +47,6 @@ Seeded by `20261001000010_taxonomy_seed.sql` (every environment, not just local;
 | Technical Aptitude | Programming (Output Prediction, OOP, DSA) · CS Fundamentals (DBMS, Operating Systems, Computer Networks) |
 
 Exam tags (`tags.kind = 'exam'`): `tcs-nqt`, `infosys`, `amcat`, `cat`, `gate`, `bank-po`, `ssc`.
-
-## Importing v1 questions
-
-`scripts/import-v1-questions.mjs` (Node 18+, no dependencies) turns a v1 TiDB/MySQL export of the `questions` table into one transactional SQL script. It never connects to either database.
-
-```bash
-# mysqldump / TiDB Dumpling SQL (pass Dumpling's *-schema.sql too), CSV with a header row, or JSON/NDJSON
-node supabase/scripts/import-v1-questions.mjs --report v1-report.csv apti_db1.questions*.sql > v1-import.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f v1-import.sql   # direct/session connection as postgres
-```
-
-- **Every question lands as `status = 'in_review'`, `source = 'import'`.** v1 answer keys were AI-generated and may be wrong, so a reviewer checks each key before publishing. Questions with an out-of-range `correct_answer_index` are imported without an answer key, and daily sets skip them even if published.
-- v1 `category` picks the section (v1 "Puzzles" → Logical Reasoning › Puzzles). The subtopic is a keyword guess; questions it can't place go to the section's inactive "Unsorted (v1 import)" topic (`20261001000011_v1_import.sql`), which users and daily sets never see. Move them, then delete those topics.
-- Skipped: v1 `status = 'rejected'` (unless `--include-rejected`), unknown categories, fewer than 2 or more than 10 options, empty text/options, and exact content duplicates (the oldest copy wins). An unknown difficulty becomes `medium`. Stderr has the summary; `--report` writes a per-question CSV with the guessed subtopic and notes.
-- `private.v1_question_import` maps each v1 `question_id`/`qid` to its v2 question, with `outcome` (`inserted`, or `duplicate` of an existing v2 question with the same `content_hash`), `classified_by` and `notes`. Re-running skips v1 rows already there, so the script is safe to repeat with a newer export.
-- Review queue: `select q.*, m.classified_by, m.notes from public.questions q join private.v1_question_import m on m.question_id = q.id where q.status = 'in_review';`
-
-## Importing v1 users
-
-`scripts/export-v1-users.sql` (TiDB, read-only) → `scripts/import-v1-users.mjs` (one transactional SQL script with `--dry-run` and `--verify` modes and a verification report) → `psql`. Users keep their bcrypt passwords; Google users relink by email on first sign-in; v1 score becomes starting XP as one `legacy_import` xp_event; streaks are recomputed from v1 daily-set history. `private.v1_user_import` maps v1 `user_id` to the auth user id. The runbook, cutover checklist and rollback plan are in [MIGRATION.md](MIGRATION.md).
 
 ## AI question generation (`generate-questions`)
 

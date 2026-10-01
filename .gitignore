@@ -4,7 +4,6 @@ Thumbs.db
 
 # --- Dependencies ---
 node_modules/
-backend/node_modules/
 frontend/node_modules/
 
 # --- Environment Secrets (CRITICAL) ---
@@ -17,11 +16,6 @@ dist/
 frontend/dist/
 build/
 *.log
-
-# --- Backend Specifics ---
-# Exclude actual user uploads but keep the directory if needed
-backend/src/uploads/*
-!backend/src/uploads/.gitkeep
 
 # --- IDE/Editor Private Configs ---
 .vscode/*
@@ -48,7 +42,3 @@ supabase/.branches/
 supabase/.temp/
 
 .gitignore
-# --- v1 -> v2 migration artifacts (emails, password hashes) ---
-v1-users*.ndjson
-v1-users*.sql
-v1-users*.csv

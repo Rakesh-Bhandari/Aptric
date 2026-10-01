@@ -24,7 +24,7 @@ const intEnv = (name: string, fallback: number, min: number, max: number) =>
 const SUPABASE_URL = env('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// Same variable names as the v1 backend. The solver defaults to a different
+// The solver defaults to a different
 // vendor's model than the generator so its pass is genuinely independent.
 const QUESTION_MODEL = env('QUESTION_MODEL', 'google/gemini-2.0-flash-001')!;
 const QUESTION_VERIFY_MODEL = env('QUESTION_VERIFY_MODEL', 'openai/gpt-4o-mini')!;

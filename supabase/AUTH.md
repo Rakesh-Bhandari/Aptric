@@ -1,4 +1,4 @@
-# Aptric v2 – Auth setup
+# Aptric – Auth setup
 
 The frontend uses Supabase Auth via `supabase-js` only: no custom JWTs, no password hashing in our code.
 
