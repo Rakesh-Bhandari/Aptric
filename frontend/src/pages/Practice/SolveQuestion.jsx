@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { marked } from 'marked';
 import './Practice.css';
+import Markdown from '../../components/Markdown/Markdown';
 import API_BASE_URL from '../../utils/config.js';
 import { useToast } from '../../context/ToastContext';
 import useAntiCheat from '../../hooks/useAntiCheat';
@@ -13,14 +13,6 @@ const Icons = {
     Book: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>,
     Left: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>,
     Right: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-};
-
-const FormattedText = ({ text }) => {
-    if (!text) return null;
-    const getHtml = () => {
-        try { return { __html: marked.parse(text) }; } catch (e) { return { __html: text }; }
-    };
-    return <div dangerouslySetInnerHTML={getHtml()} />;
 };
 
 const SolveQuestion = () => {
@@ -135,18 +127,18 @@ const SolveQuestion = () => {
                     <span>[{q.difficulty.toUpperCase()}] :: {q.category.toUpperCase()}</span>
                 </div>
                 <div className="question-text">
-                    <FormattedText text={q.questionText} />
+                    <Markdown text={q.questionText} />
                 </div>
 
                 {q.hint && (isHintUsed || isAnswered) && (
                     <div className="terminal-alert alert-hint">
-                        [HINT_DECRYPTED]: <FormattedText text={q.hint} />
+                        [HINT_DECRYPTED]: <Markdown text={q.hint} />
                     </div>
                 )}
 
                 {isAnswered && q.explanation && (
                     <div className="terminal-alert alert-info">
-                        [ANALYSIS]: <FormattedText text={q.explanation} />
+                        [ANALYSIS]: <Markdown text={q.explanation} />
                     </div>
                 )}
 
@@ -163,7 +155,7 @@ const SolveQuestion = () => {
                         return (
                             <div key={idx} className={optClass} onClick={() => !isAnswered && setSelectedAnswerIndex(idx)}>
                                 <span className="opt-prefix">{String.fromCharCode(65 + idx)} &gt;</span>
-                                <FormattedText text={opt} />
+                                <Markdown text={opt} />
                             </div>
                         );
                     })}

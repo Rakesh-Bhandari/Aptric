@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { marked } from 'marked';
 import './Practice.css';
+import Markdown from '../../components/Markdown/Markdown';
 import API_BASE_URL from '../../utils/config';
 import { useToast } from '../../context/ToastContext';
 import useAntiCheat from '../../hooks/useAntiCheat';
@@ -13,14 +13,6 @@ const Icons = {
     Left: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>,
     Right: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>,
     Check: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-};
-
-const FormattedText = ({ text }) => {
-    if (!text) return null;
-    const getHtml = () => {
-        try { return { __html: marked.parse(text) }; } catch (e) { return { __html: text }; }
-    };
-    return <div dangerouslySetInnerHTML={getHtml()} />;
 };
 
 const POLL_INTERVAL = 4000;
@@ -330,12 +322,12 @@ const Practice = () => {
                                     <Icons.Clock /> {formatTime(questionTimer)}
                                 </span>
                             </div>
-                            <div className="question-text"><FormattedText text={currentQ.questionText} /></div>
+                            <div className="question-text"><Markdown text={currentQ.questionText} /></div>
                             {currentQ.hint && (isHintUsed || isAnswered) && (
-                                <div className="terminal-alert alert-hint">[HINT_DECRYPTED]: <FormattedText text={currentQ.hint} /></div>
+                                <div className="terminal-alert alert-hint">[HINT_DECRYPTED]: <Markdown text={currentQ.hint} /></div>
                             )}
                             {isAnswered && currentQ.explanation && (
-                                <div className="terminal-alert alert-info">[ANALYSIS]: <FormattedText text={currentQ.explanation} /></div>
+                                <div className="terminal-alert alert-info">[ANALYSIS]: <Markdown text={currentQ.explanation} /></div>
                             )}
                             <div className="option-stack">
                                 {options.map((opt, idx) => {
@@ -350,7 +342,7 @@ const Practice = () => {
                                     return (
                                         <div key={idx} className={optClass} onClick={() => !isAnswered && setSelectedAnswerIndex(idx)}>
                                             <span className="opt-prefix">{String.fromCharCode(65 + idx)} &gt;</span>
-                                            <FormattedText text={opt} />
+                                            <Markdown text={opt} />
                                         </div>
                                     );
                                 })}
