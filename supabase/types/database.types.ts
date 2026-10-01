@@ -156,6 +156,7 @@ export type Database = {
           published_at: string | null;
           set_date: string;
           title: string | null;
+          track_id: string;
           updated_at: string;
         };
         Insert: {
@@ -165,6 +166,7 @@ export type Database = {
           published_at?: string | null;
           set_date: string;
           title?: string | null;
+          track_id?: string;
           updated_at?: string;
         };
         Update: {
@@ -174,6 +176,7 @@ export type Database = {
           published_at?: string | null;
           set_date?: string;
           title?: string | null;
+          track_id?: string;
           updated_at?: string;
         };
         Relationships: [
@@ -182,6 +185,13 @@ export type Database = {
             columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "daily_sets_track_id_fkey";
+            columns: ["track_id"];
+            isOneToOne: false;
+            referencedRelation: "tracks";
             referencedColumns: ["id"];
           },
         ];
@@ -230,6 +240,55 @@ export type Database = {
           },
         ];
       };
+      hint_uses: {
+        Row: {
+          context: Database["public"]["Enums"]["attempt_context"];
+          created_at: string;
+          daily_set_id: string | null;
+          id: string;
+          question_id: string;
+          user_id: string;
+        };
+        Insert: {
+          context: Database["public"]["Enums"]["attempt_context"];
+          created_at?: string;
+          daily_set_id?: string | null;
+          id?: string;
+          question_id: string;
+          user_id: string;
+        };
+        Update: {
+          context?: Database["public"]["Enums"]["attempt_context"];
+          created_at?: string;
+          daily_set_id?: string | null;
+          id?: string;
+          question_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hint_uses_daily_set_id_fkey";
+            columns: ["daily_set_id"];
+            isOneToOne: false;
+            referencedRelation: "daily_sets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hint_uses_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hint_uses_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -246,6 +305,7 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"];
           streak_freezes: number;
           timezone: string;
+          track_id: string | null;
           updated_at: string;
           xp: number;
         };
@@ -264,6 +324,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"];
           streak_freezes?: number;
           timezone?: string;
+          track_id?: string | null;
           updated_at?: string;
           xp?: number;
         };
@@ -282,10 +343,19 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"];
           streak_freezes?: number;
           timezone?: string;
+          track_id?: string | null;
           updated_at?: string;
           xp?: number;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_track_id_fkey";
+            columns: ["track_id"];
+            isOneToOne: false;
+            referencedRelation: "tracks";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       question_answers: {
         Row: {
@@ -638,6 +708,42 @@ export type Database = {
           },
         ];
       };
+      tracks: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_active: boolean;
+          is_default: boolean;
+          name: string;
+          slug: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          is_default?: boolean;
+          name: string;
+          slug: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          is_default?: boolean;
+          name?: string;
+          slug?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       xp_events: {
         Row: {
           amount: number;
@@ -723,6 +829,24 @@ export type Database = {
           target_question_id: string;
         };
         Returns: undefined;
+      };
+      get_today_set: { Args: never; Returns: Json };
+      give_up: {
+        Args: { context?: Database["public"]["Enums"]["attempt_context"]; question_id: string };
+        Returns: Json;
+      };
+      submit_answer: {
+        Args: {
+          context: Database["public"]["Enums"]["attempt_context"];
+          option_id: string;
+          question_id: string;
+          time_ms?: number;
+        };
+        Returns: Json;
+      };
+      use_hint: {
+        Args: { context?: Database["public"]["Enums"]["attempt_context"]; question_id: string };
+        Returns: Json;
       };
     };
     Enums: {

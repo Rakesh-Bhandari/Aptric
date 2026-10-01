@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Practice.css';
 import Markdown from '../../components/Markdown/Markdown';
-import API_BASE_URL from '../../utils/config';
+import { supabase } from '../../lib/supabase';
+import { submitAnswer, requestHint, giveUp, gameErrorMessage, correctIndex } from '../../lib/game';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
-import { useDailyQuestions, POLL_INTERVAL_MS, MAX_POLLS } from '../../hooks/useDailyQuestions';
-import { msUntilProductMidnight } from '../../utils/time';
+import { useDailyQuestions } from '../../hooks/useDailyQuestions';
+import { msUntilMidnight, DEFAULT_TIME_ZONE } from '../../utils/time';
 
 const Icons = {
     Target: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>,
@@ -18,9 +20,10 @@ const Icons = {
 
 const Practice = () => {
     const toast = useToast();
-    const [userData, setUserData] = useState(null);
-    const [userStats, setUserStats] = useState({ rank: 0, accuracy: 0, level: 'Beginner' });
-    const { questions, setQuestions, status: genStatus, message: genMessage, pollCount, retry } = useDailyQuestions();
+    const { user } = useSession();
+    const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE);
+    const [userStats, setUserStats] = useState({ accuracy: 0, level: 'Beginner' });
+    const { questions, setQuestions, status: genStatus, message: genMessage, retry } = useDailyQuestions();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState(null);
     const [message, setMessage] = useState(null);
@@ -28,36 +31,22 @@ const Practice = () => {
     const [questionTimer, setQuestionTimer] = useState(0);
     const timerRef = useRef(null);
 
-    const apiFetch = useCallback(async (endpoint, options = {}) => {
-        try {
-            const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                ...options,
-            });
-            // Return full response so caller can check status code
-            return res;
-        } catch (err) {
-            console.error('[apiFetch]', endpoint, err);
-            return null;
-        }
-    }, []);
-
     const refreshUserData = useCallback(async () => {
-        const res = await apiFetch('/api/user/progress');
-        if (!res || !res.ok) return;
-        const data = await res.json();
-        if (data) {
-            setUserData(data.profile);
-            setUserStats({
-                rank: data.rank,
-                accuracy: data.stats.accuracy,
-                score: data.stats.score,
-                streak: data.stats.streak,
-                level: data.stats.level
-            });
-        }
-    }, [apiFetch]);
+        if (!user) return;
+        const [{ data: profile }, { count: total }, { count: correct }] = await Promise.all([
+            supabase.from('profiles').select('xp, level, current_streak, timezone').eq('id', user.id).single(),
+            supabase.from('attempts').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+            supabase.from('attempts').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_correct', true),
+        ]);
+        if (!profile) return;
+        setTimeZone(profile.timezone || DEFAULT_TIME_ZONE);
+        setUserStats({
+            accuracy: total ? Math.round((correct / total) * 100) : 0,
+            score: profile.xp,
+            streak: profile.current_streak,
+            level: `LVL ${profile.level}`,
+        });
+    }, [user]);
 
     // Once questions arrive, jump to the first unanswered one.
     useEffect(() => {
@@ -69,9 +58,11 @@ const Practice = () => {
 
     useEffect(() => {
         refreshUserData();
+    }, [refreshUserData]);
 
+    useEffect(() => {
         const countdownInterval = setInterval(() => {
-            const diff = msUntilProductMidnight();
+            const diff = msUntilMidnight(timeZone);
             if (diff <= 0) { setCountdownTime('00:00:00'); return; }
             const h = Math.floor(diff / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
@@ -80,7 +71,7 @@ const Practice = () => {
         }, 1000);
 
         return () => clearInterval(countdownInterval);
-    }, []);
+    }, [timeZone]);
 
     useEffect(() => {
         if (timerRef.current) clearInterval(timerRef.current);
@@ -106,55 +97,52 @@ const Practice = () => {
     const handleSubmit = async () => {
         const currentQ = questions[currentIndex];
         if (selectedAnswerIndex === null) return;
-        const res = await apiFetch('/api/submit-answer', {
-            method: 'POST',
-            body: JSON.stringify({ questionId: currentQ.questionId, qid: currentQ.qid, selectedAnswerIndex })
-        });
-        if (res?.ok) {
-            const data = await res.json();
-            updateQuestionState(currentQ.qid, { ...data, selectedAnswerIndex, correctAnswerIndex: data.correct_answer_index });
+        try {
+            const data = await submitAnswer({
+                questionId: currentQ.qid,
+                optionId: currentQ.optionIds[selectedAnswerIndex],
+                context: 'daily',
+                timeMs: questionTimer * 1000,
+            });
+            updateQuestionState(currentQ.qid, {
+                status: data.is_correct ? 'correct' : 'wrong',
+                explanation: data.explanation,
+                selectedAnswerIndex,
+                correctAnswerIndex: correctIndex(currentQ.optionIds, data),
+                pointsEarned: data.xp_awarded,
+            });
+        } catch (err) {
+            toast.error(gameErrorMessage(err));
         }
     };
 
     const handleHint = async () => {
         const currentQ = questions[currentIndex];
-        const res = await apiFetch('/api/use-hint', {
-            method: 'POST',
-            body: JSON.stringify({ questionId: currentQ.questionId, qid: currentQ.qid })
-        });
-        if (res?.ok) {
-            const data = await res.json();
+        try {
+            const data = await requestHint({ questionId: currentQ.qid, context: 'daily' });
             if (data.hint) updateQuestionState(currentQ.qid, { status: 'hint_used', hint: data.hint });
+            else toast.info('No hint is available for this question.');
+        } catch (err) {
+            toast.error(gameErrorMessage(err));
         }
     };
 
     const handleReveal = async () => {
         if (!(await toast.confirm({ message: 'Abort this question? Your progress on it will be lost.', confirmText: 'Abort', cancelText: 'Cancel', variant: 'warning' }))) return;
         const currentQ = questions[currentIndex];
-        const res = await apiFetch('/api/give-up', {
-            method: 'POST',
-            body: JSON.stringify({ questionId: currentQ.questionId, qid: currentQ.qid })
-        });
-        if (res?.ok) {
-            const data = await res.json();
-            updateQuestionState(currentQ.qid, { ...data, selectedAnswerIndex: null });
+        try {
+            const data = await giveUp({ questionId: currentQ.qid, context: 'daily' });
+            updateQuestionState(currentQ.qid, {
+                status: 'gave_up',
+                explanation: data.explanation,
+                selectedAnswerIndex: null,
+                correctAnswerIndex: correctIndex(currentQ.optionIds, data),
+                pointsEarned: 0,
+            });
+        } catch (err) {
+            toast.error(gameErrorMessage(err));
         }
     };
-
-    // ── Generating state UI ──────────────────────────────────────
-    const GeneratingScreen = () => (
-        <div className="terminal-loader-container">
-            <div className="status-dot"></div>
-            <p className="glitch-text">// AI_GENERATION_PROTOCOL_ACTIVE...</p>
-            <p className="helper-text">{genMessage}</p>
-            <p style={{ fontFamily: 'JetBrains Mono', fontSize: '0.7rem', color: '#555', marginTop: '0.5rem' }}>
-                Auto-refreshing every {POLL_INTERVAL_MS / 1000}s &bull; Attempt {pollCount}/{MAX_POLLS}
-            </p>
-            <button onClick={retry} className="cmd-btn" style={{ marginTop: '1rem' }}>
-                FORCE_RETRY
-            </button>
-        </div>
-    );
 
     if (genStatus === 'loading') return <div className="loading-spinner"></div>;
 
@@ -199,7 +187,7 @@ const Practice = () => {
                             <span className="stat-desc">ACCURACY</span>
                         </div>
                         <div className="stat-tile">
-                            <span className="stat-val" style={{ fontSize: '1.4rem' }}>{attemptedCount}/10</span>
+                            <span className="stat-val" style={{ fontSize: '1.4rem' }}>{attemptedCount}/{questions.length}</span>
                             <span className="stat-desc">PROGRESS</span>
                         </div>
                     </div>
@@ -239,11 +227,9 @@ const Practice = () => {
 
                 {/* Right Column */}
                 <div className="console-card">
-                    {genStatus === 'generating' ? (
-                        <GeneratingScreen />
-                    ) : genStatus === 'error' ? (
+                    {genStatus === 'error' || genStatus === 'empty' ? (
                         <div className="terminal-loader-container">
-                            <p className="glitch-text">// ERROR</p>
+                            <p className="glitch-text">{genStatus === 'empty' ? '// STANDBY' : '// ERROR'}</p>
                             <p className="helper-text">{genMessage}</p>
                             <button onClick={retry} className="cmd-btn" style={{ marginTop: '1rem' }}>
                                 RETRY_SYNC
@@ -296,9 +282,8 @@ const Practice = () => {
                     ) : (
                         <div className="terminal-loader-container">
                             <div className="status-dot"></div>
-                            <p className="glitch-text">// INITIALIZING_AI_GENERATION_PROTOCOL...</p>
-                            <p className="helper-text">Please stand by while our AI compiles your custom training data packets.</p>
-                            <button onClick={() => window.location.reload()} className="cmd-btn">RETRY_SYNC</button>
+                            <p className="glitch-text">// SYNCING...</p>
+                            <button onClick={retry} className="cmd-btn">RETRY_SYNC</button>
                         </div>
                     )}
                 </div>

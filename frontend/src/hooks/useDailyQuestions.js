@@ -1,69 +1,65 @@
 // src/hooks/useDailyQuestions.js
-// Polls /api/daily-questions until questions are ready (status === 'ready').
-// Handles the 202 'generating' state so the serverless timeout is never hit.
+// Loads today's daily set for the signed-in user's track via the
+// get_today_set RPC and shapes it for the Practice page.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import API_BASE_URL from '../utils/config';
+import { getTodaySet, gameErrorMessage } from '../lib/game';
 
-export const POLL_INTERVAL_MS = 4000;
-export const MAX_POLLS = 30; // ~2 minutes
+export const attemptStatus = (attempt) => {
+    if (!attempt) return null;
+    if (attempt.gave_up) return 'gave_up';
+    return attempt.is_correct ? 'correct' : 'wrong';
+};
+
+const toQuestion = (q) => {
+    const optionIds = (q.options || []).map(o => o.id);
+    const selected = q.attempt?.selected_option_id;
+    const selectedIndex = selected ? optionIds.indexOf(selected) : null;
+    return {
+        qid: q.id,
+        questionText: q.stem,
+        difficulty: q.difficulty,
+        category: q.topic || q.section || '',
+        options: (q.options || []).map(o => o.body),
+        optionIds,
+        hint: q.hint,
+        status: attemptStatus(q.attempt) || (q.hint_used ? 'hint_used' : 'pending'),
+        selectedAnswerIndex: selectedIndex,
+        // The set never carries answer keys; a correct pick is the only one we know.
+        correctAnswerIndex: q.attempt?.is_correct ? selectedIndex : null,
+        pointsEarned: q.attempt?.xp_awarded ?? 0,
+    };
+};
 
 export function useDailyQuestions() {
     const [questions, setQuestions] = useState([]);
-    const [status, setStatus] = useState('loading'); // 'loading' | 'generating' | 'ready' | 'error'
+    const [dailySet, setDailySet] = useState(null);
+    const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'empty' | 'error'
     const [message, setMessage] = useState('');
-    const [pollCount, setPollCount] = useState(0);
-    const timerRef = useRef(null);
-    const pollsRef = useRef(0);
     const activeRef = useRef(true);
 
     const fetchQuestions = useCallback(async () => {
-        clearTimeout(timerRef.current);
-        let res, data;
         try {
-            res = await fetch(`${API_BASE_URL}/api/daily-questions`, { credentials: 'include' });
-            data = await res.json();
+            const data = await getTodaySet();
+            if (!activeRef.current) return;
+            setDailySet(data);
+            const list = (data?.questions || []).map(toQuestion);
+            setQuestions(list);
+            if (list.length > 0) {
+                setStatus('ready');
+            } else {
+                setStatus('empty');
+                setMessage('NO_SET_RELEASED: Today\'s set for your track is not out yet. Check back soon.');
+            }
         } catch (err) {
             console.error('[useDailyQuestions]', err);
+            if (!activeRef.current) return;
             setStatus('error');
-            setMessage('NETWORK_ERROR: Could not reach server.');
-            return;
+            setMessage(gameErrorMessage(err));
         }
-
-        if (res.status === 401) {
-            setStatus('error');
-            setMessage('SESSION_EXPIRED: Please log in again.');
-            return;
-        }
-
-        if (res.status === 202 || data.status === 'generating') {
-            pollsRef.current += 1;
-            setPollCount(pollsRef.current);
-            if (pollsRef.current >= MAX_POLLS) {
-                setStatus('error');
-                setMessage('TIMEOUT: Generation is taking too long. Please refresh.');
-                return;
-            }
-            setStatus('generating');
-            setMessage(data.message || 'AI is compiling your training data...');
-            // A request still in flight at unmount must not schedule another poll.
-            if (activeRef.current) timerRef.current = setTimeout(fetchQuestions, POLL_INTERVAL_MS);
-            return;
-        }
-
-        if (data.status === 'ready' && data.questions?.length > 0) {
-            setQuestions(data.questions);
-            setStatus('ready');
-            return;
-        }
-
-        setStatus('error');
-        setMessage(data.error || 'NO_QUESTIONS_FOUND: Please refresh.');
     }, []);
 
     const retry = useCallback(() => {
-        pollsRef.current = 0;
-        setPollCount(0);
         setStatus('loading');
         fetchQuestions();
     }, [fetchQuestions]);
@@ -71,11 +67,8 @@ export function useDailyQuestions() {
     useEffect(() => {
         activeRef.current = true;
         fetchQuestions();
-        return () => {
-            activeRef.current = false;
-            clearTimeout(timerRef.current);
-        };
+        return () => { activeRef.current = false; };
     }, [fetchQuestions]);
 
-    return { questions, setQuestions, status, message, pollCount, retry };
+    return { questions, setQuestions, dailySet, status, message, retry };
 }

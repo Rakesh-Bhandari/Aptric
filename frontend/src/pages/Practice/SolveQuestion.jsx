@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Practice.css';
 import Markdown from '../../components/Markdown/Markdown';
-import API_BASE_URL from '../../utils/config.js';
+import { supabase } from '../../lib/supabase';
+import { submitAnswer, requestHint, giveUp, gameErrorMessage, correctIndex } from '../../lib/game';
+import { attemptStatus } from '../../hooks/useDailyQuestions';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
 
 const Icons = {
@@ -18,90 +21,120 @@ const SolveQuestion = () => {
     const { qid } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
+    const { user } = useSession();
+    const userId = user?.id;
     const [q, setQ] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState(null);
     const [categoryQuestions, setCategoryQuestions] = useState([]);
 
+    // Practice mode: the question, the caller's practice attempt/hint on it,
+    // and its published siblings in the same subtopic for prev/next.
+    const loadQuestion = useCallback(async (id) => {
+        const { data, error } = await supabase
+            .from('questions')
+            .select('id, stem, difficulty, subtopic_id, subtopics(name, topics(name)), question_options(id, position, body)')
+            .eq('id', id)
+            .single();
+        if (error) throw error;
+        const opts = [...data.question_options].sort((x, y) => x.position - y.position);
+        const optionIds = opts.map(o => o.id);
+
+        const [{ data: attempt }, { data: hintUse }, { data: siblings }] = await Promise.all([
+            supabase.from('attempts').select('selected_option_id, is_correct')
+                .eq('user_id', userId).eq('question_id', id).eq('context', 'practice').maybeSingle(),
+            supabase.from('hint_uses').select('id')
+                .eq('user_id', userId).eq('question_id', id).eq('context', 'practice').maybeSingle(),
+            supabase.from('questions').select('id')
+                .eq('subtopic_id', data.subtopic_id).eq('status', 'published')
+                .order('created_at').order('id'),
+        ]);
+
+        const selectedIndex = attempt?.selected_option_id ? optionIds.indexOf(attempt.selected_option_id) : null;
+        let hint = null;
+        // Re-reading a hint already paid for is free; after answering it's not offered.
+        if (hintUse && !attempt) hint = (await requestHint({ questionId: id, context: 'practice' })).hint;
+
+        return {
+            question: {
+                qid: data.id,
+                questionText: data.stem,
+                difficulty: data.difficulty,
+                category: data.subtopics?.topics?.name || data.subtopics?.name || '',
+                options: opts.map(o => o.body),
+                optionIds,
+                hint,
+                status: attemptStatus(attempt && { ...attempt, gave_up: !attempt.selected_option_id })
+                    || (hintUse ? 'hint_used' : 'pending'),
+                selectedAnswerIndex: selectedIndex,
+                correctAnswerIndex: attempt?.is_correct ? selectedIndex : null,
+            },
+            siblings: (siblings || []).map(q => q.id),
+        };
+    }, [userId]);
+
     useEffect(() => {
+        if (!userId) return;
+        let cancelled = false;
         setLoading(true);
-        fetch(`${API_BASE_URL}/api/single/${qid}`, { credentials: 'include' })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.error) {
-                    setQ(data);
-                    if (['correct', 'wrong'].includes(data.status)) {
-                        setSelectedAnswerIndex(data.selectedAnswerIndex);
-                    } else {
-                        setSelectedAnswerIndex(null);
-                    }
-                    fetchCategoryQuestions(data.category);
-                }
-                setLoading(false);
+        loadQuestion(qid)
+            .then(({ question, siblings }) => {
+                if (cancelled) return;
+                setQ(question);
+                setSelectedAnswerIndex(question.selectedAnswerIndex);
+                setCategoryQuestions(siblings);
             })
-            .catch(() => setLoading(false));
-    }, [qid]);
+            .catch((err) => { console.error(err); if (!cancelled) setQ(null); })
+            .finally(() => { if (!cancelled) setLoading(false); });
+        return () => { cancelled = true; };
+    }, [qid, loadQuestion]);
 
-    const fetchCategoryQuestions = (category) => {
-        if (categoryQuestions.length > 0 && categoryQuestions[0].category === category) return;
-        fetch(`${API_BASE_URL}/api/category?category=${encodeURIComponent(category)}&limit=100`, { credentials: 'include' })
-            .then(res => res.json())
-            .then(data => { if (Array.isArray(data?.questions)) setCategoryQuestions(data.questions); })
-            .catch(console.error);
-    };
-
-    const currentIndex = categoryQuestions.findIndex(item => item.qid === qid);
-    const prevQid = currentIndex > 0 ? categoryQuestions[currentIndex - 1].qid : null;
-    const nextQid = currentIndex !== -1 && currentIndex < categoryQuestions.length - 1 ? categoryQuestions[currentIndex + 1].qid : null;
+    const currentIndex = categoryQuestions.indexOf(qid);
+    const prevQid = currentIndex > 0 ? categoryQuestions[currentIndex - 1] : null;
+    const nextQid = currentIndex !== -1 && currentIndex < categoryQuestions.length - 1 ? categoryQuestions[currentIndex + 1] : null;
 
     const handleSubmit = async () => {
         if (selectedAnswerIndex === null) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/submit-answer`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ questionId: q.questionId, qid: q.qid, selectedAnswerIndex })
+            const result = await submitAnswer({
+                questionId: q.qid,
+                optionId: q.optionIds[selectedAnswerIndex],
+                context: 'practice',
             });
-            if (!res.ok) return;
-            const result = await res.json();
             setQ(prev => ({
                 ...prev,
-                status: result.status,
-                correctAnswerIndex: result.correct_answer_index,
+                status: result.is_correct ? 'correct' : 'wrong',
+                correctAnswerIndex: correctIndex(prev.optionIds, result),
                 explanation: result.explanation
             }));
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            toast.error(gameErrorMessage(err));
+        }
     };
 
     const handleHint = async () => {
-        const res = await fetch(`${API_BASE_URL}/api/use-hint`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ questionId: q.questionId, qid: q.qid })
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.hint) setQ(prev => ({ ...prev, status: 'hint_used', hint: data.hint }));
+        try {
+            const data = await requestHint({ questionId: q.qid, context: 'practice' });
+            if (data.hint) setQ(prev => ({ ...prev, status: 'hint_used', hint: data.hint }));
+            else toast.info('No hint is available for this question.');
+        } catch (err) {
+            toast.error(gameErrorMessage(err));
+        }
     };
 
     const handleReveal = async () => {
         if (!(await toast.confirm({ message: 'Abort this question? Your progress on it will be lost.', confirmText: 'Abort', cancelText: 'Cancel', variant: 'warning' }))) return;
-        const res = await fetch(`${API_BASE_URL}/api/give-up`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ questionId: q.questionId, qid: q.qid })
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        setQ(prev => ({
-            ...prev,
-            status: 'gave_up',
-            correctAnswerIndex: data.correct_answer_index,
-            explanation: data.explanation
-        }));
+        try {
+            const data = await giveUp({ questionId: q.qid, context: 'practice' });
+            setQ(prev => ({
+                ...prev,
+                status: 'gave_up',
+                correctAnswerIndex: correctIndex(prev.optionIds, data),
+                explanation: data.explanation
+            }));
+        } catch (err) {
+            toast.error(gameErrorMessage(err));
+        }
     };
 
     if (loading) return <div className="loading-spinner"></div>;
