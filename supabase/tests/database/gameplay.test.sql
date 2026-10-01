@@ -2,7 +2,7 @@
 -- Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(61);
+select plan(62);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
@@ -167,7 +167,7 @@ select is((select count(*)::int from public.attempts where question_id = '300000
 select is((select count(*)::int from public.xp_events), 1, 'still exactly one xp event');
 
 select is(public.submit_answer('30000000-0000-0000-0000-0000000000a2', '40000000-0000-0000-0000-000000000022', 'daily')
-            - 'attempt_id' - 'current_streak' - 'longest_streak',
+            - 'attempt_id' - 'current_streak' - 'longest_streak' - 'progress',
   '{"context":"daily","is_correct":false,"used_hint":false,"xp_awarded":0,
     "correct_option_id":"40000000-0000-0000-0000-000000000021","explanation":"SECRET-EXPLANATION-2"}'::jsonb,
   'wrong answer scores 0 and reveals the right option');
@@ -175,7 +175,10 @@ select is((select current_streak from public.profiles where id = auth.uid()), 4,
   'streak only moves on the first daily answer of the day');
 select is((public.give_up('30000000-0000-0000-0000-0000000000a6', 'daily') ->> 'xp_awarded')::int, 0,
   'give up scores 0');
-select is((select count(*)::int from public.xp_events), 1, 'zero-point attempts write no xp event');
+select is((select count(*)::int from public.xp_events where reason <> 'daily_complete'), 1,
+  'zero-point attempts write no xp event');
+select is((select amount from public.xp_events where reason = 'daily_complete'), 20,
+  'finishing the daily set (q6 was the last) earns the completion bonus');
 
 select is(public.get_today_set() -> 'questions' -> 0 -> 'attempt',
   '{"selected_option_id":"40000000-0000-0000-0000-000000000011","is_correct":true,"gave_up":false,"used_hint":true,"xp_awarded":5}'::jsonb,
@@ -213,7 +216,7 @@ select throws_ok($$select public.submit_answer('30000000-0000-0000-0000-00000000
 select is((select xp from public.profiles where id = auth.uid()),
           (select sum(amount) from public.xp_events where user_id = auth.uid()),
   'profiles.xp matches the ledger');
-select is((select xp from public.profiles where id = auth.uid()), 27::bigint, 'alice has 5 + 15 + 7 xp');
+select is((select xp from public.profiles where id = auth.uid()), 47::bigint, 'alice has 5 + 20 (bonus) + 15 + 7 xp');
 
 -- ---------------------------------------------------------------------------
 -- carol (CAT track)

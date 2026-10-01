@@ -19,15 +19,15 @@ Auth flows and the exact dashboard settings (SMTP, providers, rate limits, email
 | Who | Can |
 | --- | --- |
 | `anon` | nothing |
-| authenticated user | read active taxonomy and tag catalog, published questions/options/tags (plus questions they've attempted), released daily sets, levels, league tiers, track sections; read own profile, attempts, xp_events, reports, feedback, streak freeze uses, league memberships; update own `handle`, `display_name`, `avatar_url`, `bio`, `timezone`, `track_id`; insert reports/feedback; play via `get_today_set`, `submit_answer`, `use_hint`, `give_up`; standings via `get_my_league` |
+| authenticated user | read active taxonomy and tag catalog, published questions/options/tags (plus questions they've attempted), released daily sets, levels, league tiers, track sections; read the badge catalog; read own profile, attempts, xp_events, reports, feedback, streak freeze uses/awards, league memberships, rating events, badges; update own `handle`, `display_name`, `avatar_url`, `bio`, `timezone`, `track_id`; insert reports/feedback; play via `get_today_set`, `submit_answer`, `use_hint`, `give_up`; standings via `get_my_league`, `get_leaderboard`, `get_player_profile`, `get_daily_result`; receive their own league's Realtime channel |
 | admin (`profiles.role = 'admin'`) | everything above + full CRUD on content tables, read all profiles/attempts/xp/reports/feedback/audit_log/`question_generation_jobs`, update report/feedback status; the `generate-questions` Edge Function; `admin_get_question_answer`, `admin_upsert_question_answer`, `admin_set_user_role`, `admin_set_user_ban`, `admin_list_users`, `admin_get_question`, `admin_save_question`, `admin_set_question_status` RPCs (see [Admin area](#admin-area)) |
-| `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` or write `attempts`, `xp_events`, `hint_uses`, league tables, `streak_freeze_uses`, `question_generation_jobs` and `profiles.role/level/xp/rating/streak*/league_tier` |
+| `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` or write `attempts`, `xp_events`, `hint_uses`, league tables, `streak_freeze_uses`/`_awards`, `rating_events`, `user_badges`, `question_generation_jobs` and `profiles.role/level/xp/rating/streak*/league_tier`; read the leaderboard materialized views |
 
 Notes:
 
 - `question_answers` has RLS on, no policies and no grants for `anon`/`authenticated`. Admins reach it only through the `admin_*` RPCs. The audit trigger records that an answer changed, never its contents.
 - Column-level privileges (not RLS) protect the game columns on `profiles`, so the rule holds for admins too.
-- `xp_events` and `audit_log` are append-only: updates, direct deletes and truncates raise errors even for `service_role`. Rows still go away when a user is deleted (FK cascade).
+- `xp_events`, `rating_events` and `audit_log` are append-only: updates, direct deletes and truncates raise errors even for `service_role`. Rows still go away when a user is deleted (FK cascade).
 - Attempt uniqueness is `(user_id, question_id, context, daily_set_id)` with `NULLS NOT DISTINCT`, so a user gets one practice attempt per question and one attempt per question per daily set.
 - `questions.content_hash` is a lowercase sha256 hex digest the writer computes over the normalised stem + options: lower-case each, turn every run of characters other than `[a-z0-9]` into one space, trim; then hash the stem, a newline, and the options sorted and newline-joined (so reordered options still collide). `contentHash()` in `scripts/import-v1-questions.mjs` is the reference implementation (`functions/generate-questions/dedup.ts` is tested against it).
 - `question_tags.tag` must name a row in `tags` (the catalog; `kind` is `exam` or `general`).
@@ -122,12 +122,14 @@ Plain SQL in `20261001000009_scheduled_jobs.sql`; nothing calls an AI model. pg_
 | `aptric-daily-sets` | `0 18 * * *` (23:30 IST) | `private.generate_daily_sets(date?)`: tomorrow's (IST) set for every active track × active level that has none yet |
 | `aptric-streaks` | `5 * * * *` | `private.settle_broken_streaks()`: settles every live streak whose player missed their local yesterday |
 | `aptric-league-rollover` | `35 18 * * 0` (Mon 00:05 IST) | `private.rollover_leagues()`: ranks every unfinished past-week league, promotes/demotes |
+| `aptric-ratings` | `15 * * * *` | `private.rate_finished_sets()`: rates started-but-unfinished daily sets once their date is over everywhere (see [Progression](#progression)) |
+| `aptric-leaderboards` | `*/5 * * * *` | `private.refresh_leaderboards()`: `REFRESH MATERIALIZED VIEW CONCURRENTLY` on both global boards (no audit row: it runs every 5 minutes) |
 
 **Daily sets.** Questions come from `published` questions with an answer key and 2+ options, under active sections/topics/subtopics in the track's `track_sections` (no rows = all active sections), and not in any daily set dated within 60 days before the target date or later. A question goes into at most one set per run, across tracks and levels. Each pick prefers the requested difficulty (else the nearest), then the section with the fewest picks so far in the set, then random. A short bank gives a shorter set (`shortfall`, plus a `WARNING`); an empty one gives no set. Sets are released at 00:00 of the date in UTC+14, i.e. already visible when the job runs. Five levels × 10 questions is 50 questions per track per day, so a track needs about 3,000 eligible questions to never run short over the 60-day window. Run by hand with e.g. `select private.generate_daily_sets('2026-10-05');`.
 
 **Streaks.** A full local day with no daily attempt breaks the streak. If `streak_freezes` covers every missed day, one freeze per day is spent (logged in `streak_freeze_uses`) and `last_streak_date` moves to the last covered day; otherwise `current_streak` drops to 0 and no freeze is spent. The same `private.settle_streak` runs before every streak bump, so the cron only keeps idle players' streaks current.
 
-**Leagues.** Weeks run Monday–Monday IST. A player's first XP of the week (any `xp_events` insert) puts them in a league of their `profiles.league_tier`, in cohorts of up to 30. At rollover, ranks are by weekly XP (ties: whoever got there first); the top `league_tiers.promote_count` go up and the bottom `demote_count` go down, both scaled to the cohort's size (promotion rounds up, demotion down). Players with no XP that week keep their tier. `get_my_league()` returns this week's standings (handles, XP, rank), the current zone sizes, and the last finished week's result.
+**Leagues.** Weeks run Monday–Monday IST. A player's first XP of the week (any `xp_events` insert) puts them in a league of their `profiles.league_tier` (Bronze → Silver → Gold → Platinum → Diamond), in cohorts of up to 30. At rollover, ranks are by weekly XP (ties: whoever got there first); the top `league_tiers.promote_count` (5) go up and the bottom `demote_count` (5) go down, both scaled to the cohort's size (promotion rounds up, demotion down; nobody drops out of Bronze or rises out of Diamond). Players with no XP that week keep their tier. `get_my_league()` returns this week's standings (handles, XP, rank), the current zone sizes, and the last finished week's result.
 
 ## Gameplay RPCs
 
@@ -142,6 +144,7 @@ All four are `SECURITY DEFINER` with `search_path = ''`, callable by `authentica
 
 `context` is `'daily'` or `'practice'`; `use_hint`/`give_up` infer it when omitted (daily if the question is in today's set). Rules:
 
+- Every scored attempt also returns `progress`: `xp`, `level`, `leveled_up`, `next_level_xp`, `rating`, `streak_freezes`, `freezes_earned`, `set_complete`, `bonus_xp`, `rating_change` (`{before, after, delta}` when this answer finished the set) and `new_badges` (see [Progression](#progression)).
 - **daily**: the question must be in today's released set for the caller's track. **practice**: it must be `published`.
 - One scoring attempt per question per context, enforced by `attempts_user_question_context_key` (`ON CONFLICT DO NOTHING`, then `23505`). Hints and give-ups are refused after answering.
 - Points (`private.score_points`): easy 10 / medium 20 / hard 30, minus 5 if a hint was used, halved (rounded down) in practice, never below 0; wrong answers and give-ups score 0. Non-zero awards insert one `xp_events` row (`idempotency_key = 'attempt:<id>'`) and add to `profiles.xp`.
@@ -149,6 +152,33 @@ All four are `SECURITY DEFINER` with `search_path = ''`, callable by `authentica
 - Errors: `42501` not signed in / not your question, `23505` already answered, `22023` bad argument, `P0002` no set today or no answer key.
 
 Tests: `tests/database/scheduled_jobs.test.sql` covers set generation (mix, section balance, reuse window, eligibility, idempotency), level fallback, streak freezes and league rollover. `tests/database/gameplay.test.sql` covers double scoring, foreign questions (other track, yesterday's set, drafts), the once-only hint charge, timezone-local "today", and that answers are unreadable by `anon`/`authenticated`.
+
+## Progression
+
+`20261001000014_progression.sql`. Tests: `tests/database/progression.test.sql`.
+
+**XP and levels.** XP is the `xp_events` ledger; every writer goes through `private.award_xp` (idempotent on `idempotency_key`), which also bumps `profiles.xp`. Sources: correct answers (see Gameplay RPCs), **+20** for finishing a daily set (answering or giving up on every question; `daily_complete`), and **+25** when an admin resolves a player's report (`report_accepted`, once per report). A `BEFORE UPDATE OF xp` trigger on `profiles` keeps `level` derived from XP: reaching level L takes 50·L·(L−1) XP (L2 100, L3 300, L5 1,000, L10 4,500, L20 19,000). Daily-set bands follow that: Beginner 1–2, Intermediate 3–5, Advanced 6–9, Pro 10–14, Expert 15+ (`levels.min_profile_level`).
+
+**Streak freezes earned with XP.** The same trigger grants one `streak_freezes` per 500 XP milestone, holding at most 2. Each milestone is recorded once in `streak_freeze_awards` (`granted = false` if the player was already full), so losing and regaining XP never re-grants. Spending them is unchanged (see Streaks).
+
+**Rating (Elo-style, daily challenges only).** Practice never moves it. Each daily question is a game against an opponent rated by difficulty (easy 1000, medium 1300, hard 1600); score 1 for correct, 0.5 for correct with a hint, 0 otherwise. A set is rated once as a whole: Δ = K · (Σ score − Σ expected), K = 16 per question for a player's first 5 rated sets and 8 after, floor 100. It is rated the moment its last question is answered; a set the player started but didn't finish is rated by the hourly `aptric-ratings` job once that date has ended in UTC−12, with unanswered questions as misses (so skipping hard questions doesn't protect the rating). Each rating is a row in `rating_events`.
+
+**Badges.** Catalog in `badges` (admin-editable, audited); awards in `user_badges`, written by triggers only:
+
+| Badge | Slug | Awarded when |
+| --- | --- | --- |
+| 💯 Centurion | `solved-100` | 100 different questions answered correctly (any context) |
+| 🔥 Week Warrior / 📅 Monthly Grind / ⚡ Unstoppable | `streak-7` / `streak-30` / `streak-100` | `current_streak` reaches 7 / 30 / 100 |
+| 🎓 Topic Master (per topic) | `topic-master` | 25+ correct answers in one topic with ≥ 80% accuracy over all attempts there |
+| 🔍 Sharp Eye | `report-accepted` | an admin resolves one of the player's reports (dismissing doesn't count) |
+
+The migration backfills badges already earned (not XP).
+
+**Leaderboards.** `private.leaderboard_all_time` (XP rank, and rating rank among rated players) and `private.leaderboard_weekly` (this league week's XP) are materialized views outside the Data API, refreshed concurrently every 5 minutes, without banned players. Read them with `get_leaderboard(board => 'all_time' | 'rating' | 'weekly', page_size => 50, page_offset => 0)`, which returns `{ board, refreshed_at, total, entries, me }` (`me` is the caller's own row, even off-page).
+
+**Live league board.** Every `league_members` XP change is broadcast (Realtime Broadcast from the database, `realtime.send`) on the private channel `league:<league_id>`, event `member_xp`, payload `{ league_id, user_id, xp, last_xp_at, joined }`. A policy on `realtime.messages` lets only that league's members receive it; a broadcast failure is logged and never blocks scoring. Client: `subscribeToLeague()` in `frontend/src/lib/game.js` (`supabase.channel('league:<id>', { config: { private: true } })`), which refetches standings after a reconnect.
+
+**Other RPCs.** `get_player_profile(handle?)`: level and XP progress, rating, streaks, league tier, solve stats per section and badges (freeze counts only for yourself; banned players are hidden). `get_daily_result(daily_set_id?)`: the share card for today's set (or any set you played): per-question outcome (`correct`/`hinted`/`wrong`/`gave_up`/`unanswered`), score, XP earned, rating change, streak and league rank; never questions or answers.
 
 ## Admin area
 

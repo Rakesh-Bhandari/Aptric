@@ -2,7 +2,7 @@
 -- Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(63);
+select plan(65);
 
 -- ---------------------------------------------------------------------------
 -- Schedules
@@ -10,8 +10,9 @@ select plan(63);
 select set_eq(
   $$select jobname, schedule from cron.job where jobname like 'aptric-%'$$,
   $$values ('aptric-daily-sets', '0 18 * * *'), ('aptric-streaks', '5 * * * *'),
-           ('aptric-league-rollover', '35 18 * * 0')$$,
-  'three cron jobs are scheduled (UTC)');
+           ('aptric-league-rollover', '35 18 * * 0'), ('aptric-ratings', '15 * * * *'),
+           ('aptric-leaderboards', '*/5 * * * *')$$,
+  'five cron jobs are scheduled (UTC)');
 
 -- ---------------------------------------------------------------------------
 -- Daily set fixtures
@@ -202,16 +203,17 @@ insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-00000000c004', 'lv9@example.com', '{"handle":"lv9","timezone":"UTC"}'),
   ('00000000-0000-0000-0000-00000000c005', 'lvx@example.com', '{"handle":"lvx","timezone":"UTC"}');
 update public.profiles set level = 2 where id = '00000000-0000-0000-0000-00000000c002';
-update public.profiles set level = 3 where id in ('00000000-0000-0000-0000-00000000c003',
+-- Bands: Beginner 1–2, Intermediate 3–5, Advanced 6–9, Pro 10–14, Expert 15+.
+update public.profiles set level = 6 where id in ('00000000-0000-0000-0000-00000000c003',
                                                    '00000000-0000-0000-0000-00000000c005');
-update public.profiles set level = 9 where id = '00000000-0000-0000-0000-00000000c004';
+update public.profiles set level = 20 where id = '00000000-0000-0000-0000-00000000c004';
 
 insert into public.daily_sets (id, track_id, level, set_date, published_at) values
   ('76000000-0000-0000-0000-000000000001', private.default_track_id(), 1, (now() at time zone 'UTC')::date, now() - interval '1 hour'),
   ('76000000-0000-0000-0000-000000000003', private.default_track_id(), 3, (now() at time zone 'UTC')::date, now() - interval '1 hour');
 insert into public.daily_set_items (daily_set_id, question_id, position) values
   ('76000000-0000-0000-0000-000000000001', '74000000-0000-0000-0000-0000000d0002', 0);
--- lvx levelled up to 3 after starting today's level-1 set.
+-- lvx levelled up to the level 3 band after starting today's level-1 set.
 insert into public.attempts (user_id, question_id, context, daily_set_id, is_correct)
 values ('00000000-0000-0000-0000-00000000c005', '74000000-0000-0000-0000-0000000d0002', 'daily',
         '76000000-0000-0000-0000-000000000001', true);
@@ -219,16 +221,18 @@ values ('00000000-0000-0000-0000-00000000c005', '74000000-0000-0000-0000-0000000
 select is((select daily_set_id from private.today_set_for('00000000-0000-0000-0000-00000000c001')),
   '76000000-0000-0000-0000-000000000001'::uuid, 'level 1 plays the level 1 set');
 select is((select daily_set_id from private.today_set_for('00000000-0000-0000-0000-00000000c002')),
-  '76000000-0000-0000-0000-000000000001'::uuid, 'level 2 with no level 2 set falls back to level 1');
+  '76000000-0000-0000-0000-000000000001'::uuid, 'profile level 2 (beginner band) plays the level 1 set');
 select is((select daily_set_id from private.today_set_for('00000000-0000-0000-0000-00000000c003')),
-  '76000000-0000-0000-0000-000000000003'::uuid, 'level 3 plays the level 3 set');
+  '76000000-0000-0000-0000-000000000003'::uuid, 'profile level 6 plays the level 3 (advanced) set');
 select is((select daily_set_id from private.today_set_for('00000000-0000-0000-0000-00000000c004')),
-  '76000000-0000-0000-0000-000000000003'::uuid, 'level 9 (expert band) falls back to the highest set below');
+  '76000000-0000-0000-0000-000000000003'::uuid, 'profile level 20 (expert band) falls back to the highest set below');
 select is((select daily_set_id from private.today_set_for('00000000-0000-0000-0000-00000000c005')),
   '76000000-0000-0000-0000-000000000001'::uuid, 'a set already started today stays the player''s set');
 
 select is(private.level_for(1), 1::smallint, 'level_for(1) = beginner');
 select is(private.level_for(42), 5::smallint, 'level_for above the top band = expert');
+select is(private.level_for(5), 2::smallint, 'level_for(5) = intermediate');
+select is(private.level_for(6), 3::smallint, 'level_for(6) = advanced');
 
 -- ---------------------------------------------------------------------------
 -- Streaks
@@ -343,7 +347,7 @@ select is((select jsonb_array_length(public.get_my_league() -> 'members')), 1, '
 select is((select public.get_my_league() -> 'members' -> 0 ->> 'handle'), 'br31', '... with public handles');
 select is((select (public.get_my_league() -> 'tier' ->> 'slug')), 'bronze', '... and my tier');
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000f0001","role":"authenticated"}';
-select is((select (public.get_my_league() ->> 'promote_zone')::int), 10, 'full bronze cohort promotes 10');
+select is((select (public.get_my_league() ->> 'promote_zone')::int), 5, 'full bronze cohort promotes 5');
 select is((select count(*)::int from public.league_members), 1, 'players read only their own memberships');
 select throws_ok(
   $$update public.profiles set league_tier = 5 where id = '00000000-0000-0000-0000-0000000f0001'$$,
@@ -360,18 +364,18 @@ reset role;
 select is((select private.rollover_leagues() ->> 'leagues_finalized')::int, 3,
   'rollover finalises last week''s leagues');
 
--- Silver, 14 players: promote ceil(7*14/30) = 4, demote floor(5*14/30) = 2.
+-- Silver, 14 players: promote ceil(5*14/30) = 3, demote floor(5*14/30) = 2.
 select results_eq(
   $$select right(m.user_id::text, 2)::int, m.final_rank, m.outcome::text, p.league_tier::int
     from public.league_members m join public.profiles p on p.id = m.user_id
     where m.week_start = (select last_week from wk) and m.user_id <= '00000000-0000-0000-0000-0000000e0014'
     order by m.final_rank$$,
   $$values (14, 1, 'promoted', 3), (13, 2, 'promoted', 3), (12, 3, 'promoted', 3),
-           (10, 4, 'promoted', 3), (11, 5, 'stayed', 2),   (9, 6, 'stayed', 2),
+           (10, 4, 'stayed', 2),   (11, 5, 'stayed', 2),   (9, 6, 'stayed', 2),
            (8, 7, 'stayed', 2),    (7, 8, 'stayed', 2),    (6, 9, 'stayed', 2),
            (5, 10, 'stayed', 2),   (4, 11, 'stayed', 2),   (3, 12, 'stayed', 2),
            (2, 13, 'demoted', 1),  (1, 14, 'demoted', 1)$$,
-  'silver: top 4 up, bottom 2 down, ties go to whoever got there first');
+  'silver: top 3 up, bottom 2 down, ties go to whoever got there first');
 
 select is((select league_tier::int from public.profiles where id = '00000000-0000-0000-0000-0000000e0015'), 2,
   'a lone bronze player is promoted');
@@ -431,8 +435,8 @@ select is((public.submit_answer('74000000-0000-0000-0000-0000000d0002',
                                  where question_id = '74000000-0000-0000-0000-0000000d0002' and position = 0),
                                 'daily') ->> 'xp_awarded')::int,
   10, 'daily answer on a level set scores');
-select is((select xp from public.league_members where user_id = '00000000-0000-0000-0000-00000000c001'), 10,
-  '... and counts toward this week''s league');
+select is((select xp from public.league_members where user_id = '00000000-0000-0000-0000-00000000c001'), 30,
+  '... and, with the completion bonus for the one-question set, counts toward this week''s league');
 reset role;
 
 select * from finish();

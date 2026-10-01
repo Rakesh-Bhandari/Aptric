@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import './Profile.css';
 import API_BASE_URL from '../../utils/config';
 import { useSession } from '../../context/SessionContext';
+import ProgressPanel from '../../components/Progress/ProgressPanel';
 
 
 // --- ICONS ---
@@ -592,8 +593,11 @@ const Profile = () => {
     if (loading) return <div className="loading-spinner">SHIELD_LINK_ESTABLISHING...</div>;
     if (!data || !data.profile) {
         return (
-            <div className="profile-container" style={{ color: 'white', textAlign: 'center', marginTop: '20%' }}>
-                DATA_LINK_FAILURE: UNAUTHORIZED_OR_OFFLINE
+            <div className="profile-container">
+                <ProgressPanel />
+                <div style={{ color: 'white', textAlign: 'center', marginTop: '10%' }}>
+                    DATA_LINK_FAILURE: UNAUTHORIZED_OR_OFFLINE
+                </div>
             </div>
         );
     }
@@ -635,6 +639,8 @@ const Profile = () => {
                     </button>
                 </div>
             </div>
+
+            <ProgressPanel />
 
             {/* 2. NAVIGATION TABS */}
             <div className="profile-tabs">

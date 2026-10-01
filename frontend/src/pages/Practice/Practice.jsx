@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Practice.css';
 import Markdown from '../../components/Markdown/Markdown';
 import { supabase } from '../../lib/supabase';
-import { submitAnswer, requestHint, giveUp, gameErrorMessage, correctIndex } from '../../lib/game';
+import { submitAnswer, requestHint, giveUp, gameErrorMessage, correctIndex, getDailyResult } from '../../lib/game';
+import DailyResultCard from '../../components/ResultCard/DailyResultCard';
 import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
 import { useDailyQuestions } from '../../hooks/useDailyQuestions';
@@ -18,6 +19,9 @@ const Icons = {
     Check: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
 };
 
+// Total XP needed to reach a level; mirrors private.level_xp() in the database.
+const levelXp = (level) => 50 * Math.max(level, 1) * (Math.max(level, 1) - 1);
+
 const Practice = () => {
     const toast = useToast();
     const { user } = useSession();
@@ -30,11 +34,12 @@ const Practice = () => {
     const [countdownTime, setCountdownTime] = useState('--:--:--');
     const [questionTimer, setQuestionTimer] = useState(0);
     const timerRef = useRef(null);
+    const [resultCard, setResultCard] = useState(null);
 
     const refreshUserData = useCallback(async () => {
         if (!user) return;
         const [{ data: profile }, { count: total }, { count: correct }] = await Promise.all([
-            supabase.from('profiles').select('xp, level, current_streak, timezone').eq('id', user.id).single(),
+            supabase.from('profiles').select('xp, level, rating, streak_freezes, current_streak, timezone').eq('id', user.id).single(),
             supabase.from('attempts').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
             supabase.from('attempts').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_correct', true),
         ]);
@@ -44,9 +49,32 @@ const Practice = () => {
             accuracy: total ? Math.round((correct / total) * 100) : 0,
             score: profile.xp,
             streak: profile.current_streak,
+            freezes: profile.streak_freezes,
+            rating: profile.rating,
+            levelNumber: profile.level,
             level: `LVL ${profile.level}`,
         });
     }, [user]);
+
+    const openResultCard = useCallback(async () => {
+        try {
+            setResultCard(await getDailyResult());
+        } catch (err) {
+            toast.error(gameErrorMessage(err));
+        }
+    }, [toast]);
+
+    // Level-ups, freezes and badges come back with every scored attempt.
+    const announceProgress = (progress) => {
+        if (!progress) return;
+        if (progress.leveled_up) toast.success(`LEVEL UP: you reached level ${progress.level}.`);
+        if (progress.freezes_earned > 0) {
+            toast.success(`Streak freeze earned (${progress.streak_freezes} held). It covers a missed day automatically.`);
+        }
+        (progress.new_badges || []).forEach(b =>
+            toast.success(`Badge unlocked: ${b.icon} ${b.name}${b.topic ? ` (${b.topic})` : ''}`));
+        if (progress.set_complete) openResultCard();
+    };
 
     // Once questions arrive, jump to the first unanswered one.
     useEffect(() => {
@@ -111,6 +139,7 @@ const Practice = () => {
                 correctAnswerIndex: correctIndex(currentQ.optionIds, data),
                 pointsEarned: data.xp_awarded,
             });
+            announceProgress(data.progress);
         } catch (err) {
             toast.error(gameErrorMessage(err));
         }
@@ -139,6 +168,7 @@ const Practice = () => {
                 correctAnswerIndex: correctIndex(currentQ.optionIds, data),
                 pointsEarned: 0,
             });
+            announceProgress(data.progress);
         } catch (err) {
             toast.error(gameErrorMessage(err));
         }
@@ -176,7 +206,7 @@ const Practice = () => {
                     <div className="stats-wrapper">
                         <div className="stat-tile">
                             <span className="stat-val">{userStats.score?.toLocaleString() || 0}</span>
-                            <span className="stat-desc">SCORE</span>
+                            <span className="stat-desc">XP</span>
                         </div>
                         <div className="stat-tile">
                             <span className="stat-val" style={{ color: 'var(--gold)' }}>{userStats.streak || 0}</span>
@@ -191,6 +221,28 @@ const Practice = () => {
                             <span className="stat-desc">PROGRESS</span>
                         </div>
                     </div>
+
+                    {userStats.levelNumber && (
+                        <div className="xp-progress" title={`Rating ${userStats.rating} · ${userStats.freezes} streak freeze(s)`}>
+                            <div className="xp-progress-labels">
+                                <span>LVL {userStats.levelNumber}</span>
+                                <span>RATING {userStats.rating} · ❄ {userStats.freezes}</span>
+                                <span>{userStats.score?.toLocaleString()} / {levelXp(userStats.levelNumber + 1).toLocaleString()} XP</span>
+                            </div>
+                            <div className="xp-progress-track">
+                                <div className="xp-progress-fill" style={{
+                                    width: `${Math.min(100, Math.max(0, ((userStats.score - levelXp(userStats.levelNumber))
+                                        / (levelXp(userStats.levelNumber + 1) - levelXp(userStats.levelNumber))) * 100))}%`,
+                                }} />
+                            </div>
+                        </div>
+                    )}
+
+                    {questions.length > 0 && attemptedCount > 0 && (
+                        <button className="cmd-btn primary" style={{ marginTop: '1rem', width: '100%', flex: 'none' }} onClick={openResultCard}>
+                            {attemptedCount === questions.length ? 'VIEW_RESULT_CARD' : 'PREVIEW_RESULT_CARD'}
+                        </button>
+                    )}
 
                     <div style={{ marginTop: '1.5rem' }}>
                         <span className="card-label">&gt;&gt; QUESTION_MATRIX</span>
@@ -288,6 +340,7 @@ const Practice = () => {
                     )}
                 </div>
             </div>
+            {resultCard && <DailyResultCard result={resultCard} onClose={() => setResultCard(null)} />}
         </div>
     );
 };
