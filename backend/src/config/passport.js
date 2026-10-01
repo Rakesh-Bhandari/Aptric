@@ -24,13 +24,36 @@ export function configurePassport() {
             try {
                 conn = await dbPool.getConnection();
 
-                await conn.query(`
-                    INSERT INTO users (user_id, google_id, user_name, email, last_login, level, answered_qids)
-                    VALUES (?, ?, ?, ?, ?, 'Beginner', JSON_ARRAY())
-                    ON DUPLICATE KEY UPDATE 
-                        google_id = VALUES(google_id),
-                        last_login = VALUES(last_login)
-                `, [nanoid(12), id, displayName, email, now]);
+                await conn.beginTransaction();
+
+                const [existing] = await conn.query(
+                    'SELECT user_id, is_verified FROM users WHERE email = ? FOR UPDATE',
+                    [email]
+                );
+
+                if (existing.length === 0) {
+                    // Google has verified the email, so new accounts start verified
+                    await conn.query(`
+                        INSERT INTO users (user_id, google_id, user_name, email, last_login, level, answered_qids, is_verified)
+                        VALUES (?, ?, ?, ?, ?, 'Beginner', JSON_ARRAY(), true)
+                    `, [nanoid(12), id, displayName, email, now]);
+                } else if (!existing[0].is_verified) {
+                    // Unverified email/password row may have been registered by someone else.
+                    // Google has proven ownership: drop the unproven credentials before linking.
+                    await conn.query(`
+                        UPDATE users
+                        SET google_id = ?, last_login = ?, is_verified = true,
+                            password_hash = NULL, verification_token = NULL
+                        WHERE user_id = ?
+                    `, [id, now, existing[0].user_id]);
+                } else {
+                    await conn.query(
+                        'UPDATE users SET google_id = ?, last_login = ? WHERE user_id = ?',
+                        [id, now, existing[0].user_id]
+                    );
+                }
+
+                await conn.commit();
 
                 const [users] = await conn.query('SELECT * FROM users WHERE email = ?', [email]);
 
@@ -44,6 +67,9 @@ export function configurePassport() {
 
                 return done(null, users[0]);
             } catch (err) {
+                if (conn) {
+                    try { await conn.rollback(); } catch (_) {}
+                }
                 console.error('[Passport] Google Auth DB Error:', err.message);
                 return done(err, null);
             } finally {
