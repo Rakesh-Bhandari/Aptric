@@ -8,10 +8,9 @@ const Admin = () => {
     // 1. State Management
     const navigate = useNavigate();
     const toast = useToast();
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [authStatus, setAuthStatus] = useState('loading'); // 'loading' | 'admin' | 'denied'
+    const isAuthenticated = authStatus === 'admin';
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [password, setPassword] = useState('');
-    const [loginError, setLoginError] = useState('');
     const [stats, setStats] = useState({ users: 0, questions: 0, feedback: 0, reports: 0 });
 
     // Data States
@@ -48,26 +47,24 @@ const Admin = () => {
     const [filterDifficulty, setFilterDifficulty] = useState('All');
     const [sortOrder, setSortOrder] = useState('newest');
 
-    // 2. Authentication Logic
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password }),
-                credentials: 'include'
-            });
-            if (response.ok) {
-                setIsAuthenticated(true);
-                loadDashboardStats();
-            } else {
-                setLoginError('Invalid master password.');
+    // 2. Authentication Logic: admin access is based on the logged-in user's role
+    useEffect(() => {
+        const checkAdmin = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/user`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.authenticated && data.user?.role === 'admin') {
+                    setAuthStatus('admin');
+                    loadDashboardStats();
+                } else {
+                    setAuthStatus('denied');
+                }
+            } catch (err) {
+                setAuthStatus('denied');
             }
-        } catch (err) {
-            setLoginError('Server connection failed.');
-        }
-    };
+        };
+        checkAdmin();
+    }, []);
 
     // 3. Data Loading
     const loadDashboardStats = async () => {
@@ -292,19 +289,23 @@ const Admin = () => {
         } catch (e) { console.error(e); }
     };
 
+    if (authStatus === 'loading') {
+        return (
+            <div className="admin-login-overlay">
+                <div className="admin-login-box">
+                    <h2>Checking access...</h2>
+                </div>
+            </div>
+        );
+    }
+
     if (!isAuthenticated) {
         return (
             <div className="admin-login-overlay">
                 <div className="admin-login-box">
-                    <h2>Admin Login</h2>
-                    <form onSubmit={handleLogin}>
-                        <div className="form-group">
-                            <label>Password</label>
-                            <input type="password" className="form-input" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                        </div>
-                        {loginError && <div className="form-message error">{loginError}</div>}
-                        <button type="submit" className="auth-button">Login</button>
-                    </form>
+                    <h2>Not authorized</h2>
+                    <p>You need an admin account to view this page.</p>
+                    <button onClick={() => navigate('/')} className="auth-button">Go Home</button>
                 </div>
             </div>
         );
@@ -321,7 +322,7 @@ const Admin = () => {
                         </a>
                     ))}
                 </div>
-                <button onClick={() => setIsAuthenticated(false)} className="admin-logout-btn">Logout</button>
+                <button onClick={() => navigate('/')} className="admin-logout-btn">Exit Admin</button>
             </aside>
 
             {/* Main Content Area */}

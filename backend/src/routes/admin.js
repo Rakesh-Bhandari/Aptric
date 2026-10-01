@@ -9,23 +9,6 @@ import { generateBulkQuestions } from '../services/bulkGenerator.js';
 
 const router = Router();
 
-// --- Admin Login ---
-router.post('/login', (req, res) => {
-    const { password } = req.body;
-    if (password === process.env.VITE_ADMIN_PASSWORD) {
-        res.cookie('aptric_admin', password, {
-            httpOnly: true,
-            secure: process.env.VITE_NODE_ENV === 'production',
-            sameSite: process.env.VITE_NODE_ENV === 'production' ? 'none' : 'lax',
-            path: '/',
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
-        });
-        res.json({ message: 'Admin logged in' });
-    } else {
-        res.status(401).json({ error: 'Invalid password' });
-    }
-});
-
 // --- Admin Stats ---
 router.get('/stats', isAdmin, async (req, res) => {
     let conn;
@@ -65,7 +48,7 @@ router.post('/users', isAdmin, async (req, res) => {
             password_hash: hashedPassword, level: 'Beginner', role: role || 'user', created_at: new Date()
         };
         await dbPool.query('INSERT INTO users SET ?', newUser);
-        logActivity(dbPool, newUserId, 'Admin Created', 'User created by Admin');
+        await logActivity(dbPool, req.user.user_id, 'Admin Create User', `Created user ${newUserId} (${email}) with role ${role || 'user'}`);
         res.json({ message: 'User created successfully' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to create user' });
@@ -94,6 +77,7 @@ router.put('/users/:id', isAdmin, async (req, res) => {
     const { user_name, email, role } = req.body;
     try {
         await dbPool.query('UPDATE users SET user_name = ?, email = ?, role = ? WHERE user_id = ?', [user_name, email, role, req.params.id]);
+        await logActivity(dbPool, req.user.user_id, 'Admin Update User', `Updated user ${req.params.id} (name=${user_name}, email=${email}, role=${role})`);
         res.json({ message: 'User updated' });
     } catch (err) {
         res.status(500).json({ error: 'Update failed' });
@@ -130,7 +114,7 @@ router.post('/users/:id/promote', isAdmin, async (req, res) => {
         params.push(userId);
 
         await conn.query(query, params);
-        await logActivity(dbPool, userId, 'Admin Promotion', `Promoted to ${newLevel} by Admin`);
+        await logActivity(dbPool, req.user.user_id, 'Admin Promote User', `Promoted user ${userId} to ${newLevel}`);
 
         res.json({ message: `User promoted to ${newLevel}`, newLevel });
     } catch (err) {
@@ -145,6 +129,7 @@ router.post('/users/:id/ban-toggle', isAdmin, async (req, res) => {
     const { is_banned } = req.body;
     try {
         await dbPool.query('UPDATE users SET is_banned = ? WHERE user_id = ?', [is_banned, req.params.id]);
+        await logActivity(dbPool, req.user.user_id, is_banned ? 'Admin Ban User' : 'Admin Unban User', `${is_banned ? 'Banned' : 'Unbanned'} user ${req.params.id}`);
         res.json({ message: `User ${is_banned ? 'banned' : 'unbanned'}` });
     } catch (err) {
         res.status(500).json({ error: 'Error toggling ban' });
@@ -156,6 +141,7 @@ router.post('/users/:id/reset-password', isAdmin, async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await dbPool.query('UPDATE users SET password_hash = ? WHERE user_id = ?', [hashedPassword, req.params.id]);
+        await logActivity(dbPool, req.user.user_id, 'Admin Reset Password', `Reset password for user ${req.params.id}`);
         res.json({ message: 'Password reset successfully' });
     } catch (err) {
         res.status(500).json({ error: 'Error resetting password' });
@@ -165,6 +151,7 @@ router.post('/users/:id/reset-password', isAdmin, async (req, res) => {
 router.delete('/users/:id', isAdmin, async (req, res) => {
     try {
         await dbPool.query('DELETE FROM users WHERE user_id = ?', [req.params.id]);
+        await logActivity(dbPool, req.user.user_id, 'Admin Delete User', `Deleted user ${req.params.id}`);
         res.json({ message: 'User deleted permanently' });
     } catch (err) {
         res.status(500).json({ error: 'Error deleting user' });
@@ -198,6 +185,7 @@ router.put('/questions/:id', isAdmin, async (req, res) => {
             'UPDATE questions SET question_text = ?, options = ?, correct_answer_index = ?, difficulty = ?, category = ?, hint = ?, explanation = ? WHERE question_id = ?',
             [question_text, JSON.stringify(options), correct_answer_index, difficulty, category, hint, explanation, req.params.id]
         );
+        await logActivity(dbPool, req.user.user_id, 'Admin Update Question', `Updated question ${req.params.id}`);
         res.json({ message: 'Question updated successfully' });
     } catch (err) {
         console.error(err);
@@ -208,6 +196,7 @@ router.put('/questions/:id', isAdmin, async (req, res) => {
 router.delete('/questions/:id', isAdmin, async (req, res) => {
     try {
         await dbPool.query('DELETE FROM questions WHERE question_id = ?', [req.params.id]);
+        await logActivity(dbPool, req.user.user_id, 'Admin Delete Question', `Deleted question ${req.params.id}`);
         res.json({ message: 'Question deleted' });
     } catch (err) {
         res.status(500).json({ error: 'Error deleting question' });
@@ -218,6 +207,7 @@ router.delete('/questions/:id', isAdmin, async (req, res) => {
 router.post('/generate-questions', isAdmin, async (req, res) => {
     try {
         const ids = await generateDailyQuestionsForUser('Beginner', dbPool);
+        await logActivity(dbPool, req.user.user_id, 'Admin Generate Questions', `Generated ${ids.length} questions`);
         res.json({ message: `Generated ${ids.length} questions` });
     } catch (err) {
         res.status(500).json({ error: 'Generation failed' });
@@ -249,6 +239,7 @@ router.post('/generate-bulk', isAdmin, async (req, res) => {
             }
         }
 
+        await logActivity(dbPool, req.user.user_id, 'Admin Generate Bulk', `Generated ${totalGenerated} questions in bulk`);
         res.json({ message: `Batch complete. Generated ${totalGenerated} questions.`, details: results });
     } catch (err) {
         console.error('Bulk Generation Error:', err);
@@ -275,6 +266,7 @@ router.get('/feedback', isAdmin, async (req, res) => {
 router.delete('/feedback/:id', isAdmin, async (req, res) => {
     try {
         await dbPool.query('DELETE FROM user_feedback WHERE feedback_id = ?', [req.params.id]);
+        await logActivity(dbPool, req.user.user_id, 'Admin Delete Feedback', `Deleted feedback ${req.params.id}`);
         res.json({ message: 'Feedback deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
@@ -292,6 +284,20 @@ router.get('/feedback-reports', isAdmin, async (req, res) => {
         res.json(reports);
     } catch (err) {
         res.status(500).json({ error: 'Error fetching reports' });
+    }
+});
+
+router.post('/reports/:id/dismiss', isAdmin, async (req, res) => {
+    try {
+        const [result] = await dbPool.query(
+            "UPDATE feedback_reports SET status = 'dismissed' WHERE report_id = ?",
+            [req.params.id]
+        );
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Report not found' });
+        await logActivity(dbPool, req.user.user_id, 'Admin Dismiss Report', `Dismissed report ${req.params.id}`);
+        res.json({ message: 'Report dismissed' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error dismissing report' });
     }
 });
 

@@ -31,13 +31,12 @@ export const isLoggedIn = async (req, res, next) => {
     }
 };
 
+// Admin = logged-in user with users.role = 'admin'.
+// To grant admin to an existing account, run once against the DB:
+//   UPDATE users SET role = 'admin' WHERE email = 'you@example.com';
 export const isAdmin = (req, res, next) => {
-    // Admin still uses a simple signed cookie check
-    const userId = getUserIdFromCookie(req);
-    if (userId && req.cookies?.aptric_admin === process.env.VITE_ADMIN_PASSWORD) {
-        return next();
-    }
-    // Fallback: check body password (admin login route sets this)
-    if (req.adminVerified === true) return next();
-    res.status(401).json({ error: 'Admin authentication required' });
+    isLoggedIn(req, res, () => {
+        if (req.user?.role === 'admin') return next();
+        res.status(403).json({ error: 'Admin access required' });
+    });
 };
