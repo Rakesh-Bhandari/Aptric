@@ -48,3 +48,7 @@ supabase/.branches/
 supabase/.temp/
 
 .gitignore
+# --- v1 -> v2 migration artifacts (emails, password hashes) ---
+v1-users*.ndjson
+v1-users*.sql
+v1-users*.csv
