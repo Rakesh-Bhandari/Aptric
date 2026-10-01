@@ -5,7 +5,9 @@ import { nanoid } from 'nanoid';
 import dbPool from '../config/db.js';
 import { isAdmin } from '../middleware/auth.js';
 import { logActivity, makeHandle } from '../utils/helpers.js';
-import { generateQuestions, topUpQuestionBank } from '../services/questionBank.js';
+import {
+    topUpQuestionBank, createGenerationJob, formatJob, questionHash, QUESTION_STATUSES,
+} from '../services/questionBank.js';
 import { bulkGenerateLimiter } from '../middleware/rateLimit.js';
 import {
     validate, email, password, displayName, role, category, difficulty, userIdParams, numericIdParams,
@@ -39,6 +41,10 @@ const updateQuestionSchema = z.object({
     path: ['correct_answer_index'],
 });
 
+const questionListQuery = z.object({
+    status: z.enum([...QUESTION_STATUSES, 'all'], { error: `Status must be one of: ${QUESTION_STATUSES.join(', ')}, all` }).default('all'),
+});
+
 const MAX_BULK_QUESTIONS = 100;
 const generateBulkSchema = z.object({
     jobs: z.array(z.object({
@@ -59,10 +65,11 @@ router.get('/stats', isAdmin, async (req, res) => {
     try {
         conn = await dbPool.getConnection();
         const [[{ total_users }]] = await conn.query('SELECT COUNT(*) as total_users FROM users');
-        const [[{ total_questions }]] = await conn.query('SELECT COUNT(*) as total_questions FROM questions');
+        const [[{ total_questions }]] = await conn.query("SELECT COUNT(*) as total_questions FROM questions WHERE status = 'published'");
+        const [[{ draft_questions }]] = await conn.query("SELECT COUNT(*) as draft_questions FROM questions WHERE status = 'draft'");
         const [[{ total_feedback }]] = await conn.query('SELECT COUNT(*) as total_feedback FROM user_feedback');
         const [[{ pending_reports }]] = await conn.query("SELECT COUNT(*) as pending_reports FROM feedback_reports WHERE status = 'pending'");
-        res.json({ total_users, total_questions, total_feedback, pending_reports });
+        res.json({ total_users, total_questions, draft_questions, total_feedback, pending_reports });
     } catch (err) {
         res.status(500).json({ error: 'Error fetching stats' });
     } finally {
@@ -203,9 +210,12 @@ router.delete('/users/:id', isAdmin, validate({ params: userIdParams }), async (
 });
 
 // --- Question Management ---
-router.get('/questions', isAdmin, async (req, res) => {
+router.get('/questions', isAdmin, validate({ query: questionListQuery }), async (req, res) => {
+    const { status } = req.valid.query;
     try {
-        const [questions] = await dbPool.query('SELECT * FROM questions ORDER BY created_at DESC LIMIT 1000');
+        const [questions] = status === 'all'
+            ? await dbPool.query('SELECT * FROM questions ORDER BY created_at DESC LIMIT 1000')
+            : await dbPool.query('SELECT * FROM questions WHERE status = ? ORDER BY created_at DESC LIMIT 1000', [status]);
         res.json(questions);
     } catch (err) {
         res.status(500).json({ error: 'Error fetching questions' });
@@ -226,16 +236,48 @@ router.put('/questions/:id', isAdmin, validate({ params: numericIdParams, body: 
     const { question_text, options, correct_answer_index, difficulty, category, hint, explanation } = req.body;
     try {
         await dbPool.query(
-            'UPDATE questions SET question_text = ?, options = ?, correct_answer_index = ?, difficulty = ?, category = ?, hint = ?, explanation = ? WHERE question_id = ?',
-            [question_text, JSON.stringify(options), correct_answer_index, difficulty, category, hint, explanation, req.params.id]
+            'UPDATE questions SET question_text = ?, question_hash = ?, options = ?, correct_answer_index = ?, difficulty = ?, category = ?, hint = ?, explanation = ? WHERE question_id = ?',
+            [question_text, questionHash(question_text), JSON.stringify(options), correct_answer_index, difficulty, category, hint, explanation, req.params.id]
         );
         await logActivity(dbPool, req.user.user_id, 'Admin Update Question', `Updated question ${req.params.id}`);
         res.json({ message: 'Question updated successfully' });
     } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: 'Another question already has this text', fields: { question_text: 'Duplicate question' } });
+        }
         console.error(err);
         res.status(500).json({ error: 'Update failed' });
     }
 });
+
+// Review: drafts (and previously rejected questions) can be published; only
+// drafts can be rejected. Published questions may already sit in users' daily
+// sets, so they are deleted rather than unpublished.
+const reviewTransitions = {
+    approve: { to: 'published', from: ['draft', 'rejected'], action: 'Admin Approve Question' },
+    reject: { to: 'rejected', from: ['draft'], action: 'Admin Reject Question' },
+};
+
+for (const [verb, { to, from, action }] of Object.entries(reviewTransitions)) {
+    router.post(`/questions/:id/${verb}`, isAdmin, validate({ params: numericIdParams }), async (req, res) => {
+        try {
+            const [result] = await dbPool.query(
+                'UPDATE questions SET status = ? WHERE question_id = ? AND status IN (?)',
+                [to, req.params.id, from]
+            );
+            if (result.affectedRows === 0) {
+                const [[row]] = await dbPool.query('SELECT status FROM questions WHERE question_id = ?', [req.params.id]);
+                if (!row) return res.status(404).json({ error: 'Question not found' });
+                return res.status(409).json({ error: `Cannot ${verb} a ${row.status} question` });
+            }
+            await logActivity(dbPool, req.user.user_id, action, `Set question ${req.params.id} to ${to}`);
+            res.json({ message: `Question ${to}`, status: to });
+        } catch (err) {
+            console.error(`${action} error:`, err);
+            res.status(500).json({ error: `Failed to ${verb} question` });
+        }
+    });
+}
 
 router.delete('/questions/:id', isAdmin, validate({ params: numericIdParams }), async (req, res) => {
     let conn;
@@ -266,38 +308,55 @@ router.delete('/questions/:id', isAdmin, validate({ params: numericIdParams }), 
 });
 
 // --- Question Generation ---
-// Same top-up the cron job runs: fills any difficulty that is running low.
+// Generation is asynchronous: these endpoints only queue a job, which
+// /api/cron/generation-jobs processes in chunks. Poll /generation-jobs for progress.
+// New questions are saved as drafts and need approval before users see them.
+
+// Same top-up the daily cron runs: queues a job for any difficulty running low.
 router.post('/generate-questions', isAdmin, async (req, res) => {
     try {
-        const { generated } = await topUpQuestionBank(dbPool);
-        const total = Object.values(generated).reduce((a, b) => a + b, 0);
-        await logActivity(dbPool, req.user.user_id, 'Admin Generate Questions', `Generated ${total} questions`);
-        res.json({ message: `Generated ${total} questions`, details: generated });
+        const { queued, jobId, alreadyQueued } = await topUpQuestionBank(dbPool, { createdBy: req.user.user_id });
+        if (alreadyQueued) return res.json({ message: `A top-up job (#${jobId}) is already in progress`, jobId });
+        if (!jobId) return res.json({ message: 'Question bank is already topped up', jobId: null });
+        const total = Object.values(queued).reduce((a, b) => a + b, 0);
+        await logActivity(dbPool, req.user.user_id, 'Admin Generate Questions', `Queued top-up job ${jobId} for ${total} questions`);
+        res.status(202).json({ message: `Queued ${total} questions (job #${jobId})`, jobId, details: queued });
     } catch (err) {
         console.error('Generate Questions Error:', err);
-        res.status(500).json({ error: 'Generation failed' });
+        res.status(500).json({ error: 'Failed to queue generation' });
     }
 });
 
 router.post('/generate-bulk', isAdmin, bulkGenerateLimiter, validate({ body: generateBulkSchema }), async (req, res) => {
     const { jobs } = req.body;
-
     try {
-        let totalGenerated = 0;
-        const results = [];
-
-        for (const job of jobs) {
-            const { category, difficulty, count, subTopic } = job;
-            const countGen = await generateQuestions(dbPool, { category, difficulty, count, subTopic });
-            totalGenerated += countGen;
-            results.push({ category, difficulty, generated: countGen });
-        }
-
-        await logActivity(dbPool, req.user.user_id, 'Admin Generate Bulk', `Generated ${totalGenerated} questions in bulk`);
-        res.json({ message: `Batch complete. Generated ${totalGenerated} questions.`, details: results });
+        const jobId = await createGenerationJob(dbPool, jobs, { createdBy: req.user.user_id });
+        const total = jobs.reduce((sum, j) => sum + j.count, 0);
+        await logActivity(dbPool, req.user.user_id, 'Admin Generate Bulk', `Queued bulk job ${jobId} for ${total} questions`);
+        res.status(202).json({ message: `Queued ${total} questions (job #${jobId}). New questions arrive as drafts.`, jobId });
     } catch (err) {
         console.error('Bulk Generation Error:', err);
-        res.status(500).json({ error: 'Server error during generation' });
+        res.status(500).json({ error: 'Failed to queue generation' });
+    }
+});
+
+router.get('/generation-jobs', isAdmin, async (req, res) => {
+    try {
+        const [rows] = await dbPool.query('SELECT * FROM question_generation_jobs ORDER BY job_id DESC LIMIT 10');
+        res.json(rows.map(formatJob));
+    } catch (err) {
+        console.error('Fetch generation jobs error:', err);
+        res.status(500).json({ error: 'Error fetching generation jobs' });
+    }
+});
+
+router.get('/generation-jobs/:id', isAdmin, validate({ params: numericIdParams }), async (req, res) => {
+    try {
+        const [[row]] = await dbPool.query('SELECT * FROM question_generation_jobs WHERE job_id = ?', [req.params.id]);
+        if (!row) return res.status(404).json({ error: 'Job not found' });
+        res.json(formatJob(row));
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching generation job' });
     }
 });
 

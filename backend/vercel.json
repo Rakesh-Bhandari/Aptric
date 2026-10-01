@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/question-bank",
       "schedule": "30 23 * * *"
+    },
+    {
+      "path": "/api/cron/generation-jobs",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
