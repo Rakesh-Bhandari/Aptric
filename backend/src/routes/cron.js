@@ -45,7 +45,8 @@ router.get('/question-bank', async (req, res) => {
     }
 });
 
-// Called every few minutes by Vercel Cron. Works through queued generation jobs
+// Called daily by Vercel Cron (Hobby plans allow daily crons only); can also be
+// triggered more often by an external scheduler with the CRON_SECRET bearer token. Works through queued generation jobs
 // (admin bulk requests and top-ups) one AI batch at a time within a time budget,
 // so no single invocation approaches the function timeout.
 router.get('/generation-jobs', async (req, res) => {
