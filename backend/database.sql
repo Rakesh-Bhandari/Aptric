@@ -35,6 +35,7 @@ CREATE TABLE `users` (
   `score` INT DEFAULT '0',
   `level` VARCHAR(20) DEFAULT 'Beginner',
   `day_streak` INT DEFAULT '0',
+  `last_streak_date` DATE DEFAULT NULL COMMENT 'Last Asia/Kolkata day the user answered a daily question',
   `last_login` DATETIME DEFAULT NULL,
   `answered_qids` JSON DEFAULT (JSON_ARRAY()),
   `premium_level` VARCHAR(20) DEFAULT 'free',

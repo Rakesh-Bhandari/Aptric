@@ -3,7 +3,6 @@ export const POINTS_CORRECT = 100;
 export const POINTS_GIVEUP = 10;
 export const POINTS_HINT = -10;
 export const POINTS_WRONG = -20;
-export const STREAK_LOSS = -50;
 
 // --- Level Calculator ---
 export function calculateLevel(score) {
@@ -14,9 +13,25 @@ export function calculateLevel(score) {
     return 'Expert';
 }
 
-// --- Date Helper ---
-export function getTodayDate() {
-    return new Date().toISOString().split('T')[0];
+// --- Date Helpers ---
+// The single product time zone: "today" (daily questions, attempts, streaks)
+// rolls over at midnight here. Keep in sync with frontend/src/utils/time.js.
+export const PRODUCT_TIME_ZONE = 'Asia/Kolkata';
+
+const productDateFormat = new Intl.DateTimeFormat('en-CA', {
+    timeZone: PRODUCT_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+});
+
+// 'YYYY-MM-DD' for the product-time-zone calendar day containing `date`.
+export function getTodayDate(date = new Date()) {
+    return productDateFormat.format(date);
+}
+
+// 'YYYY-MM-DD' of the day before `today` (defaults to the product-time-zone today).
+export function getYesterdayDate(today = getTodayDate()) {
+    const d = new Date(`${today}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    return d.toISOString().split('T')[0];
 }
 
 // --- Activity Logger ---
@@ -29,40 +44,6 @@ export async function logActivity(pool, userId, action, details) {
     } catch (e) {
         console.error('Logging failed', e);
     }
-}
-
-// --- Streak Calculator ---
-export async function calculateRealStreak(userId, pool) {
-    const [rows] = await pool.query(
-        "SELECT DISTINCT DATE_FORMAT(attempt_date, '%Y-%m-%d') as dateStr FROM user_attempts WHERE user_id = ? ORDER BY attempt_date DESC",
-        [userId]
-    );
-
-    if (rows.length === 0) return 0;
-
-    const toDateString = (date) => date.toISOString().split('T')[0];
-    const now = new Date();
-    const todayStr = toDateString(now);
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = toDateString(yesterday);
-
-    const latestActivity = rows[0].dateStr;
-    if (latestActivity !== todayStr && latestActivity !== yesterdayStr) return 0;
-
-    let streak = 0;
-    let expectedDate = new Date(latestActivity);
-
-    for (const row of rows) {
-        if (row.dateStr === toDateString(expectedDate)) {
-            streak++;
-            expectedDate.setDate(expectedDate.getDate() - 1);
-        } else {
-            break;
-        }
-    }
-
-    return streak;
 }
 
 // --- All topic categories ---

@@ -1,44 +1,30 @@
 import { Router } from 'express';
 import dbPool from '../config/db.js';
-import { STREAK_LOSS } from '../utils/helpers.js';
+import { getYesterdayDate } from '../utils/helpers.js';
 import { topUpQuestionBank } from '../services/questionBank.js';
 
 const router = Router();
 
 const isCronRequest = (req) => req.headers['authorization'] === `Bearer ${process.env.CRON_SECRET}`;
 
-// Called daily at midnight by Vercel Cron
+// Called daily just after midnight Asia/Kolkata by Vercel Cron.
+// Breaks the streak of anyone whose last streak day is before yesterday, i.e.
+// who answered none of their daily questions yesterday. Idempotent, no score penalty.
 router.get('/streak-check', async (req, res) => {
     if (!isCronRequest(req)) {
         return res.status(401).end('Unauthorized');
     }
 
-    console.log('Running daily streak check via Vercel Cron...');
-    const conn = await dbPool.getConnection();
     try {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yStr = yesterday.toISOString().split('T')[0];
-
-        const [users] = await conn.query(
-            'SELECT user_id, day_streak FROM users WHERE last_login < ? AND day_streak > 0',
-            [yStr]
+        const [result] = await dbPool.query(
+            'UPDATE users SET day_streak = 0 WHERE day_streak > 0 AND (last_streak_date IS NULL OR last_streak_date < ?)',
+            [getYesterdayDate()]
         );
-
-        for (const u of users) {
-            const penalty = u.day_streak * STREAK_LOSS;
-            await conn.query(
-                'UPDATE users SET day_streak = 0, score = score + ? WHERE user_id = ?',
-                [penalty, u.user_id]
-            );
-        }
-
-        res.status(200).json({ processed: users.length });
+        console.log('[cron/streak-check] reset', result.affectedRows);
+        res.status(200).json({ reset: result.affectedRows });
     } catch (e) {
-        console.error(e);
+        console.error('[cron/streak-check]', e);
         res.status(500).json({ error: e.message });
-    } finally {
-        conn.release();
     }
 });
 
