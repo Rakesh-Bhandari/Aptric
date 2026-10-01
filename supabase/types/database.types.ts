@@ -237,7 +237,7 @@ export type Database = {
           created_at: string;
           current_streak: number;
           display_name: string | null;
-          handle: string;
+          handle: string | null;
           id: string;
           last_streak_date: string | null;
           level: number;
@@ -255,7 +255,7 @@ export type Database = {
           created_at?: string;
           current_streak?: number;
           display_name?: string | null;
-          handle: string;
+          handle?: string | null;
           id: string;
           last_streak_date?: string | null;
           level?: number;
@@ -273,7 +273,7 @@ export type Database = {
           created_at?: string;
           current_streak?: number;
           display_name?: string | null;
-          handle?: string;
+          handle?: string | null;
           id?: string;
           last_streak_date?: string | null;
           level?: number;

@@ -1,7 +1,7 @@
 -- Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(42);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
@@ -9,7 +9,7 @@ select plan(40);
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-00000000000a', 'admin@example.com', '{"full_name":"Ada Admin"}'),
   ('00000000-0000-0000-0000-00000000000b', 'bob@example.com',   '{"handle":"Bob!!", "timezone":"Asia/Kolkata"}'),
-  ('00000000-0000-0000-0000-00000000000c', 'bob@other.com',     '{"timezone":"Not/AZone"}');
+  ('00000000-0000-0000-0000-00000000000c', 'bob@other.com',     '{"handle":"bob", "timezone":"Not/AZone"}');
 
 update public.profiles set role = 'admin' where id = '00000000-0000-0000-0000-00000000000a';
 
@@ -24,8 +24,10 @@ select is((select handle from public.profiles where id = '00000000-0000-0000-000
   'signup trigger creates profile with sanitised handle');
 select is((select timezone from public.profiles where id = '00000000-0000-0000-0000-00000000000b'), 'Asia/Kolkata',
   'signup trigger keeps a valid timezone');
-select matches((select handle from public.profiles where id = '00000000-0000-0000-0000-00000000000c'), '^bob_[0-9a-f]{5}$',
-  'colliding handle gets a suffix');
+select is((select handle from public.profiles where id = '00000000-0000-0000-0000-00000000000c'), null,
+  'colliding metadata handle is left null for onboarding');
+select is((select handle from public.profiles where id = '00000000-0000-0000-0000-00000000000a'), null,
+  'no metadata handle leaves handle null for onboarding');
 select is((select timezone from public.profiles where id = '00000000-0000-0000-0000-00000000000c'), 'UTC',
   'invalid timezone falls back to UTC');
 select is((select display_name from public.profiles where id = '00000000-0000-0000-0000-00000000000a'), 'Ada Admin',
@@ -102,6 +104,8 @@ select is((select count(*)::int from public.audit_log), 0, 'user cannot see audi
 
 select lives_ok($$update public.profiles set display_name = 'Bobby', bio = 'hi' where id = auth.uid()$$,
   'user can update cosmetic profile fields');
+select throws_ok($$update public.profiles set handle = 'Not A Handle!' where id = auth.uid()$$, '23514', null,
+  'user cannot set an invalid handle');
 select throws_ok($$update public.profiles set xp = 999999 where id = auth.uid()$$, '42501', null, 'user cannot write xp');
 select throws_ok($$update public.profiles set role = 'admin' where id = auth.uid()$$, '42501', null, 'user cannot change role');
 select throws_ok($$update public.profiles set current_streak = 99 where id = auth.uid()$$, '42501', null, 'user cannot write streaks');

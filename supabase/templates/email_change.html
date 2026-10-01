@@ -1,0 +1,4 @@
+<h2>Confirm your new email</h2>
+<p>Confirm changing your Aptric email from {{ .Email }} to {{ .NewEmail }}.</p>
+<p><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email_change&redirect_to={{ .RedirectTo }}">Confirm change</a></p>
+<p>This link works once and expires in 1 hour. If you didn't request this, you can ignore this email.</p>
