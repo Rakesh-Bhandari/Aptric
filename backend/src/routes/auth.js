@@ -9,6 +9,9 @@ import transporter from '../config/mailer.js';
 import { getOrAssignDailyLog } from '../services/questionBank.js';
 import { isLoggedIn } from '../middleware/auth.js';
 import { setAuthCookie, clearAuthCookie } from '../utils/jwt.js';
+import {
+    loginLimiter, signupLimiter, resendVerificationLimiter, forgotPasswordLimiter, resetPasswordLimiter,
+} from '../middleware/rateLimit.js';
 
 const router = Router();
 const FRONTEND = () => process.env.VITE_FRONTEND_URL;
@@ -75,7 +78,7 @@ router.post('/logout-all', isLoggedIn, async (req, res) => {
 });
 
 // ── Email/Password Login ───────────────────────────────────────
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   try {
     const [users] = await dbPool.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -139,7 +142,7 @@ const sendVerificationEmail = (email, name, token) => transporter.sendMail({
 });
 
 // ── Signup ─────────────────────────────────────────────────────
-router.post('/signup', async (req, res) => {
+router.post('/signup', signupLimiter, async (req, res) => {
   const { name, email, password, confirmPassword } = req.body;
   if (!name) return res.status(400).json({ error: 'Display name required' });
   if (password !== confirmPassword) return res.status(400).json({ error: 'Passwords do not match' });
@@ -175,7 +178,7 @@ router.post('/signup', async (req, res) => {
 // ── Resend Verification Email ──────────────────────────────────
 // Rate limited per account via the token's issue time (expires - TTL),
 // so it holds across serverless instances.
-router.post('/resend-verification', async (req, res) => {
+router.post('/resend-verification', resendVerificationLimiter, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required' });
   const generic = { message: 'If that account is awaiting activation, a new link has been sent.' };
@@ -214,7 +217,7 @@ router.post('/resend-verification', async (req, res) => {
 });
 
 // ── Forgot Password ────────────────────────────────────────────
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required' });
   // Same response whether or not the account exists, so this can't be used to enumerate emails.
@@ -286,7 +289,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // ── Reset Password ─────────────────────────────────────────────
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', resetPasswordLimiter, async (req, res) => {
   const { email, otp, newPassword } = req.body;
   const invalid = { error: 'INVALID_OR_EXPIRED_OTP' };
   if (!email || !otp) return res.status(400).json(invalid);

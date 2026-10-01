@@ -2,11 +2,12 @@ import { Router } from 'express';
 import dbPool from '../config/db.js';
 import { isLoggedIn, getUserFromCookie } from '../middleware/auth.js';
 import { getTodayDate, ALL_CATEGORIES } from '../utils/helpers.js';
+import { leaderboardLimiter, topicStatsLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
 // --- Leaderboard (public) ---
-router.get('/leaderboard', async (req, res) => {
+router.get('/leaderboard', leaderboardLimiter, async (req, res) => {
     try {
         const [rows] = await dbPool.query(
             `SELECT user_id, user_name, profile_pic, score, level, day_streak,
@@ -127,7 +128,7 @@ router.get('/category', isLoggedIn, async (req, res) => {
 // --- Get topic stats ---
 // NOTE: Returns empty stats for unauthenticated users instead of 401
 // so the Topics page always renders (just shows 0 progress for guests)
-router.get('/topics/stats', async (req, res) => {
+router.get('/topics/stats', topicStatsLimiter, async (req, res) => {
     let conn;
     try {
         conn = await dbPool.getConnection();

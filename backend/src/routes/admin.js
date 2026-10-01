@@ -5,6 +5,7 @@ import dbPool from '../config/db.js';
 import { isAdmin } from '../middleware/auth.js';
 import { logActivity } from '../utils/helpers.js';
 import { generateQuestions, topUpQuestionBank } from '../services/questionBank.js';
+import { bulkGenerateLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -216,7 +217,7 @@ router.post('/generate-questions', isAdmin, async (req, res) => {
     }
 });
 
-router.post('/generate-bulk', isAdmin, async (req, res) => {
+router.post('/generate-bulk', isAdmin, bulkGenerateLimiter, async (req, res) => {
     const { jobs } = req.body;
 
     if (!jobs || !Array.isArray(jobs) || jobs.length === 0) {

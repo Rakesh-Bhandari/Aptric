@@ -69,6 +69,7 @@ const SolveQuestion = () => {
                 credentials: 'include',
                 body: JSON.stringify({ questionId: q.questionId, qid: q.qid, selectedAnswerIndex })
             });
+            if (!res.ok) return;
             const result = await res.json();
             setQ(prev => ({
                 ...prev,
@@ -86,6 +87,7 @@ const SolveQuestion = () => {
             credentials: 'include',
             body: JSON.stringify({ questionId: q.questionId, qid: q.qid })
         });
+        if (!res.ok) return;
         const data = await res.json();
         if (data.hint) setQ(prev => ({ ...prev, status: 'hint_used', hint: data.hint }));
     };
@@ -98,6 +100,7 @@ const SolveQuestion = () => {
             credentials: 'include',
             body: JSON.stringify({ questionId: q.questionId, qid: q.qid })
         });
+        if (!res.ok) return;
         const data = await res.json();
         setQ(prev => ({
             ...prev,
