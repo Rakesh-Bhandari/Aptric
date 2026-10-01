@@ -183,10 +183,6 @@ router.post('/submit-answer', isLoggedIn, async (req, res) => {
         }
 
         await updateGameStats(userId, awarded, conn);
-        await conn.query(
-            `UPDATE users SET answered_qids = JSON_ARRAY_APPEND(COALESCE(answered_qids, '[]'), '$', ?) WHERE user_id = ?`,
-            [qid, userId]
-        );
 
         await conn.commit();
         const { correct_answer_index, explanation, hint } = question;
@@ -286,10 +282,6 @@ router.post('/give-up', isLoggedIn, async (req, res) => {
         }
 
         await updateGameStats(userId, POINTS_GIVEUP, conn);
-        await conn.query(
-            `UPDATE users SET answered_qids = JSON_ARRAY_APPEND(COALESCE(answered_qids, '[]'), '$', ?) WHERE user_id = ?`,
-            [qid, userId]
-        );
 
         await conn.commit();
         const { correct_answer_index, explanation, hint } = question;
