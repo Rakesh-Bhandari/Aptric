@@ -4,8 +4,7 @@ import { nanoid } from 'nanoid';
 import dbPool from '../config/db.js';
 import { isAdmin } from '../middleware/auth.js';
 import { logActivity } from '../utils/helpers.js';
-import { generateDailyQuestionsForUser } from '../services/questionGenerator.js';
-import { generateBulkQuestions } from '../services/bulkGenerator.js';
+import { generateQuestions, topUpQuestionBank } from '../services/questionBank.js';
 
 const router = Router();
 
@@ -204,12 +203,15 @@ router.delete('/questions/:id', isAdmin, async (req, res) => {
 });
 
 // --- Question Generation ---
+// Same top-up the cron job runs: fills any difficulty that is running low.
 router.post('/generate-questions', isAdmin, async (req, res) => {
     try {
-        const ids = await generateDailyQuestionsForUser('Beginner', dbPool);
-        await logActivity(dbPool, req.user.user_id, 'Admin Generate Questions', `Generated ${ids.length} questions`);
-        res.json({ message: `Generated ${ids.length} questions` });
+        const { generated } = await topUpQuestionBank(dbPool);
+        const total = Object.values(generated).reduce((a, b) => a + b, 0);
+        await logActivity(dbPool, req.user.user_id, 'Admin Generate Questions', `Generated ${total} questions`);
+        res.json({ message: `Generated ${total} questions`, details: generated });
     } catch (err) {
+        console.error('Generate Questions Error:', err);
         res.status(500).json({ error: 'Generation failed' });
     }
 });
@@ -233,7 +235,7 @@ router.post('/generate-bulk', isAdmin, async (req, res) => {
         for (const job of jobs) {
             const { category, difficulty, count, subTopic } = job;
             if (count > 0) {
-                const countGen = await generateBulkQuestions(dbPool, category, difficulty, count, subTopic);
+                const countGen = await generateQuestions(dbPool, { category, difficulty, count: parseInt(count), subTopic });
                 totalGenerated += countGen;
                 results.push({ category, difficulty, generated: countGen });
             }

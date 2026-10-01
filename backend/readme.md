@@ -25,9 +25,7 @@ backend/
 │   │   ├── admin.js                # /api/admin/* (users, questions, generation)
 │   │   └── cron.js                 # /api/cron/streak-check
 │   ├── services/
-│   │   ├── questionGenerator.js    # AI daily question generation (OpenRouter)
-│   │   ├── bulkGenerator.js        # Admin bulk question generation
-│   │   └── dailyQuestions.js       # Ensures daily questions exist per user
+│   │   └── questionBank.js         # AI generation (cron/admin) + bank-only daily assignment
 │   ├── utils/
 │   │   └── helpers.js              # Constants, calculateLevel, logActivity, etc.
 │   └── server.js                   # App entry point
@@ -70,6 +68,8 @@ OPEN_ROUTER_API_KEY=
 
 # Vercel Cron
 CRON_SECRET=
+QUESTION_BANK_MIN_UNUSED=50   # cron tops up a difficulty below this many unattempted questions
+QUESTION_BANK_MAX_PER_RUN=20  # max questions generated per difficulty per cron run
 ```
 
 ## Scripts

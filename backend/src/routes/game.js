@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import dbPool from '../config/db.js';
 import { isLoggedIn } from '../middleware/auth.js';
-import { ensureDailyQuestionsGenerated } from '../services/dailyQuestions.js';
+import { getOrAssignDailyLog } from '../services/questionBank.js';
 import { getTodayDate, calculateLevel, POINTS_CORRECT, POINTS_WRONG, POINTS_HINT, POINTS_GIVEUP } from '../utils/helpers.js';
 
 const router = Router();
@@ -13,10 +13,26 @@ async function updateGameStats(userId, points, conn) {
     await conn.query('UPDATE users SET level = ? WHERE user_id = ?', [newLevel, userId]);
 }
 
+// Loads a daily log's questions in the order they were stored.
+// The id array is bound as a single parameter so mysql2 expands it to
+// "FIELD(question_id, 1, 2, 3)"; spreading it would only bind the first id.
+async function fetchLogQuestions(conn, log) {
+    let ids = log?.question_ids_json;
+    if (typeof ids === 'string') ids = JSON.parse(ids);
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+    const [questions] = await conn.query(
+        `SELECT question_id, qid, question_text, options, difficulty, category, hint, explanation, correct_answer_index 
+         FROM questions WHERE question_id IN (?) ORDER BY FIELD(question_id, ?)`,
+        [ids, ids]
+    );
+    return questions;
+}
+
 // --- Get Daily Questions ---
-// NEVER generates questions here — generation happens at login time.
-// If no questions exist yet, returns status:'generating' so frontend
-// can poll and show a loading screen instead of timing out.
+// If today's set doesn't exist yet it is assigned synchronously from the
+// existing question bank (DB only, no AI). AI generation runs in the
+// /api/cron/question-bank job. 202 'generating' is returned only when the
+// bank has no unseen questions for this user.
 router.get('/daily-questions', isLoggedIn, async (req, res) => {
     const userId = req.user.user_id;
     const today = getTodayDate();
@@ -24,40 +40,20 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
 
     try {
         conn = await dbPool.getConnection();
-        const [logs] = await conn.query(
-            'SELECT * FROM user_daily_log WHERE user_id = ? AND challenge_date = ?',
-            [userId, today]
-        );
+        let log = await getOrAssignDailyLog(conn, userId);
+        let questions = await fetchLogQuestions(conn, log);
 
-        // Questions not ready yet — tell frontend to poll
-        if (logs.length === 0) {
-            return res.status(202).json({
-                status: 'generating',
-                message: 'Your questions are being prepared. Please wait...'
-            });
+        // Broken row (empty list or its questions were deleted): reassign once.
+        if (log && questions.length === 0) {
+            await conn.query('DELETE FROM user_daily_log WHERE log_id = ?', [log.log_id]);
+            log = await getOrAssignDailyLog(conn, userId);
+            questions = await fetchLogQuestions(conn, log);
         }
 
-        const questionIds = logs[0].question_ids_json;
-
-        if (!questionIds || questionIds.length === 0) {
-            await conn.query('DELETE FROM user_daily_log WHERE log_id = ?', [logs[0].log_id]);
+        if (!log || questions.length === 0) {
             return res.status(202).json({
                 status: 'generating',
-                message: 'Retrying question preparation...'
-            });
-        }
-
-        const [questions] = await conn.query(
-            `SELECT question_id, qid, question_text, options, difficulty, category, hint, explanation, correct_answer_index 
-             FROM questions WHERE question_id IN (?) ORDER BY FIELD(question_id, ?)`,
-            [questionIds, ...questionIds]
-        );
-
-        if (questions.length === 0) {
-            await conn.query('DELETE FROM user_daily_log WHERE log_id = ?', [logs[0].log_id]);
-            return res.status(202).json({
-                status: 'generating',
-                message: 'Retrying question preparation...'
+                message: 'New questions are being added to the bank. Please check back soon.'
             });
         }
 
@@ -99,7 +95,7 @@ router.get('/daily-questions', isLoggedIn, async (req, res) => {
             };
         });
 
-        res.json({ status: 'ready', questions: dailyQuestions, logId: logs[0].log_id });
+        res.json({ status: 'ready', questions: dailyQuestions, logId: log.log_id });
     } catch (err) {
         console.error('[daily-questions]', err);
         res.status(500).json({ error: 'Server error' });
