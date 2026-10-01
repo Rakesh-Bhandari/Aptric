@@ -44,7 +44,7 @@ router.post('/users', isAdmin, async (req, res) => {
         const newUserId = nanoid(12);
         const newUser = {
             user_id: newUserId, user_name: name, email,
-            password_hash: hashedPassword, level: 'Beginner', role: role || 'user', created_at: new Date()
+            password_hash: hashedPassword, is_verified: true, level: 'Beginner', role: role || 'user', created_at: new Date()
         };
         await dbPool.query('INSERT INTO users SET ?', newUser);
         await logActivity(dbPool, req.user.user_id, 'Admin Create User', `Created user ${newUserId} (${email}) with role ${role || 'user'}`);

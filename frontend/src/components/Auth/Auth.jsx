@@ -52,6 +52,7 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
     const [isResetting, setIsResetting] = useState(false);
     const [otp, setOtp] = useState('');
     const [copied, setCopied] = useState(false);
+    const [needsVerification, setNeedsVerification] = useState(false);
 
     const navigate = useNavigate();
     const toast = useToast();
@@ -116,10 +117,30 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
                     navigate('/practice');
                 }
             } else {
+                setNeedsVerification(isLogin && data.code === 'EMAIL_NOT_VERIFIED');
                 toast.error(data.error || 'Authentication failed');
             }
         } catch (err) {
             console.error("Auth error:", err);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                toast.success(data.message);
+                setNeedsVerification(false);
+            } else {
+                toast.error(data.error);
+            }
+        } catch (err) {
+            console.error("Resend error:", err);
         }
     };
 
@@ -306,7 +327,7 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
                         )}
                         <div className="form-group">
                             <label className="form-label">Email Designation</label>
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="form-input" placeholder="user@system.com" required />
+                            <input type="email" value={email} onChange={e => { setEmail(e.target.value); setNeedsVerification(false); }} className="form-input" placeholder="user@system.com" required />
                         </div>
 
                         <div className="form-group">
@@ -333,6 +354,12 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
                         {isLogin && (
                             <div className="forgot-pw-link" onClick={handleForgotPassword}>
                                 Forgot Access Key?
+                            </div>
+                        )}
+
+                        {isLogin && needsVerification && (
+                            <div className="forgot-pw-link" onClick={handleResendVerification}>
+                                Resend activation email
                             </div>
                         )}
 

@@ -13,6 +13,13 @@ import { setAuthCookie, clearAuthCookie } from '../utils/jwt.js';
 const router = Router();
 const FRONTEND = () => process.env.VITE_FRONTEND_URL;
 
+const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;   // activation link lifetime (email says 24h)
+const RESEND_COOLDOWN_MS = 60 * 1000;              // min gap between activation emails per account
+
+const escapeHtml = (str) => String(str).replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
 // ── Google OAuth ───────────────────────────────────────────────
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
@@ -46,6 +53,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     if (user.is_banned) return res.status(403).json({ error: 'Account suspended' });
+    if (!user.is_verified) {
+      return res.status(403).json({
+        error: 'Email not verified. Check your inbox for the activation link, or request a new one.',
+        code: 'EMAIL_NOT_VERIFIED'
+      });
+    }
 
     await dbPool.query('UPDATE users SET last_login = ? WHERE user_id = ?', [new Date(), user.user_id]);
 
@@ -59,30 +72,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ── Signup ─────────────────────────────────────────────────────
-router.post('/signup', async (req, res) => {
-  const { name, email, password, confirmPassword } = req.body;
-  if (!name) return res.status(400).json({ error: 'Display name required' });
-  if (password !== confirmPassword) return res.status(400).json({ error: 'Passwords do not match' });
-
-  try {
-    const token = crypto.randomBytes(32).toString('hex');
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUserId = nanoid(12);
-
-    await dbPool.query('INSERT INTO users SET ?', {
-      user_id: newUserId, user_name: name, email,
-      password_hash: hashedPassword,
-      verification_token: token,
-      is_verified: false,
-      answered_qids: JSON.stringify([])
-    });
-
-    try {
-      await transporter.sendMail({
-        to: email,
-        subject: '🎯 Activate Your Aptric Account',
-        html: `
+// ── Activation email ───────────────────────────────────────────
+const sendVerificationEmail = (email, name, token) => transporter.sendMail({
+  to: email,
+  subject: '🎯 Activate Your Aptric Account',
+  html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -92,7 +86,7 @@ router.post('/signup', async (req, res) => {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#161b22;border:1px solid #30363d;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
         <tr><td style="background:linear-gradient(135deg,#0d2818,#1a3a2a);padding:32px 40px;text-align:center;border-bottom:1px solid #2ea04320;">
           <p style="margin:0 0 8px;font-size:11px;letter-spacing:3px;color:#2ea043;font-weight:600;">APTRIC // IDENTITY SYSTEM</p>
-          <h1 style="margin:0;font-size:28px;font-weight:700;color:#ffffff;">Welcome, ${name}</h1>
+          <h1 style="margin:0;font-size:28px;font-weight:700;color:#ffffff;">Welcome, ${escapeHtml(name)}</h1>
           <p style="margin:10px 0 0;color:#8b949e;font-size:14px;">Your operative registration is almost complete.</p>
         </td></tr>
         <tr><td style="padding:36px 40px;">
@@ -110,7 +104,30 @@ router.post('/signup', async (req, res) => {
   </table>
 </body>
 </html>`
-      });
+});
+
+// ── Signup ─────────────────────────────────────────────────────
+router.post('/signup', async (req, res) => {
+  const { name, email, password, confirmPassword } = req.body;
+  if (!name) return res.status(400).json({ error: 'Display name required' });
+  if (password !== confirmPassword) return res.status(400).json({ error: 'Passwords do not match' });
+
+  try {
+    const token = crypto.randomBytes(32).toString('hex');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUserId = nanoid(12);
+
+    await dbPool.query('INSERT INTO users SET ?', {
+      user_id: newUserId, user_name: name, email,
+      password_hash: hashedPassword,
+      verification_token: token,
+      verification_expires: new Date(Date.now() + VERIFICATION_TTL_MS),
+      is_verified: false,
+      answered_qids: JSON.stringify([])
+    });
+
+    try {
+      await sendVerificationEmail(email, name, token);
     } catch (mailErr) {
       console.error('[signup] mail failed:', mailErr.message);
     }
@@ -119,6 +136,47 @@ router.post('/signup', async (req, res) => {
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'Email already registered' });
     console.error('[signup]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── Resend Verification Email ──────────────────────────────────
+// Rate limited per account via the token's issue time (expires - TTL),
+// so it holds across serverless instances.
+router.post('/resend-verification', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email required' });
+  const generic = { message: 'If that account is awaiting activation, a new link has been sent.' };
+
+  try {
+    const [[user]] = await dbPool.query(
+      'SELECT user_id, user_name, is_verified, verification_expires FROM users WHERE email = ?', [email]
+    );
+    if (!user || user.is_verified) return res.json(generic);
+
+    if (user.verification_expires) {
+      const issuedAt = new Date(user.verification_expires).getTime() - VERIFICATION_TTL_MS;
+      const waitMs = issuedAt + RESEND_COOLDOWN_MS - Date.now();
+      if (waitMs > 0) {
+        return res.status(429).json({ error: `Please wait ${Math.ceil(waitMs / 1000)}s before requesting another email.` });
+      }
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    await dbPool.query(
+      'UPDATE users SET verification_token = ?, verification_expires = ? WHERE user_id = ?',
+      [token, new Date(Date.now() + VERIFICATION_TTL_MS), user.user_id]
+    );
+
+    try {
+      await sendVerificationEmail(email, user.user_name, token);
+    } catch (mailErr) {
+      console.error('[resend-verification] mail failed:', mailErr.message);
+    }
+
+    res.json(generic);
+  } catch (err) {
+    console.error('[resend-verification]', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -210,15 +268,17 @@ router.get('/verify/:token', async (req, res) => {
     }
 
     const user = users[0];
-    await conn.query('UPDATE users SET is_verified = true, verification_token = NULL WHERE user_id = ?', [user.user_id]);
+    if (!user.verification_expires || new Date() > new Date(user.verification_expires)) {
+      return res.status(400).json({ error: 'Activation link expired. Log in to request a new one.', code: 'TOKEN_EXPIRED' });
+    }
+    await conn.query('UPDATE users SET is_verified = true, verification_token = NULL, verification_expires = NULL WHERE user_id = ?', [user.user_id]);
 
     // Set JWT cookie
     setAuthCookie(res, user.user_id);
 
     res.json({
       message: 'Account activated.',
-      user: { id: user.user_id, name: user.user_name },
-      status: 'generating'
+      user: { id: user.user_id, name: user.user_name }
     });
   } catch (err) {
     console.error('[verify]', err);
