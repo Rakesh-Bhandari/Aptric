@@ -153,6 +153,7 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           id: string;
+          level: number;
           published_at: string | null;
           set_date: string;
           title: string | null;
@@ -163,6 +164,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          level?: number;
           published_at?: string | null;
           set_date: string;
           title?: string | null;
@@ -173,6 +175,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          level?: number;
           published_at?: string | null;
           set_date?: string;
           title?: string | null;
@@ -186,6 +189,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "daily_sets_level_fkey";
+            columns: ["level"];
+            isOneToOne: false;
+            referencedRelation: "levels";
+            referencedColumns: ["level"];
           },
           {
             foreignKeyName: "daily_sets_track_id_fkey";
@@ -289,6 +299,155 @@ export type Database = {
           },
         ];
       };
+      league_members: {
+        Row: {
+          final_rank: number | null;
+          joined_at: string;
+          last_xp_at: string;
+          league_id: string;
+          outcome: Database["public"]["Enums"]["league_outcome"] | null;
+          user_id: string;
+          week_start: string;
+          xp: number;
+        };
+        Insert: {
+          final_rank?: number | null;
+          joined_at?: string;
+          last_xp_at?: string;
+          league_id: string;
+          outcome?: Database["public"]["Enums"]["league_outcome"] | null;
+          user_id: string;
+          week_start: string;
+          xp?: number;
+        };
+        Update: {
+          final_rank?: number | null;
+          joined_at?: string;
+          last_xp_at?: string;
+          league_id?: string;
+          outcome?: Database["public"]["Enums"]["league_outcome"] | null;
+          user_id?: string;
+          week_start?: string;
+          xp?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "league_members_league_id_fkey";
+            columns: ["league_id"];
+            isOneToOne: false;
+            referencedRelation: "leagues";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "league_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      league_tiers: {
+        Row: {
+          created_at: string;
+          demote_count: number;
+          name: string;
+          promote_count: number;
+          slug: string;
+          tier: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          demote_count: number;
+          name: string;
+          promote_count: number;
+          slug: string;
+          tier: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          demote_count?: number;
+          name?: string;
+          promote_count?: number;
+          slug?: string;
+          tier?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      leagues: {
+        Row: {
+          created_at: string;
+          finalized_at: string | null;
+          id: string;
+          tier: number;
+          week_start: string;
+        };
+        Insert: {
+          created_at?: string;
+          finalized_at?: string | null;
+          id?: string;
+          tier: number;
+          week_start: string;
+        };
+        Update: {
+          created_at?: string;
+          finalized_at?: string | null;
+          id?: string;
+          tier?: number;
+          week_start?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "leagues_tier_fkey";
+            columns: ["tier"];
+            isOneToOne: false;
+            referencedRelation: "league_tiers";
+            referencedColumns: ["tier"];
+          },
+        ];
+      };
+      levels: {
+        Row: {
+          created_at: string;
+          easy_count: number;
+          hard_count: number;
+          is_active: boolean;
+          level: number;
+          medium_count: number;
+          min_profile_level: number;
+          name: string;
+          slug: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          easy_count: number;
+          hard_count: number;
+          is_active?: boolean;
+          level: number;
+          medium_count: number;
+          min_profile_level: number;
+          name: string;
+          slug: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          easy_count?: number;
+          hard_count?: number;
+          is_active?: boolean;
+          level?: number;
+          medium_count?: number;
+          min_profile_level?: number;
+          name?: string;
+          slug?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -299,6 +458,7 @@ export type Database = {
           handle: string | null;
           id: string;
           last_streak_date: string | null;
+          league_tier: number;
           level: number;
           longest_streak: number;
           rating: number;
@@ -318,6 +478,7 @@ export type Database = {
           handle?: string | null;
           id: string;
           last_streak_date?: string | null;
+          league_tier?: number;
           level?: number;
           longest_streak?: number;
           rating?: number;
@@ -337,6 +498,7 @@ export type Database = {
           handle?: string | null;
           id?: string;
           last_streak_date?: string | null;
+          league_tier?: number;
           level?: number;
           longest_streak?: number;
           rating?: number;
@@ -348,6 +510,13 @@ export type Database = {
           xp?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "profiles_league_tier_fkey";
+            columns: ["league_tier"];
+            isOneToOne: false;
+            referencedRelation: "league_tiers";
+            referencedColumns: ["tier"];
+          },
           {
             foreignKeyName: "profiles_track_id_fkey";
             columns: ["track_id"];
@@ -620,6 +789,32 @@ export type Database = {
         };
         Relationships: [];
       };
+      streak_freeze_uses: {
+        Row: {
+          covered_date: string;
+          created_at: string;
+          user_id: string;
+        };
+        Insert: {
+          covered_date: string;
+          created_at?: string;
+          user_id: string;
+        };
+        Update: {
+          covered_date?: string;
+          created_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "streak_freeze_uses_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       subtopics: {
         Row: {
           created_at: string;
@@ -704,6 +899,39 @@ export type Database = {
             columns: ["section_id"];
             isOneToOne: false;
             referencedRelation: "sections";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      track_sections: {
+        Row: {
+          created_at: string;
+          section_id: string;
+          track_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          section_id: string;
+          track_id: string;
+        };
+        Update: {
+          created_at?: string;
+          section_id?: string;
+          track_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "track_sections_section_id_fkey";
+            columns: ["section_id"];
+            isOneToOne: false;
+            referencedRelation: "sections";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "track_sections_track_id_fkey";
+            columns: ["track_id"];
+            isOneToOne: false;
+            referencedRelation: "tracks";
             referencedColumns: ["id"];
           },
         ];
@@ -830,6 +1058,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      get_my_league: { Args: never; Returns: Json };
       get_today_set: { Args: never; Returns: Json };
       give_up: {
         Args: { context?: Database["public"]["Enums"]["attempt_context"]; question_id: string };
@@ -853,6 +1082,7 @@ export type Database = {
       attempt_context: "daily" | "practice" | "assessment";
       feedback_category: "general" | "bug" | "feature" | "content" | "other";
       feedback_status: "new" | "read" | "archived";
+      league_outcome: "promoted" | "stayed" | "demoted";
       question_difficulty: "easy" | "medium" | "hard";
       question_source: "manual" | "ai" | "import";
       question_status: "draft" | "in_review" | "published" | "retired";
@@ -977,6 +1207,7 @@ export const Constants = {
       attempt_context: ["daily", "practice", "assessment"],
       feedback_category: ["general", "bug", "feature", "content", "other"],
       feedback_status: ["new", "read", "archived"],
+      league_outcome: ["promoted", "stayed", "demoted"],
       question_difficulty: ["easy", "medium", "hard"],
       question_source: ["manual", "ai", "import"],
       question_status: ["draft", "in_review", "published", "retired"],
