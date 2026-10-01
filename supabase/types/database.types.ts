@@ -84,6 +84,7 @@ export type Database = {
           entity_id: string | null;
           entity_type: string;
           id: number;
+          question_ref: string | null;
         };
         Insert: {
           action: string;
@@ -94,6 +95,7 @@ export type Database = {
           entity_id?: string | null;
           entity_type: string;
           id?: never;
+          question_ref?: never;
         };
         Update: {
           action?: string;
@@ -104,6 +106,7 @@ export type Database = {
           entity_id?: string | null;
           entity_type?: string;
           id?: never;
+          question_ref?: never;
         };
         Relationships: [
           {
@@ -451,6 +454,9 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null;
+          banned_at: string | null;
+          banned_by: string | null;
+          banned_reason: string | null;
           bio: string | null;
           created_at: string;
           current_streak: number;
@@ -471,6 +477,9 @@ export type Database = {
         };
         Insert: {
           avatar_url?: string | null;
+          banned_at?: string | null;
+          banned_by?: string | null;
+          banned_reason?: string | null;
           bio?: string | null;
           created_at?: string;
           current_streak?: number;
@@ -491,6 +500,9 @@ export type Database = {
         };
         Update: {
           avatar_url?: string | null;
+          banned_at?: string | null;
+          banned_by?: string | null;
+          banned_reason?: string | null;
           bio?: string | null;
           created_at?: string;
           current_streak?: number;
@@ -510,6 +522,13 @@ export type Database = {
           xp?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "profiles_banned_by_fkey";
+            columns: ["banned_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "profiles_league_tier_fkey";
             columns: ["league_tier"];
@@ -571,6 +590,7 @@ export type Database = {
       question_generation_jobs: {
         Row: {
           batches: number;
+          cancelled_by: string | null;
           created_at: string;
           created_by: string | null;
           difficulty: Database["public"]["Enums"]["question_difficulty"];
@@ -595,6 +615,7 @@ export type Database = {
         };
         Insert: {
           batches?: number;
+          cancelled_by?: string | null;
           created_at?: string;
           created_by?: string | null;
           difficulty: Database["public"]["Enums"]["question_difficulty"];
@@ -619,6 +640,7 @@ export type Database = {
         };
         Update: {
           batches?: number;
+          cancelled_by?: string | null;
           created_at?: string;
           created_by?: string | null;
           difficulty?: Database["public"]["Enums"]["question_difficulty"];
@@ -642,6 +664,13 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "question_generation_jobs_cancelled_by_fkey";
+            columns: ["cancelled_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "question_generation_jobs_created_by_fkey";
             columns: ["created_by"];
@@ -739,6 +768,9 @@ export type Database = {
           model: string | null;
           prompt_version: string | null;
           published_at: string | null;
+          review_note: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
           source: Database["public"]["Enums"]["question_source"];
           status: Database["public"]["Enums"]["question_status"];
           stem: string;
@@ -757,6 +789,9 @@ export type Database = {
           model?: string | null;
           prompt_version?: string | null;
           published_at?: string | null;
+          review_note?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
           source?: Database["public"]["Enums"]["question_source"];
           status?: Database["public"]["Enums"]["question_status"];
           stem: string;
@@ -775,6 +810,9 @@ export type Database = {
           model?: string | null;
           prompt_version?: string | null;
           published_at?: string | null;
+          review_note?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
           source?: Database["public"]["Enums"]["question_source"];
           status?: Database["public"]["Enums"]["question_status"];
           stem?: string;
@@ -794,6 +832,13 @@ export type Database = {
             columns: ["generation_job_id"];
             isOneToOne: false;
             referencedRelation: "question_generation_jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "questions_reviewed_by_fkey";
+            columns: ["reviewed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
           {
@@ -1184,6 +1229,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_get_question: { Args: { target_question_id: string }; Returns: Json };
       admin_get_question_answer: {
         Args: { target_question_id: string };
         Returns: {
@@ -1193,6 +1239,63 @@ export type Database = {
           question_id: string;
           updated_at: string;
         }[];
+      };
+      admin_list_users: {
+        Args: {
+          only_banned?: boolean;
+          only_role?: Database["public"]["Enums"]["user_role"];
+          page_offset?: number;
+          page_size?: number;
+          search?: string;
+          target_user_id?: string;
+        };
+        Returns: {
+          attempts: number;
+          banned_at: string;
+          banned_reason: string;
+          correct: number;
+          created_at: string;
+          current_streak: number;
+          display_name: string;
+          email: string;
+          handle: string;
+          id: string;
+          last_sign_in_at: string;
+          level: number;
+          longest_streak: number;
+          role: Database["public"]["Enums"]["user_role"];
+          timezone: string;
+          total_count: number;
+          xp: number;
+        }[];
+      };
+      admin_save_question: {
+        Args: {
+          correct_index: number;
+          difficulty: Database["public"]["Enums"]["question_difficulty"];
+          est_seconds: number;
+          explanation: string;
+          hint?: string;
+          options: string[];
+          stem: string;
+          subtopic_id: string;
+          tags?: string[];
+          target_question_id: string;
+        };
+        Returns: Json;
+      };
+      admin_set_question_status: {
+        Args: {
+          from_status?: Database["public"]["Enums"]["question_status"];
+          new_status: Database["public"]["Enums"]["question_status"];
+          note?: string;
+          question_ids: string[];
+        };
+        Returns: number;
+      };
+      admin_set_user_ban: {
+        Args: { banned: boolean; reason?: string; target_user_id: string };
+        Returns: undefined;
       };
       admin_set_user_role: {
         Args: { new_role: Database["public"]["Enums"]["user_role"]; target_user_id: string };
@@ -1209,11 +1312,71 @@ export type Database = {
       };
       gen_claim_job: {
         Args: { p_job_id: string; p_lease_seconds: number };
-        Returns: Database["public"]["Tables"]["question_generation_jobs"]["Row"];
+        Returns: {
+          batches: number;
+          cancelled_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          difficulty: Database["public"]["Enums"]["question_difficulty"];
+          dropped_computed: number;
+          dropped_duplicate_hash: number;
+          dropped_duplicate_similar: number;
+          dropped_invalid: number;
+          dropped_solver: number;
+          finished_at: string | null;
+          id: string;
+          inserted: number;
+          last_error: string | null;
+          locked_until: string | null;
+          max_batches: number;
+          model: string;
+          prompt_version: string;
+          requested: number;
+          solver_model: string;
+          status: Database["public"]["Enums"]["generation_job_status"];
+          subtopic_id: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "question_generation_jobs";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       gen_finish_batch: {
         Args: { p_error?: string; p_job_id: string; p_stats: Json };
-        Returns: Database["public"]["Tables"]["question_generation_jobs"]["Row"];
+        Returns: {
+          batches: number;
+          cancelled_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          difficulty: Database["public"]["Enums"]["question_difficulty"];
+          dropped_computed: number;
+          dropped_duplicate_hash: number;
+          dropped_duplicate_similar: number;
+          dropped_invalid: number;
+          dropped_solver: number;
+          finished_at: string | null;
+          id: string;
+          inserted: number;
+          last_error: string | null;
+          locked_until: string | null;
+          max_batches: number;
+          model: string;
+          prompt_version: string;
+          requested: number;
+          solver_model: string;
+          status: Database["public"]["Enums"]["generation_job_status"];
+          subtopic_id: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "question_generation_jobs";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       gen_insert_question: {
         Args: {
@@ -1233,22 +1396,29 @@ export type Database = {
       };
       gen_nearest_question: {
         Args: { p_embedding: string };
-        Returns: { question_id: string; similarity: number }[];
+        Returns: {
+          question_id: string;
+          similarity: number;
+        }[];
       };
       gen_questions_missing_embeddings: {
         Args: { p_limit: number; p_subtopic_id: string };
-        Returns: { options: string[]; question_id: string; stem: string }[];
+        Returns: {
+          options: string[];
+          question_id: string;
+          stem: string;
+        }[];
       };
       gen_rate_limit: {
         Args: { p_bucket: string; p_max: number; p_subject: string; p_window_seconds: number };
-        Returns: { allowed: boolean; retry_after_seconds: number }[];
+        Returns: {
+          allowed: boolean;
+          retry_after_seconds: number;
+        }[];
       };
-      gen_store_embeddings: {
-        Args: { p_model: string; p_rows: Json };
-        Returns: number;
-      };
-      get_my_league: { Args: never; Returns: Json };
-      get_today_set: { Args: never; Returns: Json };
+      gen_store_embeddings: { Args: { p_model: string; p_rows: Json }; Returns: number };
+      get_my_league: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_today_set: { Args: Record<PropertyKey, never>; Returns: Json };
       give_up: {
         Args: { context?: Database["public"]["Enums"]["attempt_context"]; question_id: string };
         Returns: Json;
@@ -1295,12 +1465,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
@@ -1320,11 +1490,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I;
@@ -1343,11 +1513,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U;
@@ -1366,11 +1536,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
@@ -1381,11 +1551,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]

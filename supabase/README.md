@@ -20,7 +20,7 @@ Auth flows and the exact dashboard settings (SMTP, providers, rate limits, email
 | --- | --- |
 | `anon` | nothing |
 | authenticated user | read active taxonomy and tag catalog, published questions/options/tags (plus questions they've attempted), released daily sets, levels, league tiers, track sections; read own profile, attempts, xp_events, reports, feedback, streak freeze uses, league memberships; update own `handle`, `display_name`, `avatar_url`, `bio`, `timezone`, `track_id`; insert reports/feedback; play via `get_today_set`, `submit_answer`, `use_hint`, `give_up`; standings via `get_my_league` |
-| admin (`profiles.role = 'admin'`) | everything above + full CRUD on content tables, read all profiles/attempts/xp/reports/feedback/audit_log/`question_generation_jobs`, update report/feedback status; the `generate-questions` Edge Function; `admin_get_question_answer`, `admin_upsert_question_answer`, `admin_set_user_role` RPCs |
+| admin (`profiles.role = 'admin'`) | everything above + full CRUD on content tables, read all profiles/attempts/xp/reports/feedback/audit_log/`question_generation_jobs`, update report/feedback status; the `generate-questions` Edge Function; `admin_get_question_answer`, `admin_upsert_question_answer`, `admin_set_user_role`, `admin_set_user_ban`, `admin_list_users`, `admin_get_question`, `admin_save_question`, `admin_set_question_status` RPCs (see [Admin area](#admin-area)) |
 | `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` or write `attempts`, `xp_events`, `hint_uses`, league tables, `streak_freeze_uses`, `question_generation_jobs` and `profiles.role/level/xp/rating/streak*/league_tier` |
 
 Notes:
@@ -31,7 +31,8 @@ Notes:
 - Attempt uniqueness is `(user_id, question_id, context, daily_set_id)` with `NULLS NOT DISTINCT`, so a user gets one practice attempt per question and one attempt per question per daily set.
 - `questions.content_hash` is a lowercase sha256 hex digest the writer computes over the normalised stem + options: lower-case each, turn every run of characters other than `[a-z0-9]` into one space, trim; then hash the stem, a newline, and the options sorted and newline-joined (so reordered options still collide). `contentHash()` in `scripts/import-v1-questions.mjs` is the reference implementation (`functions/generate-questions/dedup.ts` is tested against it).
 - `question_tags.tag` must name a row in `tags` (the catalog; `kind` is `exam` or `general`).
-- Content changes (taxonomy, tags, questions, options, answers, daily sets) are written to `audit_log` by trigger, with `actor_id = auth.uid()`.
+- Content changes (taxonomy, tags, questions, options, answers, question tags, daily sets and their items) are written to `audit_log` by trigger, with `actor_id = auth.uid()`; so are admin updates/deletes of reports and feedback. Role, ban and question status changes are logged by the RPCs that make them, and generation jobs by trigger (actor = `created_by` / `cancelled_by`).
+- Banned users (`profiles.banned_at`) can't play (every gameplay RPC goes through `private.require_uid()`), file reports or feedback, or edit their profile; the ban also sets `auth.users.banned_until` and ends their sessions.
 
 ## Taxonomy and tags
 
@@ -148,3 +149,23 @@ All four are `SECURITY DEFINER` with `search_path = ''`, callable by `authentica
 - Errors: `42501` not signed in / not your question, `23505` already answered, `22023` bad argument, `P0002` no set today or no answer key.
 
 Tests: `tests/database/scheduled_jobs.test.sql` covers set generation (mix, section balance, reuse window, eligibility, idempotency), level fallback, streak freezes and league rollover. `tests/database/gameplay.test.sql` covers double scoring, foreign questions (other track, yesterday's set, drafts), the once-only hint charge, timezone-local "today", and that answers are unreadable by `anon`/`authenticated`.
+
+## Admin area
+
+`frontend/src/pages/Admin` (`/admin/*`), for `profiles.role = 'admin'` only. The UI's role check is cosmetic: reads go through RLS and writes through RLS or the `admin_*` functions (`20261001000013_admin.sql`), which check `private.is_admin()` themselves. Every write lands in `audit_log`.
+
+| Page | Does | Backed by |
+| --- | --- | --- |
+| Review queue | `in_review` questions oldest first; edit with a live Markdown + KaTeX preview, approve (→ `published`) or reject (→ `retired`) with a note | `admin_get_question`, `admin_save_question`, `admin_set_question_status(…, from_status => 'in_review')` |
+| Questions | search stem (trigram index) or id; filter by section/topic/subtopic, difficulty, status, source, job; bulk status changes; per-question page with reports and full history | `questions` via RLS, `audit_log.question_ref` |
+| Users | search handle/name/email/id; change role; ban/unban with a reason; attempts | `admin_list_users`, `admin_set_user_role`, `admin_set_user_ban`, `attempts` via RLS |
+| Reports | open → triaged → resolved/dismissed with a note, linked to the question | `reports` via RLS (`reports_audit` trigger) |
+| Generation jobs | start jobs, drive them batch by batch with progress, resume, cancel | `generate-questions` Edge Function |
+| Audit log | filter by entity, action, actor, entity id or question; field-level diffs | `audit_log` via RLS |
+
+- `admin_save_question` saves stem, subtopic, difficulty, time, options, answer key, explanation, hint and tags in one transaction and recomputes `content_hash` in SQL (`private.content_hash`, tested against the JS reference). Options are matched by position, so edited options keep their ids and past attempts stay valid; an option a player picked can't be removed. A hash collision with another question is refused (`23505`).
+- `admin_set_question_status` refuses to publish a question without an answer key or with fewer than 2 options (`23514`). With `from_status` it only moves questions still in that status and returns how many moved, so two reviewers never decide the same question twice. Out of `in_review` the audit action is `approve`/`reject`, otherwise `set_status`; `questions.reviewed_by/at/review_note` hold the last decision.
+- Admins can't ban themselves or another admin (demote first), and a banned user can't be made admin.
+- `audit_log.question_ref` (generated) names the question a row is about, whichever table it came from, for per-question history.
+
+Tests: `tests/database/admin.test.sql`.

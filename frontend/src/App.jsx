@@ -1,6 +1,6 @@
 // src/App.jsx
-import { useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { PreferencesProvider, usePreferences } from './context/PreferencesContext';
 import { SessionProvider, useSession } from './context/SessionContext';
@@ -11,7 +11,6 @@ import Footer from './components/Footer/Footer';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RequireAuth from './components/RouteGuards/RequireAuth';
 import OnboardingGate from './components/RouteGuards/OnboardingGate';
-import Admin from './pages/Admin/Admin';
 import Home from './pages/Home/Home';
 import Practice from './pages/Practice/Practice';
 import Profile from './pages/Profile/Profile';
@@ -21,16 +20,25 @@ import Feedback from './pages/Feedback/Feedback';
 import Help from './pages/Help/Help';
 import Terms from './pages/Terms/Terms';
 import Contact from './pages/Contact/Contact';
-import UserDetails from './pages/Admin/UserDetails';
 import Topics from './pages/Topics/Topics';
 import TopicQuestions from './pages/Topics/TopicQuestions';
 import SolveQuestion from './pages/Practice/SolveQuestion';
-import QuestionDetails from './pages/Admin/QuestionDetails';
 import AuthCallback from './pages/AuthCallback/AuthCallback';
 import ResetPassword from './pages/ResetPassword/ResetPassword';
 import Onboarding from './pages/Onboarding/Onboarding';
 import NotFound from './pages/NotFound/NotFound';
 import './assets/styles/styles.css';
+
+// The admin area is only for admins: load it on demand.
+const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
+const ReviewQueue = lazy(() => import('./pages/Admin/ReviewQueue'));
+const AdminQuestions = lazy(() => import('./pages/Admin/Questions'));
+const AdminQuestionPage = lazy(() => import('./pages/Admin/QuestionPage'));
+const AdminUsers = lazy(() => import('./pages/Admin/Users'));
+const AdminUserPage = lazy(() => import('./pages/Admin/UserPage'));
+const AdminReports = lazy(() => import('./pages/Admin/Reports'));
+const AdminJobs = lazy(() => import('./pages/Admin/Jobs'));
+const AdminAuditLog = lazy(() => import('./pages/Admin/AuditLog'));
 import './assets/styles/lightmode.css'
 import './App.css';
 
@@ -124,33 +132,44 @@ const AppContent = () => {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
       <main className={reduceMotion ? '' : 'page-enter'} style={{ flex: 1 }}>
-        <Routes>
-          <Route element={<OnboardingGate />}>
-            <Route path="/" element={<Home isAuthenticated={isAuthenticated} onAuthClick={handleAuthTrigger} />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/feedback" element={<Feedback />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/admin/user/:id" element={<UserDetails />} />
-            <Route path="/admin/question/:id" element={<QuestionDetails />} />
-            <Route path="/topics" element={<Topics />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
+        <Suspense fallback={null}>
+          <Routes>
+            <Route element={<OnboardingGate />}>
+              <Route path="/" element={<Home isAuthenticated={isAuthenticated} onAuthClick={handleAuthTrigger} />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/feedback" element={<Feedback />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/topics" element={<Topics />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
 
-            <Route element={<RequireAuth />}>
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/practice" element={<Practice />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/practice/topic" element={<TopicQuestions />} />
-              <Route path="/solve/:qid" element={<SolveQuestion />} />
+              <Route element={<RequireAuth />}>
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/practice" element={<Practice />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/practice/topic" element={<TopicQuestions />} />
+                <Route path="/solve/:qid" element={<SolveQuestion />} />
+
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Navigate to="review" replace />} />
+                  <Route path="review" element={<ReviewQueue />} />
+                  <Route path="questions" element={<AdminQuestions />} />
+                  <Route path="questions/:id" element={<AdminQuestionPage />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="users/:id" element={<AdminUserPage />} />
+                  <Route path="reports" element={<AdminReports />} />
+                  <Route path="jobs" element={<AdminJobs />} />
+                  <Route path="audit" element={<AdminAuditLog />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
             </Route>
-
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
+          </Routes>
+        </Suspense>
       </main>
       <Footer />
     </div>

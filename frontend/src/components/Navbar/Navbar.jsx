@@ -10,7 +10,7 @@ import logoSymbol from '/LOGO.png';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, signOut } = useSession();
+  const { isAuthenticated, isAdmin, signOut } = useSession();
   const { openAuth } = useAuthModal();
   // 1. Get 'theme' alongside reduceMotion
   const { reduceMotion, theme } = usePreferences();
@@ -121,6 +121,7 @@ const Navbar = () => {
         <Link to="/about" onClick={closeMenu}>About</Link>
         {isAuthenticated && <Link to="/profile" onClick={closeMenu}>My Progress</Link>}
         <Link to="/feedback" onClick={closeMenu}>Feedback</Link>
+        {isAdmin && <Link to="/admin" onClick={closeMenu}>Admin</Link>}
 
         <div className="menu-auth-container">
           {!isAuthenticated ? (
