@@ -408,6 +408,13 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Admin-only AI question generation (the function also checks the caller is an admin).
+[functions.generate-questions]
+enabled = true
+verify_jwt = true
+import_map = "./functions/generate-questions/deno.json"
+entrypoint = "./functions/generate-questions/index.ts"
+
 [analytics]
 enabled = true
 port = 54327
