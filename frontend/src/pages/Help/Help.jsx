@@ -83,12 +83,16 @@ const FAQ_SECTIONS = [
                 table: true,
             },
             {
-                q: 'What is the hint penalty?',
-                a: 'Using a hint deducts 50% of the question\'s base point value from your potential reward. If you still answer correctly after using a hint, you earn the remaining 50%. Giving up awards zero points.',
+                q: 'What do wrong answers, hints and giving up cost?',
+                a: 'A wrong answer costs 20 points. Opening a hint costs 10 points, charged once per question when you open it and not refunded, so a correct answer after a hint earns 10 less. Giving up earns 0 points, so it is never worth more than a wrong answer. Your score never drops below 0.',
+            },
+            {
+                q: 'Do topic practice questions score the same?',
+                a: 'No. Correct answers in topic practice earn half the daily-set points (Easy 25, Medium 50, Hard 75). Wrong answers and hints cost the same as in the daily set. Each question is scored only once.',
             },
             {
                 q: 'How does my rank level change?',
-                a: 'Your rank (Beginner → Intermediate → Advanced → Expert) updates automatically based on your cumulative score and accuracy. The system re-evaluates your level after each session.',
+                a: 'Your level rises with your total score: Beginner (0–25,000), Intermediate (up to 50,000), Advanced (up to 75,000), Pro (up to 100,000), then Expert. Levels only go up: losing points never moves you down a level, and a level granted by an admin is kept.',
             },
         ],
     },
@@ -126,15 +130,16 @@ const FAQ_SECTIONS = [
     },
 ];
 
+// Keep in sync with POINTS_BY_DIFFICULTY in backend/src/utils/helpers.js.
 const SCORE_ROWS = [
-    { difficulty: 'Easy', points: 10, badge: 'easy' },
-    { difficulty: 'Medium', points: 20, badge: 'medium' },
-    { difficulty: 'Hard', points: 30, badge: 'hard' },
+    { difficulty: 'Easy', points: 50, badge: 'easy' },
+    { difficulty: 'Medium', points: 100, badge: 'medium' },
+    { difficulty: 'Hard', points: 150, badge: 'hard' },
 ];
 
 const TIPS = [
     { icon: '🔥', title: 'Build Streaks', text: 'Answer daily questions consistently to stack streak bonuses.' },
-    { icon: '💡', title: 'Use Hints Wisely', text: 'Hints cost half the points — only use them when truly stuck.' },
+    { icon: '💡', title: 'Use Hints Wisely', text: 'Each hint costs 10 points — only use them when truly stuck.' },
     { icon: '📊', title: 'Track Progress', text: 'Visit your profile to spot weak categories and focus your practice.' },
 ];
 
@@ -152,8 +157,8 @@ const FaqItem = ({ item, isOpen, onToggle }) => (
                         <thead>
                             <tr>
                                 <th>Difficulty</th>
-                                <th>Base Points</th>
-                                <th>With Hint</th>
+                                <th>Daily Set</th>
+                                <th>Topic Practice</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -164,6 +169,21 @@ const FaqItem = ({ item, isOpen, onToggle }) => (
                                     <td>+{row.points / 2} pts</td>
                                 </tr>
                             ))}
+                            <tr>
+                                <td>Wrong answer</td>
+                                <td>-20 pts</td>
+                                <td>-20 pts</td>
+                            </tr>
+                            <tr>
+                                <td>Hint</td>
+                                <td>-10 pts</td>
+                                <td>-10 pts</td>
+                            </tr>
+                            <tr>
+                                <td>Give up</td>
+                                <td>0 pts</td>
+                                <td>0 pts</td>
+                            </tr>
                         </tbody>
                     </table>
                 ) : (
