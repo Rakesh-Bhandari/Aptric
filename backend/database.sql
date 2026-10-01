@@ -62,7 +62,8 @@ CREATE TABLE `questions` (
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`question_id`),
   UNIQUE KEY `qid` (`qid`),
-  KEY `idx_generated_for_date` (`generated_for_date`)
+  KEY `idx_generated_for_date` (`generated_for_date`),
+  KEY `idx_difficulty_category` (`difficulty`,`category`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
@@ -91,6 +92,7 @@ CREATE TABLE `user_attempts` (
   PRIMARY KEY (`attempt_id`),
   UNIQUE KEY `user_daily_question` (`user_id`,`attempt_date`,`qid`),
   KEY `fk_user_attempts` (`user_id`),
+  KEY `idx_user_question` (`user_id`,`question_id`),
   KEY `fk_question_attempts` (`question_id`),
   CONSTRAINT `user_attempts_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
   CONSTRAINT `user_attempts_question_fk` FOREIGN KEY (`question_id`) REFERENCES `questions` (`question_id`) ON DELETE CASCADE

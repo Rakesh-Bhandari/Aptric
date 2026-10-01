@@ -221,29 +221,44 @@ export async function topUpQuestionBank(pool, {
 // Daily assignment (bank only, no AI — safe in the request path)
 // ─────────────────────────────────────────────────────────────
 
-function parseJsonArray(value) {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    try { return JSON.parse(value) || []; } catch { return []; }
-}
+// A question counts as seen if the user has an attempt on it, or it was in any
+// earlier daily set (assigned but skipped counts too).
+const UNSEEN_CONDITION = `
+    NOT EXISTS (SELECT 1 FROM user_attempts a WHERE a.user_id = ? AND a.question_id = q.question_id)
+    AND NOT EXISTS (SELECT 1 FROM user_daily_log l
+                    WHERE l.user_id = ? AND JSON_CONTAINS(l.question_ids_json, CAST(q.question_id AS JSON)))`;
 
 // Picks up to DAILY_QUESTION_COUNT unseen question_ids from the bank following
 // the level's difficulty mix; shortfalls are filled from any difficulty.
+// Randomness: each slot seeks from a random question_id pivot along the primary
+// key and takes the first unseen row (wrapping to the start if none follows),
+// so no full-table ORDER BY RAND() sort is needed.
 async function pickQuestionsFromBank(conn, userId, userLevel) {
-    const [[user]] = await conn.query('SELECT answered_qids FROM users WHERE user_id = ?', [userId]);
-    const seenQids = parseJsonArray(user?.answered_qids);
+    const [[range]] = await conn.query('SELECT MIN(question_id) AS minId, MAX(question_id) AS maxId FROM questions');
+    if (range?.minId == null) return [];
+    const minId = Number(range.minId);
+    const maxId = Number(range.maxId);
     const picked = [];
 
+    const pickOne = async (difficulty) => {
+        const pivot = minId + Math.floor(Math.random() * (maxId - minId + 1));
+        let query = `SELECT q.question_id FROM questions q WHERE ${UNSEEN_CONDITION}`;
+        const params = [userId, userId];
+        if (difficulty) { query += ' AND q.difficulty = ?'; params.push(difficulty); }
+        if (picked.length > 0) { query += ' AND q.question_id NOT IN (?)'; params.push(picked); }
+
+        const [after] = await conn.query(`${query} AND q.question_id >= ? ORDER BY q.question_id LIMIT 1`, [...params, pivot]);
+        if (after.length > 0) return after[0].question_id;
+        const [before] = await conn.query(`${query} AND q.question_id < ? ORDER BY q.question_id LIMIT 1`, [...params, pivot]);
+        return before.length > 0 ? before[0].question_id : null;
+    };
+
     const pick = async (difficulty, limit) => {
-        let query = 'SELECT question_id FROM questions WHERE 1 = 1';
-        const params = [];
-        if (difficulty) { query += ' AND difficulty = ?'; params.push(difficulty); }
-        if (seenQids.length > 0) { query += ' AND qid NOT IN (?)'; params.push(seenQids); }
-        if (picked.length > 0) { query += ' AND question_id NOT IN (?)'; params.push(picked); }
-        query += ' ORDER BY RAND() LIMIT ?';
-        params.push(limit);
-        const [rows] = await conn.query(query, params);
-        picked.push(...rows.map(r => r.question_id));
+        for (let i = 0; i < limit; i++) {
+            const id = await pickOne(difficulty);
+            if (id == null) return; // no unseen questions left for this difficulty
+            picked.push(id);
+        }
     };
 
     for (const [difficulty, needed] of Object.entries(getDifficultyDistribution(userLevel))) {
