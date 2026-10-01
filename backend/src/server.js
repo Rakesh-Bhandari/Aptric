@@ -19,25 +19,29 @@ const app = express();
 const isProd = process.env.VITE_NODE_ENV === 'production';
 
 // ── CORS ──────────────────────────────────────────────────────
-const FRONTEND_SLUG = process.env.VITE_FRONTEND_SLUG || 'aptric-bxno';
+// Exact allow-list: production frontend + local dev ports.
 const ALLOWED_ORIGINS = [
-    process.env.VITE_FRONTEND_URL,
+    process.env.VITE_FRONTEND_URL?.replace(/\/+$/, ''),
     'http://localhost:5173',
     'http://localhost:6969',
     'http://localhost:3000',
 ].filter(Boolean);
 
+// Optional Vercel preview deployments for this project + team only, e.g.
+// https://aptric-bxno-abc123-my-team.vercel.app. Disabled unless the team slug is set.
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const FRONTEND_SLUG = process.env.VITE_FRONTEND_SLUG || 'aptric-bxno';
+const VERCEL_TEAM_SLUG = process.env.VITE_VERCEL_TEAM_SLUG;
+const PREVIEW_ORIGIN_RE = VERCEL_TEAM_SLUG
+    ? new RegExp(`^https://${escapeRegex(FRONTEND_SLUG)}-[a-z0-9]+-${escapeRegex(VERCEL_TEAM_SLUG)}\\.vercel\\.app$`)
+    : null;
+
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
+        // No Origin header (same-origin, curl, server-to-server): no CORS headers.
+        if (!origin) return callback(null, false);
         if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-        // Allow any Vercel preview URL for this project
-        try {
-            const { hostname } = new URL(origin);
-            if (hostname.endsWith('.vercel.app') && hostname.startsWith(FRONTEND_SLUG)) {
-                return callback(null, true);
-            }
-        } catch (_) {}
+        if (PREVIEW_ORIGIN_RE && PREVIEW_ORIGIN_RE.test(origin)) return callback(null, true);
         console.warn(`[CORS] Blocked: ${origin}`);
         return callback(new Error(`Origin ${origin} not allowed`), false);
     },
