@@ -1,10 +1,24 @@
 // --- Game Constants ---
-export const POINTS_CORRECT = 100;
-export const POINTS_GIVEUP = 10;
+// Correct-answer points for the daily set, by question difficulty.
+// Topic practice awards half (see pointsForCorrect).
+export const POINTS_BY_DIFFICULTY = { Easy: 50, Medium: 100, Hard: 150 };
+export const POINTS_GIVEUP = 0; // never worth more than a wrong answer
 export const POINTS_HINT = -10;
 export const POINTS_WRONG = -20;
 
+export function pointsForCorrect(difficulty, isDaily) {
+    const base = POINTS_BY_DIFFICULTY[difficulty] ?? POINTS_BY_DIFFICULTY.Medium;
+    return isDaily ? base : Math.floor(base / 2);
+}
+
 // --- Level Calculator ---
+export const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Pro', 'Expert'];
+
+// The higher of two levels; unknown levels rank lowest.
+export function maxLevel(a, b) {
+    return LEVELS.indexOf(a) >= LEVELS.indexOf(b) ? a : b;
+}
+
 export function calculateLevel(score) {
     if (score <= 25000) return 'Beginner';
     if (score <= 50000) return 'Intermediate';
