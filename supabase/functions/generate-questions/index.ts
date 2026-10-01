@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
         return json({ job: await loadJob(input.job_id) });
       case 'cancel': {
         const { data, error } = await db.from('question_generation_jobs')
-          .update({ status: 'cancelled', finished_at: new Date().toISOString() })
+          .update({ status: 'cancelled', cancelled_by: userId, finished_at: new Date().toISOString() })
           .eq('id', input.job_id).in('status', ['queued', 'running'])
           .select('*').maybeSingle();
         if (error) throw new Error(`cancel job: ${error.message}`);
