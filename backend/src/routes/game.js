@@ -3,7 +3,7 @@ import { z } from 'zod';
 import dbPool from '../config/db.js';
 import { isLoggedIn } from '../middleware/auth.js';
 import { getOrAssignDailyLog } from '../services/questionBank.js';
-import { getTodayDate, getYesterdayDate, calculateLevel, POINTS_CORRECT, POINTS_WRONG, POINTS_HINT, POINTS_GIVEUP } from '../utils/helpers.js';
+import { getTodayDate, getYesterdayDate, calculateLevel, maxLevel, pointsForCorrect, POINTS_WRONG, POINTS_HINT, POINTS_GIVEUP } from '../utils/helpers.js';
 import { submitAnswerLimiter, useHintLimiter, giveUpLimiter } from '../middleware/rateLimit.js';
 import { validate, qid } from '../middleware/validate.js';
 
@@ -18,11 +18,25 @@ const submitAnswerSchema = z.object({
         .min(0, 'Invalid answer index'),
 });
 
+// Score never drops below 0. Level only ever goes up: it is the higher of the
+// current level (which an admin may have promoted) and the level the score earns.
 async function updateGameStats(userId, points, conn) {
-    await conn.query('UPDATE users SET score = score + ? WHERE user_id = ?', [points, userId]);
-    const [[{ score }]] = await conn.query('SELECT score FROM users WHERE user_id = ?', [userId]);
-    const newLevel = calculateLevel(score);
-    await conn.query('UPDATE users SET level = ? WHERE user_id = ?', [newLevel, userId]);
+    await conn.query('UPDATE users SET score = GREATEST(score + ?, 0) WHERE user_id = ?', [points, userId]);
+    const [[{ score, level }]] = await conn.query('SELECT score, level FROM users WHERE user_id = ?', [userId]);
+    const newLevel = maxLevel(level, calculateLevel(score));
+    if (newLevel !== level) {
+        await conn.query('UPDATE users SET level = ? WHERE user_id = ?', [newLevel, userId]);
+    }
+}
+
+// True if the question is in the user's daily set for `today`.
+async function isInDailySet(conn, userId, questionId, today) {
+    const [[row]] = await conn.query(
+        `SELECT 1 FROM user_daily_log
+         WHERE user_id = ? AND challenge_date = ? AND JSON_CONTAINS(question_ids_json, CAST(? AS JSON))`,
+        [userId, today, questionId]
+    );
+    return Boolean(row);
 }
 
 // Streak rule: a day counts once the user finishes (correct / wrong / give-up)
@@ -31,12 +45,7 @@ async function updateGameStats(userId, points, conn) {
 // restarts at 1; later answers the same day are no-ops (the WHERE clause).
 // Topic-practice answers don't count. Must run inside the scoring transaction.
 async function recordStreakDay(conn, userId, questionId, today) {
-    const [[inDailySet]] = await conn.query(
-        `SELECT 1 FROM user_daily_log
-         WHERE user_id = ? AND challenge_date = ? AND JSON_CONTAINS(question_ids_json, CAST(? AS JSON))`,
-        [userId, today, questionId]
-    );
-    if (!inDailySet) return;
+    if (!(await isInDailySet(conn, userId, questionId, today))) return;
 
     await conn.query(
         `UPDATE users
@@ -166,9 +175,10 @@ async function lockAttempt(conn, userId, qid, today, columns) {
 const isRaceError = (err) => err && (err.code === 'ER_DUP_ENTRY' || err.code === 'ER_LOCK_DEADLOCK');
 
 // --- Submit Answer ---
-// Scoring: correct = +100, wrong = -20, awarded once per question.
+// Scoring: correct = Easy +50 / Medium +100 / Hard +150 for the daily set, half
+// that for topic practice; wrong = -20. Awarded once per question.
 // A hint taken earlier was already charged (-10) by /use-hint and is NOT charged again,
-// so correct + hint = +90 total and wrong + hint = -30 total.
+// so e.g. correct (Medium, daily) + hint = +90 total and wrong + hint = -30 total.
 // points_earned on the attempt row stores the net total for the question.
 router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, validate({ body: submitAnswerSchema }), async (req, res) => {
     const { qid, selectedAnswerIndex } = req.body;
@@ -180,7 +190,7 @@ router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, validate({ body: 
         conn = await dbPool.getConnection();
         await conn.beginTransaction();
 
-        const { error, question, existing } = await lockAttempt(conn, userId, qid, today, 'options, correct_answer_index, explanation, hint');
+        const { error, question, existing } = await lockAttempt(conn, userId, qid, today, 'options, correct_answer_index, explanation, hint, difficulty');
         if (error) { await conn.rollback(); return res.status(error[0]).json({ error: error[1] }); }
 
         if (existing && existing.status !== 'pending' && existing.status !== 'hint_used') {
@@ -195,7 +205,9 @@ router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, validate({ body: 
         }
 
         const isCorrect = selectedAnswerIndex === question.correct_answer_index;
-        const awarded = isCorrect ? POINTS_CORRECT : POINTS_WRONG;
+        const awarded = isCorrect
+            ? pointsForCorrect(question.difficulty, await isInDailySet(conn, userId, question.question_id, today))
+            : POINTS_WRONG;
         const hintPoints = existing && existing.status === 'hint_used' ? (existing.points_earned || 0) : 0;
         const points = awarded + hintPoints;
 
@@ -276,8 +288,8 @@ router.post('/use-hint', isLoggedIn, useHintLimiter, validate({ body: qidSchema 
 });
 
 // --- Give Up ---
-// Scoring: +10, awarded once per question. A hint taken earlier was already
-// charged (-10) by /use-hint and is NOT charged again, so give-up + hint = 0 total.
+// Scoring: 0, so giving up is never worth more than a wrong answer. A hint taken
+// earlier was already charged (-10) by /use-hint and is NOT refunded, so give-up + hint = -10 total.
 router.post('/give-up', isLoggedIn, giveUpLimiter, validate({ body: qidSchema }), async (req, res) => {
     const { qid } = req.body;
     const userId = req.user.user_id;
