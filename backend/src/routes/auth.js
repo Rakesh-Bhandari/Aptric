@@ -15,6 +15,26 @@ const FRONTEND = () => process.env.VITE_FRONTEND_URL;
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;   // activation link lifetime (email says 24h)
 const RESEND_COOLDOWN_MS = 60 * 1000;              // min gap between activation emails per account
+const OTP_TTL_MS = 10 * 60 * 1000;                 // password reset code lifetime (email says 10 min)
+const OTP_MAX_ATTEMPTS = 5;                        // wrong guesses before the code is invalidated
+const OTP_COOLDOWN_MS = 60 * 1000;                 // min gap between reset emails per account
+
+// OTPs are stored only as a SHA-256 hex digest.
+const hashOtp = (otp) => crypto.createHash('sha256').update(String(otp)).digest('hex');
+const otpMatches = (otp, storedHash) => {
+  if (!storedHash) return false;
+  const a = Buffer.from(hashOtp(otp), 'hex');
+  const b = Buffer.from(storedHash, 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
+// Returns an error message, or null if the password is acceptable.
+const validatePassword = (pw) => {
+  if (typeof pw !== 'string' || pw.length < 8) return 'Password must be at least 8 characters';
+  if (pw.length > 72) return 'Password must be at most 72 characters'; // bcrypt input limit
+  if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Password must contain both letters and digits';
+  return null;
+};
 
 const escapeHtml = (str) => String(str).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -31,7 +51,7 @@ router.get('/login/callback', (req, res, next) => {
     }
 
     // Set JWT cookie — works across all Vercel invocations
-    setAuthCookie(res, user.user_id);
+    setAuthCookie(res, user.user_id, user.token_version);
 
     return res.redirect(`${FRONTEND()}/practice`);
   })(req, res, next);
@@ -40,6 +60,18 @@ router.get('/login/callback', (req, res, next) => {
 router.get('/logout', (req, res) => {
   clearAuthCookie(res);
   res.json({ message: 'Logged out' });
+});
+
+// Revokes every session for this account (all devices), including the current one.
+router.post('/logout-all', isLoggedIn, async (req, res) => {
+  try {
+    await dbPool.query('UPDATE users SET token_version = token_version + 1 WHERE user_id = ?', [req.user.user_id]);
+    clearAuthCookie(res);
+    res.json({ message: 'Logged out of all sessions' });
+  } catch (err) {
+    console.error('[logout-all]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // ── Email/Password Login ───────────────────────────────────────
@@ -63,7 +95,7 @@ router.post('/login', async (req, res) => {
     await dbPool.query('UPDATE users SET last_login = ? WHERE user_id = ?', [new Date(), user.user_id]);
 
     // Set JWT cookie
-    setAuthCookie(res, user.user_id);
+    setAuthCookie(res, user.user_id, user.token_version);
 
     res.json({ user_id: user.user_id, name: user.user_name });
   } catch (err) {
@@ -184,18 +216,32 @@ router.post('/resend-verification', async (req, res) => {
 // ── Forgot Password ────────────────────────────────────────────
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
-  const [[user]] = await dbPool.query('SELECT user_id FROM users WHERE email = ?', [email]);
-  if (!user) return res.status(404).json({ error: 'Email not found' });
-
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expires = new Date(Date.now() + 10 * 60000);
-  await dbPool.query('UPDATE users SET otp_code = ?, otp_expires = ? WHERE email = ?', [otp, expires, email]);
+  if (!email) return res.status(400).json({ error: 'Email required' });
+  // Same response whether or not the account exists, so this can't be used to enumerate emails.
+  const generic = { message: 'If an account exists for that email, a reset code has been sent.' };
 
   try {
-    await transporter.sendMail({
-      to: email,
-      subject: '🔐 Your Aptric Password Reset Code',
-      html: `
+    const [[user]] = await dbPool.query('SELECT user_id, otp_expires FROM users WHERE email = ?', [email]);
+    if (!user) return res.json(generic);
+
+    // Silently skip if a code was issued within the cooldown (issue time = expires - TTL),
+    // so a fresh code (and fresh attempt budget) can't be requested in a tight loop.
+    if (user.otp_expires) {
+      const issuedAt = new Date(user.otp_expires).getTime() - OTP_TTL_MS;
+      if (Date.now() < issuedAt + OTP_COOLDOWN_MS) return res.json(generic);
+    }
+
+    const otp = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
+    await dbPool.query(
+      'UPDATE users SET otp_hash = ?, otp_expires = ?, otp_attempts = 0 WHERE user_id = ?',
+      [hashOtp(otp), new Date(Date.now() + OTP_TTL_MS), user.user_id]
+    );
+
+    try {
+      await transporter.sendMail({
+        to: email,
+        subject: '🔐 Your Aptric Password Reset Code',
+        html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -229,31 +275,66 @@ router.post('/forgot-password', async (req, res) => {
   </table>
 </body>
 </html>`
-    });
-  } catch (e) { console.error('[forgot-password] mail:', e.message); }
+      });
+    } catch (e) { console.error('[forgot-password] mail:', e.message); }
 
-  res.json({ message: 'OTP sent' });
+    res.json(generic);
+  } catch (err) {
+    console.error('[forgot-password]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // ── Reset Password ─────────────────────────────────────────────
 router.post('/reset-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;
-  let conn;
+  const invalid = { error: 'INVALID_OR_EXPIRED_OTP' };
+  if (!email || !otp) return res.status(400).json(invalid);
+  const pwError = validatePassword(newPassword);
+  if (pwError) return res.status(400).json({ error: pwError });
+
   try {
-    conn = await dbPool.getConnection();
-    const [[user]] = await conn.query('SELECT user_id, otp_code, otp_expires FROM users WHERE email = ?', [email]);
-    if (!user) { return res.status(404).json({ error: 'User not found' }); }
-    if (user.otp_code !== otp || new Date() > new Date(user.otp_expires)) {
-      return res.status(400).json({ error: 'INVALID_OR_EXPIRED_OTP' });
+    const [[user]] = await dbPool.query('SELECT user_id FROM users WHERE email = ?', [email]);
+    if (!user) return res.status(400).json(invalid);
+
+    // Atomically spend one attempt on a live code. Done before comparing so concurrent
+    // guesses can't exceed OTP_MAX_ATTEMPTS.
+    const now = new Date();
+    const [spent] = await dbPool.query(
+      `UPDATE users SET otp_attempts = otp_attempts + 1
+       WHERE user_id = ? AND otp_hash IS NOT NULL AND otp_expires > ? AND otp_attempts < ?`,
+      [user.user_id, now, OTP_MAX_ATTEMPTS]
+    );
+    if (!spent.affectedRows) return res.status(400).json(invalid);
+
+    const [[row]] = await dbPool.query('SELECT otp_hash, otp_attempts FROM users WHERE user_id = ?', [user.user_id]);
+    if (!otpMatches(otp, row?.otp_hash)) {
+      if (row && row.otp_attempts >= OTP_MAX_ATTEMPTS) {
+        // Keep otp_expires so the forgot-password cooldown still applies after a lockout.
+        await dbPool.query(
+          'UPDATE users SET otp_hash = NULL WHERE user_id = ? AND otp_hash = ?',
+          [user.user_id, row.otp_hash]
+        );
+      }
+      return res.status(400).json(invalid);
     }
+
+    // Consume the code, set the password, and bump token_version to revoke all existing sessions.
+    // Conditioned on otp_hash so a concurrent request can't reuse the same code.
     const hash = await bcrypt.hash(newPassword, 10);
-    await conn.query('UPDATE users SET password_hash = ?, otp_code = NULL, otp_expires = NULL WHERE email = ?', [hash, email]);
+    const [updated] = await dbPool.query(
+      `UPDATE users SET password_hash = ?, otp_hash = NULL, otp_expires = NULL, otp_attempts = 0,
+              token_version = token_version + 1
+       WHERE user_id = ? AND otp_hash = ?`,
+      [hash, user.user_id, row.otp_hash]
+    );
+    if (!updated.affectedRows) return res.status(400).json(invalid);
+
+    clearAuthCookie(res);
     res.json({ message: 'PASSWORD_RESET_SUCCESSFUL' });
   } catch (err) {
     console.error('[reset-password]', err);
     res.status(500).json({ error: 'Server error' });
-  } finally {
-    if (conn) conn.release();
   }
 });
 
@@ -274,7 +355,7 @@ router.get('/verify/:token', async (req, res) => {
     await conn.query('UPDATE users SET is_verified = true, verification_token = NULL, verification_expires = NULL WHERE user_id = ?', [user.user_id]);
 
     // Set JWT cookie
-    setAuthCookie(res, user.user_id);
+    setAuthCookie(res, user.user_id, user.token_version);
 
     res.json({
       message: 'Account activated.',
