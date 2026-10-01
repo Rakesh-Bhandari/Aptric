@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import dbPool from '../config/db.js';
 import { STREAK_LOSS } from '../utils/helpers.js';
+import { topUpQuestionBank } from '../services/questionBank.js';
 
 const router = Router();
 
+const isCronRequest = (req) => req.headers['authorization'] === `Bearer ${process.env.CRON_SECRET}`;
+
 // Called daily at midnight by Vercel Cron
 router.get('/streak-check', async (req, res) => {
-    const authHeader = req.headers['authorization'];
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!isCronRequest(req)) {
         return res.status(401).end('Unauthorized');
     }
 
@@ -37,6 +39,23 @@ router.get('/streak-check', async (req, res) => {
         res.status(500).json({ error: e.message });
     } finally {
         conn.release();
+    }
+});
+
+// Called by Vercel Cron. Keeps AI generation out of the request path:
+// tops up any difficulty with fewer than QUESTION_BANK_MIN_UNUSED unused questions.
+router.get('/question-bank', async (req, res) => {
+    if (!isCronRequest(req)) {
+        return res.status(401).end('Unauthorized');
+    }
+
+    try {
+        const result = await topUpQuestionBank(dbPool);
+        console.log('[cron/question-bank]', JSON.stringify(result));
+        res.status(200).json(result);
+    } catch (e) {
+        console.error('[cron/question-bank]', e);
+        res.status(500).json({ error: e.message });
     }
 });
 

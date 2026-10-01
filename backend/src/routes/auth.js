@@ -6,10 +6,9 @@ import crypto from 'crypto';
 import { nanoid } from 'nanoid';
 import dbPool from '../config/db.js';
 import transporter from '../config/mailer.js';
-import { ensureDailyQuestionsGenerated } from '../services/dailyQuestions.js';
+import { getOrAssignDailyLog } from '../services/questionBank.js';
 import { isLoggedIn } from '../middleware/auth.js';
 import { setAuthCookie, clearAuthCookie } from '../utils/jwt.js';
-import { getTodayDate } from '../utils/helpers.js';
 
 const router = Router();
 const FRONTEND = () => process.env.VITE_FRONTEND_URL;
@@ -26,9 +25,6 @@ router.get('/login/callback', (req, res, next) => {
 
     // Set JWT cookie — works across all Vercel invocations
     setAuthCookie(res, user.user_id);
-
-    // Generate daily questions in background (don't await — avoid timeout)
-    ensureDailyQuestionsGenerated(user, dbPool).catch(console.error);
 
     return res.redirect(`${FRONTEND()}/practice`);
   })(req, res, next);
@@ -55,9 +51,6 @@ router.post('/login', async (req, res) => {
 
     // Set JWT cookie
     setAuthCookie(res, user.user_id);
-
-    // Generate daily questions in background
-    ensureDailyQuestionsGenerated(user, dbPool).catch(console.error);
 
     res.json({ user_id: user.user_id, name: user.user_name });
   } catch (err) {
@@ -222,9 +215,6 @@ router.get('/verify/:token', async (req, res) => {
     // Set JWT cookie
     setAuthCookie(res, user.user_id);
 
-    // Generate questions in background
-    ensureDailyQuestionsGenerated(user, dbPool).catch(console.error);
-
     res.json({
       message: 'Account activated.',
       user: { id: user.user_id, name: user.user_name },
@@ -239,20 +229,18 @@ router.get('/verify/:token', async (req, res) => {
 });
 
 // ── Activation status polling ──────────────────────────────────
+// Assigns today's questions from the bank if needed (fast, no AI).
 router.get('/activation-status', isLoggedIn, async (req, res) => {
   let conn;
   try {
     conn = await dbPool.getConnection();
-    const today = getTodayDate();
-    const [[log]] = await conn.query(
-      'SELECT log_id FROM user_daily_log WHERE user_id = ? AND challenge_date = ?',
-      [req.user.user_id, today]
-    );
+    const log = await getOrAssignDailyLog(conn, req.user.user_id);
     if (log) {
       return res.json({ status: 'complete', progress: 10, total: 10, message: 'Questions ready!' });
     }
     res.json({ status: 'generating', progress: 0, total: 10, message: 'Still preparing...' });
   } catch (err) {
+    console.error('[activation-status]', err);
     res.status(500).json({ error: 'Status check failed' });
   } finally {
     if (conn) conn.release();
