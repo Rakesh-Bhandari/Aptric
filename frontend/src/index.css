@@ -1,67 +1,199 @@
-/* index.css */
+@import 'tailwindcss';
+
+/* Dark mode follows data-theme on <html> (set by ThemeProvider: light, dark or the system's). */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Colour tokens. Every foreground/background pair used for text meets WCAG AA
+ * (4.5:1) in both themes; muted text is checked against card and background.
+ */
 :root {
+  --background: #f6f7fb;
+  --foreground: #121826;
+  --card: #ffffff;
+  --card-foreground: #121826;
+  --muted: #eceef5;
+  --muted-foreground: #4a5368;
+  --border: #d9dde8;
+  --input: #c4c9d6;
+  --ring: #4f46e5;
+  --primary: #4f46e5;
+  --primary-strong: #4338ca;
+  --primary-foreground: #ffffff;
+  --primary-soft: #eef0ff;
+  --primary-soft-foreground: #3730a3;
+  --success: #15803d;
+  --success-soft: #e8f7ee;
+  --success-soft-foreground: #14532d;
+  --danger: #c2261d;
+  --danger-soft: #fdecea;
+  --danger-soft-foreground: #7f1d1d;
+  --warning: #b45309;
+  --warning-soft: #fff4e0;
+  --warning-soft-foreground: #7c2d12;
+  --streak: #ea580c;
+  --gold: #b7791f;
+  --radius: 0.875rem;
+  color-scheme: light;
+
+  /* Aliases used by the admin area's stylesheet. */
+  --bg: var(--background);
+  --card-bg: var(--card);
+  --text: var(--foreground);
+  --text-muted: var(--muted-foreground);
+  --error: var(--danger);
+  --primary-dark: var(--primary-strong);
+}
+
+[data-theme='dark'] {
+  --background: #0d111c;
+  --foreground: #e8ebf4;
+  --card: #151a28;
+  --card-foreground: #e8ebf4;
+  --muted: #1e2435;
+  --muted-foreground: #a7afc4;
+  --border: #2a3247;
+  --input: #3a4460;
+  --ring: #a5b4fc;
+  --primary: #8b93ff;
+  --primary-strong: #a5acff;
+  --primary-foreground: #0d111c;
+  --primary-soft: #232a4d;
+  --primary-soft-foreground: #c7ccff;
+  --success: #4ade80;
+  --success-soft: #12301f;
+  --success-soft-foreground: #bbf7d0;
+  --danger: #f87171;
+  --danger-soft: #3a1717;
+  --danger-soft-foreground: #fecaca;
+  --warning: #fbbf24;
+  --warning-soft: #33260b;
+  --warning-soft-foreground: #fde68a;
+  --streak: #fb923c;
+  --gold: #facc15;
   color-scheme: dark;
-  /* Forces dark scrollbars and system elements */
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-foreground: var(--danger-soft-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
+  --color-streak: var(--streak);
+  --color-gold: var(--gold);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 8px);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --animate-pop: pop 180ms ease-out;
+  --animate-fade-in: fade-in 200ms ease-out;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
-  overflow-x: hidden;
+@keyframes pop {
+  from { transform: scale(0.96); opacity: 0.6; }
+  to { transform: scale(1); opacity: 1; }
 }
 
-#root {
-  width: 100%;
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-  transition: color 0.3s ease;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--primary-soft-foreground);
+  }
 }
 
-button {
-  font-family: inherit;
+/* Reduced motion: the OS setting, or the in-app switch (data-reduce-motion). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+[data-reduce-motion='true'] *,
+[data-reduce-motion='true'] *::before,
+[data-reduce-motion='true'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
 
-/* Custom Tech Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Rendered question/explanation Markdown. */
+.prose-question {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
 }
+.prose-question p + p,
+.prose-question p + ul,
+.prose-question p + ol,
+.prose-question ul + p,
+.prose-question ol + p {
+  margin-top: 0.75em;
+}
+.prose-question ul { list-style: disc; padding-left: 1.25rem; }
+.prose-question ol { list-style: decimal; padding-left: 1.25rem; }
+.prose-question code {
+  font-size: 0.9em;
+  background: var(--muted);
+  padding: 0.1em 0.35em;
+  border-radius: 0.3em;
+}
+.prose-question pre {
+  background: var(--muted);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md, 0.6rem);
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+.prose-question pre code { background: none; padding: 0; }
+.prose-question table { border-collapse: collapse; margin: 0.75em 0; display: block; overflow-x: auto; }
+.prose-question th, .prose-question td { border: 1px solid var(--border); padding: 0.35rem 0.6rem; text-align: left; }
+.prose-question img { max-width: 100%; height: auto; }
+.prose-question .math-display { overflow-x: auto; overflow-y: hidden; margin: 0.75em 0; }
+.prose-question .katex { font-size: 1.05em; }
 
-::-webkit-scrollbar-track {
-  background: var(--bg-dark, #050505);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(46, 160, 67, 0.4);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(46, 160, 67, 0.8);
-}
-
-/* Custom Text Selection */
-::selection {
-  background: rgba(46, 160, 67, 0.4);
-  color: #fff;
-}
-
-/* Accessible Focus Outlines */
-*:focus-visible {
-  outline: 2px solid var(--accent-green, #2ea043);
-  outline-offset: 2px;
-}
+/* Safe-area padding for the mobile bottom bar. */
+.pb-safe { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }

@@ -2,12 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/LOGO.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>APTRIC</title>
+    <link rel="icon" type="image/png" href="/LOGO.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Daily aptitude challenges, focused practice and friendly competition." />
+    <meta name="theme-color" content="#f6f7fb" />
+    <title>Aptric – daily aptitude practice</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a flash.
+      (function () {
+        try {
+          var t = localStorage.getItem('aptric.theme');
+          var dark = t === 'dark' || ((!t || t === 'system') && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+          if (localStorage.getItem('aptric.motion') === 'reduce') document.documentElement.dataset.reduceMotion = 'true';
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
+    <noscript>Aptric needs JavaScript to run.</noscript>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

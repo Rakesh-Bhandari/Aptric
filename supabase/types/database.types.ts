@@ -151,6 +151,189 @@ export type Database = {
         };
         Relationships: [];
       };
+      contest_answers: {
+        Row: {
+          contest_id: string;
+          created_at: string;
+          is_correct: boolean;
+          points: number;
+          question_id: string;
+          selected_option_id: string | null;
+          time_ms: number | null;
+          user_id: string;
+        };
+        Insert: {
+          contest_id: string;
+          created_at?: string;
+          is_correct: boolean;
+          points?: number;
+          question_id: string;
+          selected_option_id?: string | null;
+          time_ms?: number | null;
+          user_id: string;
+        };
+        Update: {
+          contest_id?: string;
+          created_at?: string;
+          is_correct?: boolean;
+          points?: number;
+          question_id?: string;
+          selected_option_id?: string | null;
+          time_ms?: number | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contest_answers_contest_id_user_id_fkey";
+            columns: ["contest_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "contest_entries";
+            referencedColumns: ["contest_id", "user_id"];
+          },
+          {
+            foreignKeyName: "contest_answers_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contest_answers_selected_option_id_question_id_fkey";
+            columns: ["selected_option_id", "question_id"];
+            isOneToOne: false;
+            referencedRelation: "question_options";
+            referencedColumns: ["id", "question_id"];
+          },
+        ];
+      };
+      contest_entries: {
+        Row: {
+          answered: number;
+          contest_id: string;
+          correct: number;
+          joined_at: string;
+          last_answer_at: string | null;
+          score: number;
+          time_ms: number;
+          user_id: string;
+        };
+        Insert: {
+          answered?: number;
+          contest_id: string;
+          correct?: number;
+          joined_at?: string;
+          last_answer_at?: string | null;
+          score?: number;
+          time_ms?: number;
+          user_id: string;
+        };
+        Update: {
+          answered?: number;
+          contest_id?: string;
+          correct?: number;
+          joined_at?: string;
+          last_answer_at?: string | null;
+          score?: number;
+          time_ms?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contest_entries_contest_id_fkey";
+            columns: ["contest_id"];
+            isOneToOne: false;
+            referencedRelation: "contests";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contest_entries_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      contest_items: {
+        Row: {
+          contest_id: string;
+          position: number;
+          question_id: string;
+        };
+        Insert: {
+          contest_id: string;
+          position: number;
+          question_id: string;
+        };
+        Update: {
+          contest_id?: string;
+          position?: number;
+          question_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contest_items_contest_id_fkey";
+            columns: ["contest_id"];
+            isOneToOne: false;
+            referencedRelation: "contests";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contest_items_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      contests: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          ends_at: string;
+          id: string;
+          is_published: boolean;
+          slug: string;
+          starts_at: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          ends_at: string;
+          id?: string;
+          is_published?: boolean;
+          slug: string;
+          starts_at: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          ends_at?: string;
+          id?: string;
+          is_published?: boolean;
+          slug?: string;
+          starts_at?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contests_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       daily_set_items: {
         Row: {
           daily_set_id: string;
@@ -484,6 +667,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      placement_tests: {
+        Row: {
+          completed_at: string | null;
+          correct: number | null;
+          id: string;
+          placed_level: number | null;
+          question_ids: string[];
+          score: number | null;
+          started_at: string;
+          user_id: string;
+        };
+        Insert: {
+          completed_at?: string | null;
+          correct?: number | null;
+          id?: string;
+          placed_level?: number | null;
+          question_ids: string[];
+          score?: number | null;
+          started_at?: string;
+          user_id: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          correct?: number | null;
+          id?: string;
+          placed_level?: number | null;
+          question_ids?: string[];
+          score?: number | null;
+          started_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "placement_tests_placed_level_fkey";
+            columns: ["placed_level"];
+            isOneToOne: false;
+            referencedRelation: "levels";
+            referencedColumns: ["level"];
+          },
+          {
+            foreignKeyName: "placement_tests_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -493,13 +724,18 @@ export type Database = {
           bio: string | null;
           created_at: string;
           current_streak: number;
+          daily_target: number;
           display_name: string | null;
+          exam_goal: string | null;
           handle: string | null;
           id: string;
           last_streak_date: string | null;
           league_tier: number;
           level: number;
           longest_streak: number;
+          onboarded_at: string | null;
+          placed_at: string | null;
+          placement_level: number | null;
           rating: number;
           role: Database["public"]["Enums"]["user_role"];
           streak_freezes: number;
@@ -516,13 +752,18 @@ export type Database = {
           bio?: string | null;
           created_at?: string;
           current_streak?: number;
+          daily_target?: number;
           display_name?: string | null;
+          exam_goal?: string | null;
           handle?: string | null;
           id: string;
           last_streak_date?: string | null;
           league_tier?: number;
           level?: number;
           longest_streak?: number;
+          onboarded_at?: string | null;
+          placed_at?: string | null;
+          placement_level?: number | null;
           rating?: number;
           role?: Database["public"]["Enums"]["user_role"];
           streak_freezes?: number;
@@ -539,13 +780,18 @@ export type Database = {
           bio?: string | null;
           created_at?: string;
           current_streak?: number;
+          daily_target?: number;
           display_name?: string | null;
+          exam_goal?: string | null;
           handle?: string | null;
           id?: string;
           last_streak_date?: string | null;
           league_tier?: number;
           level?: number;
           longest_streak?: number;
+          onboarded_at?: string | null;
+          placed_at?: string | null;
+          placement_level?: number | null;
           rating?: number;
           role?: Database["public"]["Enums"]["user_role"];
           streak_freezes?: number;
@@ -563,11 +809,25 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "profiles_exam_goal_fkey";
+            columns: ["exam_goal"];
+            isOneToOne: false;
+            referencedRelation: "tags";
+            referencedColumns: ["slug"];
+          },
+          {
             foreignKeyName: "profiles_league_tier_fkey";
             columns: ["league_tier"];
             isOneToOne: false;
             referencedRelation: "league_tiers";
             referencedColumns: ["tier"];
+          },
+          {
+            foreignKeyName: "profiles_placement_level_fkey";
+            columns: ["placement_level"];
+            isOneToOne: false;
+            referencedRelation: "levels";
+            referencedColumns: ["level"];
           },
           {
             foreignKeyName: "profiles_track_id_fkey";
@@ -1470,6 +1730,7 @@ export type Database = {
         Args: { correct_option_id: string; explanation: string; hint?: string; target_question_id: string };
         Returns: undefined;
       };
+      finish_placement: { Args: { answers: Json; test_id: string }; Returns: Json };
       gen_claim_job: {
         Args: { p_job_id: string; p_lease_seconds: number };
         Returns: {
@@ -1577,15 +1838,32 @@ export type Database = {
         }[];
       };
       gen_store_embeddings: { Args: { p_model: string; p_rows: Json }; Returns: number };
+      get_activity: { Args: { days?: number }; Returns: Json };
+      get_contest: { Args: { contest_id: string }; Returns: Json };
+      get_contest_standings: { Args: { contest_id: string; page_offset?: number; page_size?: number }; Returns: Json };
       get_daily_result: { Args: { target_set_id?: string }; Returns: Json };
       get_leaderboard: { Args: { board?: string; page_offset?: number; page_size?: number }; Returns: Json };
+      get_mistakes: { Args: { page_offset?: number; page_size?: number }; Returns: Json };
       get_my_league: { Args: Record<PropertyKey, never>; Returns: Json };
       get_player_profile: { Args: { target_handle?: string }; Returns: Json };
+      get_practice_questions: {
+        Args: {
+          mode?: string;
+          prefer_difficulty?: Database["public"]["Enums"]["question_difficulty"];
+          question_limit?: number;
+          subtopic_ids?: string[];
+        };
+        Returns: Json;
+      };
+      get_practice_tree: { Args: Record<PropertyKey, never>; Returns: Json };
       get_today_set: { Args: Record<PropertyKey, never>; Returns: Json };
       give_up: {
         Args: { context?: Database["public"]["Enums"]["attempt_context"]; question_id: string };
         Returns: Json;
       };
+      join_contest: { Args: { contest_id: string }; Returns: Json };
+      list_contests: { Args: Record<PropertyKey, never>; Returns: Json };
+      start_placement: { Args: Record<PropertyKey, never>; Returns: Json };
       submit_answer: {
         Args: {
           context: Database["public"]["Enums"]["attempt_context"];
@@ -1593,6 +1871,10 @@ export type Database = {
           question_id: string;
           time_ms?: number;
         };
+        Returns: Json;
+      };
+      submit_contest_answer: {
+        Args: { contest_id: string; option_id: string; question_id: string; time_ms?: number };
         Returns: Json;
       };
       use_hint: {
