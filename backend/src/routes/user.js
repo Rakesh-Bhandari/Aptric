@@ -2,8 +2,7 @@
 import { Router } from 'express';
 import dbPool from '../config/db.js';
 import { upload } from '../config/cloudinary.js';
-import { isLoggedIn } from '../middleware/auth.js';
-import { getUserIdFromCookie } from '../utils/jwt.js';
+import { isLoggedIn, getUserFromCookie } from '../middleware/auth.js';
 import { ALL_CATEGORIES } from '../utils/helpers.js';
 
 const router = Router();
@@ -11,16 +10,9 @@ const router = Router();
 // ── GET /api/user — session check, never returns 401 ──────────
 router.get('/', async (req, res) => {
     try {
-        const userId = getUserIdFromCookie(req);
-        if (!userId) return res.json({ authenticated: false });
+        const u = await getUserFromCookie(req);
+        if (!u || u.is_banned) return res.json({ authenticated: false });
 
-        const [users] = await dbPool.query(
-            'SELECT user_id, user_name, email, score, level, day_streak, last_login, is_banned, role FROM users WHERE user_id = ?',
-            [userId]
-        );
-        if (!users?.length || users[0].is_banned) return res.json({ authenticated: false });
-
-        const u = users[0];
         res.json({
             authenticated: true,
             user: { id: u.user_id, name: u.user_name, email: u.email, score: u.score, level: u.level, streak: u.day_streak, lastLogin: u.last_login, role: u.role }

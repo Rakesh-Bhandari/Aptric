@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import dbPool from '../config/db.js';
-import { isLoggedIn } from '../middleware/auth.js';
-import { getUserIdFromCookie } from '../utils/jwt.js';
+import { isLoggedIn, getUserFromCookie } from '../middleware/auth.js';
 import { getTodayDate, ALL_CATEGORIES } from '../utils/helpers.js';
 
 const router = Router();
@@ -144,7 +143,7 @@ router.get('/topics/stats', async (req, res) => {
         });
 
         // If logged in, also add the user's solved count
-        const userId = getUserIdFromCookie(req);
+        const userId = (await getUserFromCookie(req))?.user_id;
         if (userId) {
             const [solvedRows] = await conn.query(
                 `SELECT q.category, COUNT(DISTINCT ua.question_id) as solved
