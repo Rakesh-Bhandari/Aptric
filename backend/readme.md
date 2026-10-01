@@ -56,9 +56,6 @@ VITE_GOOGLE_REDIRECT_URI=
 # Session
 VITE_SESSION_SECRET=
 
-# Admin
-VITE_ADMIN_PASSWORD=
-
 # Email (Gmail)
 EMAIL_USER=
 EMAIL_PASS=
@@ -81,3 +78,14 @@ CRON_SECRET=
 npm start     # Production
 npm run dev   # Development with hot reload (Node 18+)
 ```
+
+## Admin Access
+
+Admin access is role-based: any logged-in user with `users.role = 'admin'` can use `/admin` and `/api/admin/*`.
+There is no admin password. To make your account an admin, run once against the database:
+
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'you@example.com';
+```
+
+Every admin write action is recorded in `activity_logs` under the admin's `user_id`.

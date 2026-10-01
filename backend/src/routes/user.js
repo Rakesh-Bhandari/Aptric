@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
         if (!userId) return res.json({ authenticated: false });
 
         const [users] = await dbPool.query(
-            'SELECT user_id, user_name, email, score, level, day_streak, last_login, is_banned FROM users WHERE user_id = ?',
+            'SELECT user_id, user_name, email, score, level, day_streak, last_login, is_banned, role FROM users WHERE user_id = ?',
             [userId]
         );
         if (!users?.length || users[0].is_banned) return res.json({ authenticated: false });
@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
         const u = users[0];
         res.json({
             authenticated: true,
-            user: { id: u.user_id, name: u.user_name, email: u.email, score: u.score, level: u.level, streak: u.day_streak, lastLogin: u.last_login }
+            user: { id: u.user_id, name: u.user_name, email: u.email, score: u.score, level: u.level, streak: u.day_streak, lastLogin: u.last_login, role: u.role }
         });
     } catch (err) {
         console.error('[GET /api/user]', err.message);
