@@ -1,8 +1,10 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import dbPool from '../config/db.js';
 import { isLoggedIn, getUserFromCookie } from '../middleware/auth.js';
 import { getTodayDate, ALL_CATEGORIES } from '../utils/helpers.js';
 import { leaderboardLimiter, topicStatsLimiter } from '../middleware/rateLimit.js';
+import { validate, qid, category } from '../middleware/validate.js';
 
 const router = Router();
 
@@ -37,7 +39,7 @@ router.get('/leaderboard', leaderboardLimiter, async (req, res) => {
 });
 
 // --- Get single question by QID ---
-router.get('/single/:qid', isLoggedIn, async (req, res) => {
+router.get('/single/:qid', isLoggedIn, validate({ params: z.object({ qid }) }), async (req, res) => {
     const { qid } = req.params;
     const userId = req.user.user_id;
     const today = getTodayDate();
@@ -90,9 +92,8 @@ router.get('/single/:qid', isLoggedIn, async (req, res) => {
 });
 
 // --- Get questions by category ---
-router.get('/category', isLoggedIn, async (req, res) => {
-    const { category } = req.query;
-    if (!category) return res.status(400).json({ error: 'Category required' });
+router.get('/category', isLoggedIn, validate({ query: z.object({ category }) }), async (req, res) => {
+    const { category } = req.valid.query;
     let conn;
 
     try {

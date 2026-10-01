@@ -1,22 +1,23 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import dbPool from '../config/db.js';
 import { isLoggedIn } from '../middleware/auth.js';
+import { validate, rating, feedbackComment, numericIdParams } from '../middleware/validate.js';
 
 const router = Router();
 
+// Create and edit share one schema so they accept exactly the same ratings.
+const feedbackSchema = z.object({ rating, comment: feedbackComment });
+
 // --- Submit feedback ---
-router.post('/', isLoggedIn, async (req, res) => {
+router.post('/', isLoggedIn, validate({ body: feedbackSchema }), async (req, res) => {
     const { rating, comment } = req.body;
     const userId = req.user.user_id;
-
-    if (!rating || rating < 0.5 || rating > 5) {
-        return res.status(400).json({ error: 'Please provide a valid rating (0.5 - 5.0).' });
-    }
 
     let conn;
     try {
         conn = await dbPool.getConnection();
-        await conn.query('INSERT INTO user_feedback (user_id, rating, comment) VALUES (?, ?, ?)', [userId, rating, comment || null]);
+        await conn.query('INSERT INTO user_feedback (user_id, rating, comment) VALUES (?, ?, ?)', [userId, rating, comment]);
         res.status(201).json({ message: 'Feedback submitted successfully' });
     } catch (err) {
         console.error('Feedback error:', err);
@@ -44,12 +45,10 @@ router.get('/', async (req, res) => {
 });
 
 // --- Update own feedback ---
-router.put('/:id', isLoggedIn, async (req, res) => {
+router.put('/:id', isLoggedIn, validate({ params: numericIdParams, body: feedbackSchema }), async (req, res) => {
     const feedbackId = req.params.id;
     const { rating, comment } = req.body;
     const userId = req.user.user_id;
-
-    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Valid rating required' });
 
     let conn;
     try {
@@ -70,7 +69,7 @@ router.put('/:id', isLoggedIn, async (req, res) => {
 });
 
 // --- Delete own feedback ---
-router.delete('/:id', isLoggedIn, async (req, res) => {
+router.delete('/:id', isLoggedIn, validate({ params: numericIdParams }), async (req, res) => {
     const feedbackId = req.params.id;
     const userId = req.user.user_id;
 
@@ -92,7 +91,7 @@ router.delete('/:id', isLoggedIn, async (req, res) => {
 });
 
 // --- Report feedback ---
-router.post('/:id/report', isLoggedIn, async (req, res) => {
+router.post('/:id/report', isLoggedIn, validate({ params: numericIdParams }), async (req, res) => {
     const feedbackId = req.params.id;
     const userId = req.user.user_id;
 

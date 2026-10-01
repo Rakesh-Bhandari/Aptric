@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { nanoid } from 'nanoid';
 import dbPool from '../config/db.js';
@@ -6,8 +7,51 @@ import { isAdmin } from '../middleware/auth.js';
 import { logActivity } from '../utils/helpers.js';
 import { generateQuestions, topUpQuestionBank } from '../services/questionBank.js';
 import { bulkGenerateLimiter } from '../middleware/rateLimit.js';
+import {
+    validate, email, password, displayName, role, category, difficulty, userIdParams, numericIdParams,
+} from '../middleware/validate.js';
 
 const router = Router();
+
+const createUserSchema = z.object({ name: displayName, email, password, role: role.default('user') });
+const updateUserSchema = z.object({ user_name: displayName, email, role });
+const banToggleSchema = z.object({ is_banned: z.boolean({ error: 'is_banned must be true or false' }) });
+const resetPasswordSchema = z.object({ newPassword: password });
+
+const optionalText = (label, max) => z.string({ error: `${label} must be text` })
+    .max(max, `${label} must be at most ${max} characters`).nullable().default('');
+
+const updateQuestionSchema = z.object({
+    question_text: z.string({ error: 'Question text is required' }).trim()
+        .min(1, 'Question text is required').max(2000, 'Question text must be at most 2000 characters'),
+    options: z.array(
+        z.string({ error: 'Each option must be text' }).trim()
+            .min(1, 'Options cannot be empty').max(500, 'Each option must be at most 500 characters'),
+        { error: 'Options must be a list' }
+    ).min(2, 'At least 2 options are required').max(6, 'At most 6 options are allowed'),
+    correct_answer_index: z.number({ error: 'Correct answer index is required' }).int('Invalid answer index').min(0, 'Invalid answer index'),
+    difficulty,
+    category,
+    hint: optionalText('Hint', 1000),
+    explanation: optionalText('Explanation', 4000),
+}).refine((q) => q.correct_answer_index < q.options.length, {
+    message: 'Correct answer index must point to one of the options',
+    path: ['correct_answer_index'],
+});
+
+const MAX_BULK_QUESTIONS = 100;
+const generateBulkSchema = z.object({
+    jobs: z.array(z.object({
+        category,
+        difficulty,
+        count: z.coerce.number({ error: 'Count must be a number' }).int('Count must be a whole number')
+            .min(1, 'Count must be at least 1').max(MAX_BULK_QUESTIONS, `Count must be at most ${MAX_BULK_QUESTIONS}`),
+        subTopic: z.string({ error: 'Sub-topic must be text' }).trim().max(100, 'Sub-topic must be at most 100 characters').optional().default(''),
+    }), { error: 'No generation jobs provided' }).min(1, 'No generation jobs provided'),
+}).refine((b) => b.jobs.reduce((sum, j) => sum + j.count, 0) <= MAX_BULK_QUESTIONS, {
+    message: `Max ${MAX_BULK_QUESTIONS} questions per batch allowed.`,
+    path: ['jobs'],
+});
 
 // --- Admin Stats ---
 router.get('/stats', isAdmin, async (req, res) => {
@@ -38,24 +82,24 @@ router.get('/users', isAdmin, async (req, res) => {
     }
 });
 
-router.post('/users', isAdmin, async (req, res) => {
+router.post('/users', isAdmin, validate({ body: createUserSchema }), async (req, res) => {
     const { name, email, password, role } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUserId = nanoid(12);
         const newUser = {
             user_id: newUserId, user_name: name, email,
-            password_hash: hashedPassword, is_verified: true, level: 'Beginner', role: role || 'user', created_at: new Date()
+            password_hash: hashedPassword, is_verified: true, level: 'Beginner', role, created_at: new Date()
         };
         await dbPool.query('INSERT INTO users SET ?', newUser);
-        await logActivity(dbPool, req.user.user_id, 'Admin Create User', `Created user ${newUserId} (${email}) with role ${role || 'user'}`);
+        await logActivity(dbPool, req.user.user_id, 'Admin Create User', `Created user ${newUserId} (${email}) with role ${role}`);
         res.json({ message: 'User created successfully' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to create user' });
     }
 });
 
-router.get('/users/:id', isAdmin, async (req, res) => {
+router.get('/users/:id', isAdmin, validate({ params: userIdParams }), async (req, res) => {
     try {
         const [users] = await dbPool.query(
             'SELECT user_id, user_name, email, score, level, day_streak, role, is_banned, created_at, last_login FROM users WHERE user_id = ?',
@@ -73,7 +117,7 @@ router.get('/users/:id', isAdmin, async (req, res) => {
     }
 });
 
-router.put('/users/:id', isAdmin, async (req, res) => {
+router.put('/users/:id', isAdmin, validate({ params: userIdParams, body: updateUserSchema }), async (req, res) => {
     const { user_name, email, role } = req.body;
     try {
         await dbPool.query('UPDATE users SET user_name = ?, email = ?, role = ? WHERE user_id = ?', [user_name, email, role, req.params.id]);
@@ -84,7 +128,7 @@ router.put('/users/:id', isAdmin, async (req, res) => {
     }
 });
 
-router.post('/users/:id/promote', isAdmin, async (req, res) => {
+router.post('/users/:id/promote', isAdmin, validate({ params: userIdParams }), async (req, res) => {
     const userId = req.params.id;
     const levels = ['Beginner', 'Intermediate', 'Advanced', 'Pro', 'Expert'];
     const levelThresholds = { 'Intermediate': 25001, 'Advanced': 50001, 'Pro': 75001, 'Expert': 100001 };
@@ -125,7 +169,7 @@ router.post('/users/:id/promote', isAdmin, async (req, res) => {
     }
 });
 
-router.post('/users/:id/ban-toggle', isAdmin, async (req, res) => {
+router.post('/users/:id/ban-toggle', isAdmin, validate({ params: userIdParams, body: banToggleSchema }), async (req, res) => {
     const { is_banned } = req.body;
     try {
         await dbPool.query('UPDATE users SET is_banned = ? WHERE user_id = ?', [is_banned, req.params.id]);
@@ -136,7 +180,7 @@ router.post('/users/:id/ban-toggle', isAdmin, async (req, res) => {
     }
 });
 
-router.post('/users/:id/reset-password', isAdmin, async (req, res) => {
+router.post('/users/:id/reset-password', isAdmin, validate({ params: userIdParams, body: resetPasswordSchema }), async (req, res) => {
     const { newPassword } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -148,7 +192,7 @@ router.post('/users/:id/reset-password', isAdmin, async (req, res) => {
     }
 });
 
-router.delete('/users/:id', isAdmin, async (req, res) => {
+router.delete('/users/:id', isAdmin, validate({ params: userIdParams }), async (req, res) => {
     try {
         await dbPool.query('DELETE FROM users WHERE user_id = ?', [req.params.id]);
         await logActivity(dbPool, req.user.user_id, 'Admin Delete User', `Deleted user ${req.params.id}`);
@@ -168,7 +212,7 @@ router.get('/questions', isAdmin, async (req, res) => {
     }
 });
 
-router.get('/questions/:id', isAdmin, async (req, res) => {
+router.get('/questions/:id', isAdmin, validate({ params: numericIdParams }), async (req, res) => {
     try {
         const [rows] = await dbPool.query('SELECT * FROM questions WHERE question_id = ?', [req.params.id]);
         if (rows.length === 0) return res.status(404).json({ error: 'Question not found' });
@@ -178,7 +222,7 @@ router.get('/questions/:id', isAdmin, async (req, res) => {
     }
 });
 
-router.put('/questions/:id', isAdmin, async (req, res) => {
+router.put('/questions/:id', isAdmin, validate({ params: numericIdParams, body: updateQuestionSchema }), async (req, res) => {
     const { question_text, options, correct_answer_index, difficulty, category, hint, explanation } = req.body;
     try {
         await dbPool.query(
@@ -193,7 +237,7 @@ router.put('/questions/:id', isAdmin, async (req, res) => {
     }
 });
 
-router.delete('/questions/:id', isAdmin, async (req, res) => {
+router.delete('/questions/:id', isAdmin, validate({ params: numericIdParams }), async (req, res) => {
     try {
         await dbPool.query('DELETE FROM questions WHERE question_id = ?', [req.params.id]);
         await logActivity(dbPool, req.user.user_id, 'Admin Delete Question', `Deleted question ${req.params.id}`);
@@ -217,17 +261,8 @@ router.post('/generate-questions', isAdmin, async (req, res) => {
     }
 });
 
-router.post('/generate-bulk', isAdmin, bulkGenerateLimiter, async (req, res) => {
+router.post('/generate-bulk', isAdmin, bulkGenerateLimiter, validate({ body: generateBulkSchema }), async (req, res) => {
     const { jobs } = req.body;
-
-    if (!jobs || !Array.isArray(jobs) || jobs.length === 0) {
-        return res.status(400).json({ error: 'No generation jobs provided' });
-    }
-
-    const totalRequested = jobs.reduce((sum, job) => sum + (parseInt(job.count) || 0), 0);
-    if (totalRequested > 100) {
-        return res.status(400).json({ error: 'Max 100 questions per batch allowed.' });
-    }
 
     try {
         let totalGenerated = 0;
@@ -235,11 +270,9 @@ router.post('/generate-bulk', isAdmin, bulkGenerateLimiter, async (req, res) => 
 
         for (const job of jobs) {
             const { category, difficulty, count, subTopic } = job;
-            if (count > 0) {
-                const countGen = await generateQuestions(dbPool, { category, difficulty, count: parseInt(count), subTopic });
-                totalGenerated += countGen;
-                results.push({ category, difficulty, generated: countGen });
-            }
+            const countGen = await generateQuestions(dbPool, { category, difficulty, count, subTopic });
+            totalGenerated += countGen;
+            results.push({ category, difficulty, generated: countGen });
         }
 
         await logActivity(dbPool, req.user.user_id, 'Admin Generate Bulk', `Generated ${totalGenerated} questions in bulk`);
@@ -266,7 +299,7 @@ router.get('/feedback', isAdmin, async (req, res) => {
     }
 });
 
-router.delete('/feedback/:id', isAdmin, async (req, res) => {
+router.delete('/feedback/:id', isAdmin, validate({ params: numericIdParams }), async (req, res) => {
     try {
         await dbPool.query('DELETE FROM user_feedback WHERE feedback_id = ?', [req.params.id]);
         await logActivity(dbPool, req.user.user_id, 'Admin Delete Feedback', `Deleted feedback ${req.params.id}`);
@@ -290,7 +323,7 @@ router.get('/feedback-reports', isAdmin, async (req, res) => {
     }
 });
 
-router.post('/reports/:id/dismiss', isAdmin, async (req, res) => {
+router.post('/reports/:id/dismiss', isAdmin, validate({ params: numericIdParams }), async (req, res) => {
     try {
         const [result] = await dbPool.query(
             "UPDATE feedback_reports SET status = 'dismissed' WHERE report_id = ?",

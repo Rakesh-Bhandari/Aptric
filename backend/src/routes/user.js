@@ -1,8 +1,10 @@
 // src/routes/user.js
 import { Router } from 'express';
+import { z } from 'zod';
 import dbPool from '../config/db.js';
-import { upload } from '../config/cloudinary.js';
+import { avatarUpload } from '../config/cloudinary.js';
 import { isLoggedIn, getUserFromCookie } from '../middleware/auth.js';
+import { validate, displayName, bio, userIdParams } from '../middleware/validate.js';
 import { ALL_CATEGORIES } from '../utils/helpers.js';
 
 const router = Router();
@@ -24,8 +26,8 @@ router.get('/', async (req, res) => {
 });
 
 // ── Avatar upload ──────────────────────────────────────────────
-router.post('/avatar', isLoggedIn, upload.single('avatar'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file' });
+router.post('/avatar', isLoggedIn, avatarUpload, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded', fields: { avatar: 'No file uploaded' } });
     try {
         await dbPool.query('UPDATE users SET profile_pic = ? WHERE user_id = ?', [req.file.path, req.user.user_id]);
         res.json({ message: 'Avatar updated', url: req.file.path });
@@ -89,7 +91,9 @@ router.get('/progress', isLoggedIn, async (req, res) => {
 });
 
 // ── Update profile ─────────────────────────────────────────────
-router.put('/update', isLoggedIn, async (req, res) => {
+const updateProfileSchema = z.object({ user_name: displayName, bio });
+
+router.put('/update', isLoggedIn, validate({ body: updateProfileSchema }), async (req, res) => {
     const { bio, user_name } = req.body;
     try {
         await dbPool.query('UPDATE users SET bio=?, user_name=? WHERE user_id=?', [bio, user_name, req.user.user_id]);
@@ -100,7 +104,7 @@ router.put('/update', isLoggedIn, async (req, res) => {
 });
 
 // ── Public profile ─────────────────────────────────────────────
-router.get('/:id/public', async (req, res) => {
+router.get('/:id/public', validate({ params: userIdParams }), async (req, res) => {
     let conn;
     try {
         conn = await dbPool.getConnection();

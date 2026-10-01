@@ -1,11 +1,22 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import dbPool from '../config/db.js';
 import { isLoggedIn } from '../middleware/auth.js';
 import { getOrAssignDailyLog } from '../services/questionBank.js';
 import { getTodayDate, calculateLevel, POINTS_CORRECT, POINTS_WRONG, POINTS_HINT, POINTS_GIVEUP } from '../utils/helpers.js';
 import { submitAnswerLimiter, useHintLimiter, giveUpLimiter } from '../middleware/rateLimit.js';
+import { validate, qid } from '../middleware/validate.js';
 
 const router = Router();
+
+const qidSchema = z.object({ qid });
+// Upper bound is checked against the question's options inside the handler.
+const submitAnswerSchema = z.object({
+    qid,
+    selectedAnswerIndex: z.number({ error: 'Answer index is required' })
+        .int('Invalid answer index')
+        .min(0, 'Invalid answer index'),
+});
 
 async function updateGameStats(userId, points, conn) {
     await conn.query('UPDATE users SET score = score + ? WHERE user_id = ?', [points, userId]);
@@ -137,13 +148,10 @@ const isRaceError = (err) => err && (err.code === 'ER_DUP_ENTRY' || err.code ===
 // A hint taken earlier was already charged (-10) by /use-hint and is NOT charged again,
 // so correct + hint = +90 total and wrong + hint = -30 total.
 // points_earned on the attempt row stores the net total for the question.
-router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, async (req, res) => {
+router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, validate({ body: submitAnswerSchema }), async (req, res) => {
     const { qid, selectedAnswerIndex } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
-
-    if (selectedAnswerIndex === undefined || !qid) return res.status(400).json({ error: 'Missing data' });
-    if (!Number.isInteger(selectedAnswerIndex)) return res.status(400).json({ error: 'Invalid answer index' });
 
     let conn;
     try {
@@ -201,11 +209,10 @@ router.post('/submit-answer', isLoggedIn, submitAnswerLimiter, async (req, res) 
 // --- Use Hint ---
 // Scoring: -10, charged once per question, only while it is still unanswered.
 // Asking again (or after answering) returns the hint for 0 points.
-router.post('/use-hint', isLoggedIn, useHintLimiter, async (req, res) => {
+router.post('/use-hint', isLoggedIn, useHintLimiter, validate({ body: qidSchema }), async (req, res) => {
     const { qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
-    if (!qid) return res.status(400).json({ error: 'Missing data' });
     let conn;
 
     try {
@@ -248,11 +255,10 @@ router.post('/use-hint', isLoggedIn, useHintLimiter, async (req, res) => {
 // --- Give Up ---
 // Scoring: +10, awarded once per question. A hint taken earlier was already
 // charged (-10) by /use-hint and is NOT charged again, so give-up + hint = 0 total.
-router.post('/give-up', isLoggedIn, giveUpLimiter, async (req, res) => {
+router.post('/give-up', isLoggedIn, giveUpLimiter, validate({ body: qidSchema }), async (req, res) => {
     const { qid } = req.body;
     const userId = req.user.user_id;
     const today = getTodayDate();
-    if (!qid) return res.status(400).json({ error: 'Missing data' });
     let conn;
 
     try {

@@ -4,6 +4,7 @@ import passport from 'passport';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { nanoid } from 'nanoid';
+import { z } from 'zod';
 import dbPool from '../config/db.js';
 import transporter from '../config/mailer.js';
 import { getOrAssignDailyLog } from '../services/questionBank.js';
@@ -12,6 +13,7 @@ import { setAuthCookie, clearAuthCookie } from '../utils/jwt.js';
 import {
     loginLimiter, signupLimiter, resendVerificationLimiter, forgotPasswordLimiter, resetPasswordLimiter,
 } from '../middleware/rateLimit.js';
+import { validate, email, password, loginPassword, displayName } from '../middleware/validate.js';
 
 const router = Router();
 const FRONTEND = () => process.env.VITE_FRONTEND_URL;
@@ -31,13 +33,21 @@ const otpMatches = (otp, storedHash) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
-// Returns an error message, or null if the password is acceptable.
-const validatePassword = (pw) => {
-  if (typeof pw !== 'string' || pw.length < 8) return 'Password must be at least 8 characters';
-  if (pw.length > 72) return 'Password must be at most 72 characters'; // bcrypt input limit
-  if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Password must contain both letters and digits';
-  return null;
-};
+const loginSchema = z.object({ email, password: loginPassword });
+const signupSchema = z.object({
+  name: displayName,
+  email,
+  password,
+  confirmPassword: z.string({ error: 'Please confirm your password' }),
+}).refine((b) => b.password === b.confirmPassword, { message: 'Passwords do not match', path: ['confirmPassword'] });
+const emailOnlySchema = z.object({ email });
+const resetPasswordSchema = z.object({
+  email,
+  otp: z.string({ error: 'Reset code is required' }).trim().regex(/^\d{6}$/, 'Reset code must be 6 digits'),
+  newPassword: password,
+});
+// crypto.randomBytes(32).toString('hex')
+const verifyParams = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/, 'Token invalid or already used') });
 
 const escapeHtml = (str) => String(str).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -78,7 +88,7 @@ router.post('/logout-all', isLoggedIn, async (req, res) => {
 });
 
 // ── Email/Password Login ───────────────────────────────────────
-router.post('/login', loginLimiter, async (req, res) => {
+router.post('/login', loginLimiter, validate({ body: loginSchema }), async (req, res) => {
   const { email, password } = req.body;
   try {
     const [users] = await dbPool.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -142,10 +152,8 @@ const sendVerificationEmail = (email, name, token) => transporter.sendMail({
 });
 
 // ── Signup ─────────────────────────────────────────────────────
-router.post('/signup', signupLimiter, async (req, res) => {
-  const { name, email, password, confirmPassword } = req.body;
-  if (!name) return res.status(400).json({ error: 'Display name required' });
-  if (password !== confirmPassword) return res.status(400).json({ error: 'Passwords do not match' });
+router.post('/signup', signupLimiter, validate({ body: signupSchema }), async (req, res) => {
+  const { name, email, password } = req.body;
 
   try {
     const token = crypto.randomBytes(32).toString('hex');
@@ -178,9 +186,8 @@ router.post('/signup', signupLimiter, async (req, res) => {
 // ── Resend Verification Email ──────────────────────────────────
 // Rate limited per account via the token's issue time (expires - TTL),
 // so it holds across serverless instances.
-router.post('/resend-verification', resendVerificationLimiter, async (req, res) => {
+router.post('/resend-verification', resendVerificationLimiter, validate({ body: emailOnlySchema }), async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required' });
   const generic = { message: 'If that account is awaiting activation, a new link has been sent.' };
 
   try {
@@ -217,9 +224,8 @@ router.post('/resend-verification', resendVerificationLimiter, async (req, res) 
 });
 
 // ── Forgot Password ────────────────────────────────────────────
-router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, validate({ body: emailOnlySchema }), async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required' });
   // Same response whether or not the account exists, so this can't be used to enumerate emails.
   const generic = { message: 'If an account exists for that email, a reset code has been sent.' };
 
@@ -289,12 +295,9 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
 });
 
 // ── Reset Password ─────────────────────────────────────────────
-router.post('/reset-password', resetPasswordLimiter, async (req, res) => {
+router.post('/reset-password', resetPasswordLimiter, validate({ body: resetPasswordSchema }), async (req, res) => {
   const { email, otp, newPassword } = req.body;
   const invalid = { error: 'INVALID_OR_EXPIRED_OTP' };
-  if (!email || !otp) return res.status(400).json(invalid);
-  const pwError = validatePassword(newPassword);
-  if (pwError) return res.status(400).json({ error: pwError });
 
   try {
     const [[user]] = await dbPool.query('SELECT user_id FROM users WHERE email = ?', [email]);
@@ -342,7 +345,7 @@ router.post('/reset-password', resetPasswordLimiter, async (req, res) => {
 });
 
 // ── Email Verification ─────────────────────────────────────────
-router.get('/verify/:token', async (req, res) => {
+router.get('/verify/:token', validate({ params: verifyParams }), async (req, res) => {
   let conn;
   try {
     conn = await dbPool.getConnection();
