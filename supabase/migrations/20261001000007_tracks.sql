@@ -55,7 +55,7 @@ grant update (track_id) on public.profiles to authenticated;
 -- ---------------------------------------------------------------------------
 alter table public.daily_sets
   add column track_id uuid references public.tracks (id) on delete restrict;
-update public.daily_sets set track_id = private.default_track_id();
+update public.daily_sets set track_id = private.default_track_id() where track_id is null;
 alter table public.daily_sets
   alter column track_id set default private.default_track_id(),
   alter column track_id set not null,

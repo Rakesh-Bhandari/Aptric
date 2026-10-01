@@ -1,727 +1,230 @@
-# 🚀 Aptric – AI-Powered Aptitude Learning Platform
+# 🚀 Aptric – Daily Aptitude Practice
 
-> A modern, AI-powered aptitude preparation platform that combines adaptive learning, daily challenges, gamification, analytics, and intelligent question generation to help students improve their aptitude skills for placements, competitive exams, and technical interviews.
+> Aptric helps students prepare for placements, competitive exams and technical interviews with a short daily challenge, focused practice, leagues and progress tracking, on a question bank grown with verified AI generation.
 
-![Home Page](frontend/public/LOGO.png)
-
----
-
-# 📖 Overview
-
-**Aptric** is a full-stack web application designed to make aptitude preparation engaging, personalized, and data-driven. Unlike traditional aptitude platforms that rely on static question banks, Aptric leverages AI-powered question generation to continuously expand its database with high-quality, categorized aptitude questions.
-
-The platform provides an interactive learning experience through:
-
-- 🎯 Daily aptitude challenges
-- 🤖 AI-generated questions
-- 📊 Performance analytics
-- 🏆 Gamified leaderboard
-- 🔥 Daily streak system
-- 📈 Progress tracking
-- 👤 Personalized dashboard
-- 🛠 Comprehensive admin panel
-
-Aptric is built using **React**, **Node.js**, **Express**, **MySQL**, and **OpenRouter AI**, providing a scalable architecture suitable for educational platforms.
+![Aptric](frontend/public/LOGO.png)
 
 ---
 
-# ✨ Key Features
+## 📖 Overview
 
-## 👨‍🎓 Student Features
+Aptric v2 is a React + TypeScript single-page app on top of **Supabase** (Postgres, Auth, Realtime, Edge Functions, pg_cron). Every game rule (grading, hints, XP, streaks, levels, ratings, leagues, placement, contests) lives in Postgres as RLS policies and `SECURITY DEFINER` RPCs, so the browser never sees an answer key before it has spent its one scoring attempt.
 
-- Secure Email & Google Authentication
-- Daily Aptitude Challenges
-- Practice Mode
-- AI-Generated Questions
-- Multiple Aptitude Categories
-- Detailed Explanations
-- Hint System
-- Difficulty Levels
-- Personalized Dashboard
-- Daily Streak Tracking
-- Performance Analytics
-- Accuracy Statistics
-- Activity Heatmap
-- Leaderboard Rankings
-- User Profile Management
-- Theme Customization
-- Feedback System
+The original v1 app (Express + TiDB/MySQL in `backend/`) is still in the repo and stays deployed until the v1 → v2 cutover in [supabase/MIGRATION.md](supabase/MIGRATION.md).
 
 ---
 
-## 🛡 Admin Features
+## ✨ Features
 
-- Secure Admin Authentication
-- Dashboard Analytics
-- User Management
-- Question Bank Management
-- AI Bulk Question Generator
-- Question Editing
-- Question Deletion
-- Create Users
-- Promote Users
-- Ban / Unban Users
-- Reset Passwords
-- Feedback Moderation
-- Report Management
-- Search, Filter & Sort Questions
-- Audit Logs
+### Learners
 
----
+- **Today**: a daily set per track and level, released at local midnight, with streak, daily goal ring, level and league position
+- **Solve**: one question at a time, timer, keyboard shortcuts (`1`–`4`, `Enter`), paid hints, "Give up & see answer", explanations
+- **Practice**: section → topic → subtopic with mastery stars, search, preferred difficulty and a weak-areas mode
+- **Compete**: live weekly leagues (Bronze → Diamond, via Realtime), weekly / all-time / rating leaderboards, contests
+- **Progress**: skill radar, activity heatmap, recent daily sets and a mistakes-to-review list
+- **Onboarding**: pick a username, exam goal and daily target, then a 10-question placement test sets your starting level
+- **Profile**: public profile at `/u/:handle`, badges, share card, time zone, theme (light / dark / device), reduced motion
+- Email + password, magic link and Google sign-in (Supabase Auth)
 
-# 🎯 Supported Categories
+### Admins
 
-The platform currently supports six major aptitude domains.
+- Review queue for AI-generated questions, question search and editor, status changes (draft → in review → published → retired)
+- User management (roles, bans), reports and feedback moderation, generation jobs, audit log
+- Every write is audited in Postgres by triggers or the `admin_*` RPCs
 
-- Quantitative Aptitude
-- Logical Reasoning
-- Verbal Ability
-- Data Interpretation
-- Puzzles
-- Technical Aptitude
+### Question bank
 
-Each category contains questions classified into:
+Five sections: Quantitative Aptitude, Logical Reasoning, Verbal Ability, Data Interpretation and Technical Aptitude, split into topics and subtopics, with exam tags (`tcs-nqt`, `infosys`, `amcat`, `cat`, `gate`, `bank-po`, `ssc`) and easy / medium / hard difficulty. Questions support Markdown and KaTeX math.
 
-- Easy
-- Medium
-- Hard
+AI-generated questions go through the `generate-questions` Edge Function. Each one is schema-validated, de-duplicated by hash and embedding similarity, arithmetic-checked where the options are numeric, and independently solved by a second model before it reaches the review queue. Nothing is published without an admin's approval.
 
 ---
 
-# ⭐ Repository Highlights
+## 🛠 Tech stack
 
-- 🤖 AI-Powered Question Generation
-- 📈 Gamified Learning Experience
-- 🏆 Real-Time Leaderboard
-- 📅 Daily Challenge System
-- 📊 Advanced User Analytics
-- 🔥 Daily Streak Tracking
-- 📚 Dynamic Question Bank
-- 👨‍💼 Complete Admin Dashboard
-- 🔐 JWT + Google OAuth Authentication
-- ☁ Cloud Image Uploads
-- 📧 Email Verification Support
-- 🌙 Dark Theme UI
-- 📱 Responsive Design
+| Layer | Technologies |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite, TanStack Query, React Router 7, Tailwind CSS v4, Radix UI, KaTeX, Marked |
+| Backend | Supabase: Postgres 17 (RLS, RPCs, pg_cron, pgvector, pg_trgm), Auth, Realtime, Edge Functions (Deno) |
+| AI | OpenRouter (or any OpenAI-compatible API) for generation and verification; Supabase `gte-small` embeddings |
+| Tests | Vitest + Testing Library (frontend), pgTAP (`supabase test db`), `deno test` (Edge Function) |
+| Hosting | Vercel (frontend), Supabase (database and functions) |
+| Legacy v1 | Express, TiDB/MySQL, Passport, Cloudinary, Nodemailer, Vercel Cron (`backend/`) |
 
 ---
 
-# 🛠 Tech Stack
-
-| Category | Technologies |
-|-----------|--------------|
-| Frontend | React, Vite, JavaScript, CSS3 |
-| Backend | Node.js, Express.js |
-| Database | MySQL (TiDB Compatible) |
-| Authentication | JWT, Passport.js, Google OAuth |
-| AI Integration | OpenRouter API |
-| File Storage | Cloudinary |
-| Email Service | Nodemailer |
-| Scheduling | Node Cron |
-| Deployment | Vercel |
-| Version Control | Git & GitHub |
-
----
-
-# 📂 Repository Structure
+## 📂 Repository structure
 
 ```text
 .
-├── backend
-│   ├── database.sql
-│   ├── src
-│   │   ├── certs
-│   │   ├── config
-│   │   ├── middleware
-│   │   ├── routes
-│   │   ├── services
-│   │   ├── utils
-│   │   └── server.js
-│   └── vercel.json
+├── frontend/                 # v2 web app (React + TypeScript)
+│   ├── src/
+│   │   ├── pages/            # Today, Solve, Practice, Compete, Progress, Profile, Onboarding, …
+│   │   ├── admin/            # admin area
+│   │   ├── components/       # UI, layout, charts, markdown, solve
+│   │   ├── context/          # session, preferences, toasts, auth dialog
+│   │   └── lib/              # supabase client, typed RPC wrappers (api.ts), queries
+│   └── .env.example
 │
-├── frontend
-│   ├── public
-│   │   └── LOGO.png
-│   ├── src
-│   │   ├── assets
-│   │   ├── components
-│   │   ├── context
-│   │   ├── hooks
-│   │   ├── pages
-│   │   ├── utils
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   └── vite.config.js
+├── supabase/                 # v2 backend
+│   ├── migrations/           # schema, RLS, RPCs, cron jobs, seeds (applied in order)
+│   ├── functions/
+│   │   └── generate-questions/   # AI question generation Edge Function
+│   ├── tests/database/       # pgTAP tests
+│   ├── types/                # generated database.types.ts
+│   ├── scripts/              # v1 question / user import and rollback
+│   ├── templates/            # auth email templates
+│   ├── README.md             # schema, access model, RPCs, jobs
+│   ├── AUTH.md               # auth dashboard settings
+│   └── MIGRATION.md          # v1 → v2 user migration and cutover runbook
 │
-├── env.txt
+├── backend/                  # legacy v1 API (Express + TiDB), kept until cutover
 └── README.md
 ```
 
 ---
 
-# 🏗 System Architecture
+## 🏗 Architecture
 
 ```text
-                    ┌──────────────────────┐
-                    │      React UI        │
-                    └──────────┬───────────┘
-                               │
-                      REST API Requests
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │   Express Backend    │
-                    └──────────┬───────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                    │
-          ▼                    ▼                    ▼
- Authentication         AI Question Engine      Admin APIs
-          │                    │                    │
-          └────────────────────┼────────────────────┘
-                               │
-                               ▼
-                       MySQL Database
-                               │
-            ┌──────────────────┼───────────────────┐
-            ▼                  ▼                   ▼
-      Leaderboard        User Profiles      Question Bank
+ ┌──────────────────────────────┐
+ │  React SPA (Vercel)          │
+ │  supabase-js + TanStack Query│
+ └──────┬──────────────┬────────┘
+        │ Auth / RPC   │ Realtime (league channel)
+        ▼              ▼
+ ┌──────────────────────────────────────────────┐
+ │  Supabase                                    │
+ │  ┌────────────┐  ┌─────────────────────────┐ │
+ │  │ Auth       │  │ Postgres                │ │
+ │  └────────────┘  │  RLS + SECURITY DEFINER │ │
+ │                  │  RPCs (game rules)      │ │
+ │  ┌────────────┐  │  pg_cron jobs           │ │
+ │  │ Edge Fn:   │─▶│  pgvector embeddings    │ │
+ │  │ generate-  │  └─────────────────────────┘ │
+ │  │ questions  │──▶ OpenRouter (generate +    │
+ │  └────────────┘    independent solve)        │
+ └──────────────────────────────────────────────┘
 ```
 
----
-
-# ⚙ How It Works
-
-## 1. User Authentication
-
-Users can register using:
-
-- Email & Password
-- Google OAuth
-
-After authentication, a secure session is created using JWT.
-
-↓
-
-## 2. Daily Challenge
-
-Every day, users receive fresh aptitude questions generated from the question bank.
-
-↓
-
-## 3. AI Question Generation
-
-Administrators can generate new aptitude questions using AI.
-
-Questions are automatically categorized by:
-
-- Category
-- Difficulty
-- Explanation
-- Hint
-
-↓
-
-## 4. Practice Mode
-
-Users solve questions from different categories while receiving:
-
-- Instant feedback
-- Correct explanations
-- Performance statistics
-
-↓
-
-## 5. Progress Tracking
-
-The system continuously records:
-
-- Accuracy
-- Score
-- Daily streak
-- Activity
-- Level
-- Ranking
-
-↓
-
-## 6. Leaderboard
-
-Scores are updated dynamically, allowing users to compare their progress with others.
+Scheduled jobs (pg_cron, UTC): daily set generation, hourly streak settlement with streak freezes, weekly league rollover, rating updates and leaderboard refreshes. See [supabase/README.md](supabase/README.md#scheduled-jobs-pg_cron).
 
 ---
 
-# 📋 Prerequisites
+## 📋 Prerequisites
 
-Before running the project, install:
-
-- Node.js (18+)
-- npm
-- MySQL Server
-- Git
-- OpenRouter API Key
-- Cloudinary Account
-- Google OAuth Credentials
+- Node.js 20+ and npm
+- A Supabase project (or Docker for the local stack)
+- Supabase CLI (`npx supabase`)
+- Deno (only to run the Edge Function tests)
+- An OpenRouter API key (only for AI question generation)
 
 ---
 
-# ⚙ Installation
+## ⚙ Getting started
 
-## 1. Clone Repository
+### 1. Clone
 
 ```bash
 git clone https://github.com/Rakesh-Bhandari/Aptric.git
-
 cd Aptric
 ```
 
----
+### 2. Database
 
-## 2. Install Backend Dependencies
-
-```bash
-cd backend
-
-npm install
-```
-
----
-
-## 3. Install Frontend Dependencies
+Local stack:
 
 ```bash
-cd ../frontend
-
-npm install
+npx supabase start            # needs Docker
+npx supabase db reset         # applies supabase/migrations + seed.sql
 ```
 
----
-
-# 🔧 Environment Variables
-
-Create a `.env` file inside the backend directory.
-
-Configure the following variables.
-
-```env
-PORT=
-
-JWT_SECRET=
-
-DB_HOST=
-DB_USER=
-DB_PASSWORD=
-DB_NAME=
-
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-
-OPENROUTER_API_KEY=
-
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-
-EMAIL_USER=
-EMAIL_PASS=
-```
-
----
-
-# 🗄 Database Setup
-
-Create a MySQL database.
-
-Import the schema:
+Hosted project:
 
 ```bash
-mysql -u root -p
-
-CREATE DATABASE aptric;
-
-USE aptric;
-
-SOURCE database.sql;
+npx supabase link --project-ref <project-ref>
+npx supabase db push          # applies any migrations the project doesn't have yet
 ```
 
----
+Then configure Auth (site URL, redirect URLs, Google provider, SMTP, email templates) as described in [supabase/AUTH.md](supabase/AUTH.md).
 
-# ▶ Running the Backend
+### 3. AI question generation (optional)
 
 ```bash
-cd backend
-
-npm run dev
+npx supabase secrets set OPEN_ROUTER_API_KEY=sk-or-...
+npx supabase functions deploy generate-questions
 ```
 
-Backend runs on
+Optional secrets: `QUESTION_MODEL`, `QUESTION_VERIFY_MODEL`, `LLM_BASE_URL`, `SITE_URL`, `GENERATE_*` (see [supabase/README.md](supabase/README.md#ai-question-generation-generate-questions)).
 
-```
-http://localhost:5000
-```
-
----
-
-# ▶ Running the Frontend
-
-Open another terminal.
+### 4. Frontend
 
 ```bash
 cd frontend
-
-npm run dev
+cp .env.example .env.local    # set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY
+npm install
+npm run dev                   # http://localhost:6969
 ```
 
-Frontend runs on
+Only the publishable (anon) key goes in the frontend. Never put the `service_role` key there.
 
+### 5. Make yourself an admin
+
+After signing up, run this in the SQL editor:
+
+```sql
+update public.profiles set role = 'admin' where handle = '<your-handle>';
 ```
-http://localhost:5173
+
+---
+
+## 🧪 Tests and checks
+
+```bash
+# frontend
+cd frontend && npm run lint && npm run typecheck && npm test
+
+# database (local stack running)
+npx supabase test db
+
+# Edge Function
+deno test --allow-read --config supabase/functions/generate-questions/deno.json supabase/functions/generate-questions
+
+# v1 import scripts
+node --test supabase/scripts/*.test.mjs
+```
+
+After changing the schema, regenerate the types:
+
+```bash
+npx supabase gen types typescript --local --schema public > supabase/types/database.types.ts
 ```
 
 ---
 
-# 🌐 Deployment
+## 🌐 Deployment
 
-The project is designed for deployment on **Vercel**.
-
-Deploy:
-
-- Frontend
-- Backend
-
-independently using the provided `vercel.json` configurations.
+- **Frontend**: deploy `frontend/` to Vercel (`frontend/vercel.json`) with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` set.
+- **Database**: `npx supabase db push` to the linked project. The pg_cron schedules are created by the migrations.
+- **Edge Function**: `npx supabase functions deploy generate-questions`.
+- **Legacy v1**: `backend/` deploys to Vercel with its own `.env` (see `backend/.env.example`) and Vercel Cron, until cutover.
 
 ---
 
-# 📊 User Dashboard
+## 🔄 Migrating from v1
 
-The personalized dashboard provides users with real-time insights into their learning journey.
-
-### Dashboard Features
-
-- 🏆 Current Rank
-- 📈 Total Score
-- 🎯 Accuracy Percentage
-- 🔥 Daily Streak
-- 📅 Activity Heatmap
-- 📚 Solved Questions
-- 📊 Skill Distribution
-- 📉 Weekly Progress
-- ⭐ Current Level
-- 🎮 Performance Statistics
-
-The dashboard enables users to identify strengths and weaknesses across different aptitude categories and monitor long-term improvement.
+- Questions: `supabase/scripts/import-v1-questions.mjs` turns a TiDB/MySQL export into one transactional SQL script ([details](supabase/README.md#importing-v1-questions)).
+- Users, scores, streaks, history and feedback: export, dry run, import, verify and the cutover/rollback checklist are in [supabase/MIGRATION.md](supabase/MIGRATION.md).
 
 ---
 
-# 👨‍💼 Admin Dashboard
-
-The Admin Dashboard provides centralized management of the entire platform.
-
-### Dashboard Analytics
-
-- Total Users
-- Total Questions
-- Total Feedback
-- Pending Reports
-
-### User Management
-
-- Create Users
-- Edit User Profiles
-- Promote User Levels
-- Ban / Unban Accounts
-- Reset Passwords
-- Delete Users
-- View User Statistics
-
-### Question Management
-
-- View Complete Question Bank
-- Search Questions
-- Filter by Category
-- Filter by Difficulty
-- Edit Questions
-- Delete Questions
-
-### AI Bulk Generator
-
-Administrators can generate hundreds of aptitude questions automatically using AI.
-
-Generated questions include:
-
-- Question Statement
-- Four Options
-- Correct Answer
-- Difficulty
-- Category
-- Hint
-- Detailed Explanation
-
-### Feedback Moderation
-
-- View User Feedback
-- Delete Inappropriate Feedback
-- Handle Reported Content
-
----
-
-# 🤖 AI Question Generation
-
-One of Aptric's core features is its AI-powered aptitude question generator.
-
-Instead of manually writing every question, administrators can generate high-quality questions using AI.
-
-The generated content includes:
-
-- Question
-- Four Options
-- Correct Answer
-- Explanation
-- Hint
-- Category
-- Difficulty
-
-This significantly reduces manual effort while continuously expanding the question bank.
-
----
-
-# 🎮 Gamification System
-
-To improve engagement, Aptric incorporates several gamification features.
-
-### Daily Challenges
-
-Users receive new aptitude questions every day.
-
-### Daily Streak
-
-Maintains consistency by rewarding users for continuous participation.
-
-### Experience Points
-
-Users earn points by:
-
-- Solving Questions
-- Maintaining Streaks
-- Completing Daily Challenges
-
-### Levels
-
-Users progress through different skill levels based on accumulated scores.
-
-### Leaderboard
-
-Ranks users according to:
-
-- Total Score
-- Activity
-- Performance
-
-This encourages healthy competition among learners.
-
----
-
-# 📁 REST API Modules
-
-The backend follows a modular REST API architecture.
-
-### Authentication
-
-- User Registration
-- Login
-- Google OAuth
-- Logout
-- Password Reset
-
-### User APIs
-
-- User Profile
-- Statistics
-- Dashboard Data
-- Activity History
-
-### Question APIs
-
-- Practice Questions
-- Daily Questions
-- AI Generated Questions
-- Category Filtering
-
-### Leaderboard APIs
-
-- Global Rankings
-- User Position
-- Top Performers
-
-### Feedback APIs
-
-- Submit Feedback
-- Report Feedback
-- Delete Feedback
-
-### Admin APIs
-
-- User Management
-- Question Management
-- AI Generation
-- Reports
-- Dashboard Analytics
-
----
-
-# 📊 Database Overview
-
-The database stores all information required by the platform.
-
-### Main Tables
-
-- Users
-- Questions
-- User Progress
-- Daily Questions
-- Leaderboard
-- Feedback
-- Reports
-
-The design ensures efficient retrieval of user progress, rankings, and AI-generated question data.
-
----
-
-# 📸 Screenshots
-
-## Landing Page
-
-*Add landing page screenshot here*
-
----
-
-## Login Page
-
-*Add login page screenshot here*
-
----
-
-## Dashboard
-
-*Add dashboard screenshot here*
-
----
-
-## Practice Page
-
-*Add practice page screenshot here*
-
----
-
-## Leaderboard
-
-*Add leaderboard screenshot here*
-
----
-
-## Profile
-
-*Add profile screenshot here*
-
----
-
-## Admin Dashboard
-
-*Add admin dashboard screenshot here*
-
----
-
-## AI Question Generator
-
-*Add AI Generator screenshot here*
-
----
-
-## User Management
-
-*Add user management screenshot here*
-
----
-
-## Question Management
-
-*Add question management screenshot here*
-
----
-
-## Feedback Management
-
-*Add feedback management screenshot here*
-
----
-
-# 📈 Performance Analytics
-
-Aptric continuously evaluates user performance using several metrics.
-
-### Metrics Tracked
-
-- Total Questions Solved
-- Accuracy Percentage
-- Daily Activity
-- Current Streak
-- Total Score
-- Skill-wise Performance
-- Leaderboard Position
-
-This enables users to make informed decisions about where to focus their preparation.
-
----
-
-# 🎯 Applications
-
-Aptric can be used for:
-
-- Campus Placement Preparation
-- Competitive Exam Practice
-- Technical Interview Preparation
-- Company Recruitment Training
-- College Aptitude Tests
-- Online Learning Platforms
-- Coding Club Activities
-- Student Skill Development
-
----
-
-# 🚀 Future Improvements
-
-The platform is designed to be extensible.
-
-Planned enhancements include:
-
-- 📱 Mobile Application
-- 🔔 Push Notifications
-- 🎤 Voice-based Questions
-- 🎥 Video Explanations
-- 🌍 Multi-language Support
-- 📡 Real-time Multiplayer Quiz Battles
-- 🧠 Personalized AI Learning Paths
-- 📄 PDF Performance Reports
-- 🏅 Achievement Badges
-- 📅 Study Planner
-- 📚 Mock Placement Tests
-- 📊 Advanced Analytics Dashboard
-- ☁ Cloud Synchronization
-- 🤝 Friend Challenges
-- 📢 Discussion Forums
-
----
-
-# 📖 Project Summary
-
-**Aptric** is a comprehensive AI-powered aptitude learning platform that combines modern web technologies, artificial intelligence, and gamification to provide an engaging and personalized learning experience.
-
-The platform enables users to practice aptitude questions across multiple categories, monitor their performance through interactive dashboards, compete on leaderboards, and improve consistently using AI-generated content and detailed analytics.
-
-Administrators benefit from a powerful management interface that supports AI-assisted question generation, user management, feedback moderation, and platform analytics.
-
-By integrating **React**, **Node.js**, **Express**, **MySQL**, **OpenRouter AI**, **Google OAuth**, and **Cloudinary**, Aptric demonstrates a scalable full-stack architecture suitable for educational technology platforms and placement preparation systems.
+## 📚 Further reading
+
+- [supabase/README.md](supabase/README.md): access model, taxonomy, gameplay RPCs, progression, leagues, learner app, admin area, scheduled jobs
+- [supabase/AUTH.md](supabase/AUTH.md): auth flows and dashboard settings
+- [supabase/MIGRATION.md](supabase/MIGRATION.md): v1 → v2 user migration and cutover
+- [frontend/README.md](frontend/README.md): screens, conventions, theming and accessibility
 
 ---
 
