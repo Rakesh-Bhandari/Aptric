@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "axios": "^1.7.9",
     "dompurify": "^3.4.16",
     "gsap": "^3.12.5",

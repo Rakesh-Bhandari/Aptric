@@ -12,6 +12,8 @@ npx supabase db push        # apply migrations to the linked remote project
 
 Regenerate `types/database.types.ts` after every migration.
 
+Auth flows and the exact dashboard settings (SMTP, providers, rate limits, email templates) are in [AUTH.md](AUTH.md).
+
 ## Access model
 
 | Who | Can |

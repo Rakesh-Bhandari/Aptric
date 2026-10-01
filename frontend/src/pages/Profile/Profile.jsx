@@ -4,7 +4,7 @@ import { usePreferences } from '../../context/PreferencesContext';
 import { useToast } from '../../context/ToastContext';
 import './Profile.css';
 import API_BASE_URL from '../../utils/config';
-import { broadcastAuthChange } from '../../utils/authSync';
+import { useSession } from '../../context/SessionContext';
 
 
 // --- ICONS ---
@@ -505,6 +505,7 @@ const AvatarEditorModal = ({ currentAvatar, editorImage, onFileSelect, onUpload,
 const Profile = () => {
     const navigate = useNavigate();
     const toast = useToast();
+    const { signOut } = useSession();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
@@ -533,9 +534,9 @@ const Profile = () => {
         const ok = await toast.confirm({ message: 'Disconnect this session?', confirmText: 'Disconnect', cancelText: 'Cancel', variant: 'warning' });
         if (!ok) return;
         try {
-            await fetch(`${API_BASE_URL}/auth/logout`, { credentials: 'include' });
-            broadcastAuthChange(false);
-            window.location.href = '/';
+            const { error } = await signOut();
+            if (error) throw error;
+            navigate('/');
         } catch (error) { console.error(error); }
     };
 

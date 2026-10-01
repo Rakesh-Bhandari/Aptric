@@ -3,12 +3,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePreferences } from '../../context/PreferencesContext'; 
 import './Navbar.css';
-import API_BASE_URL from '../../utils/config';
+import { useSession } from '../../context/SessionContext';
+import { useAuthModal } from '../../context/AuthModalContext';
 import GradientText from '../../assets/styles/Navbar/GradientText';
 import logoSymbol from '/LOGO.png'; 
 
-const Navbar = ({ isAuthenticated, onAuthClick, setIsAuthenticated }) => {
+const Navbar = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, signOut } = useSession();
+  const { openAuth } = useAuthModal();
   // 1. Get 'theme' alongside reduceMotion
   const { reduceMotion, theme } = usePreferences();
 
@@ -25,8 +28,8 @@ const Navbar = ({ isAuthenticated, onAuthClick, setIsAuthenticated }) => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, { credentials: 'include' });
-      setIsAuthenticated(false);
+      const { error } = await signOut();
+      if (error) throw error;
       navigate('/');
       closeMenu();
     } catch (err) {
@@ -121,7 +124,7 @@ const Navbar = ({ isAuthenticated, onAuthClick, setIsAuthenticated }) => {
 
         <div className="menu-auth-container">
           {!isAuthenticated ? (
-            <button className="login-btn primary" onClick={() => { onAuthClick(); closeMenu(); }}>
+            <button className="login-btn primary" onClick={() => { openAuth(); closeMenu(); }}>
               Sign In
             </button>
           ) : (

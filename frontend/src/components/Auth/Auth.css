@@ -452,4 +452,35 @@
     background: rgba(88, 166, 255, 0.18);
     border-color: #58a6ff;
     box-shadow: 0 0 10px rgba(88, 166, 255, 0.25);
-}
+}
+/* --- SUPABASE AUTH ADDITIONS --- */
+.modal-submit-btn:disabled,
+.social-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+    transform: none;
+}
+
+.auth-sent-message {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    text-align: center;
+    margin: 0 0 1rem;
+}
+
+.form-hint {
+    display: block;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+/* Full-page auth screens (callback, reset password, onboarding) reuse the modal card. */
+.auth-page {
+    display: flex;
+    justify-content: center;
+    padding: 4rem 1rem;
+}
