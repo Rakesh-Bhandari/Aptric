@@ -4,6 +4,7 @@ import { usePreferences } from '../../context/PreferencesContext';
 import { useToast } from '../../context/ToastContext';
 import './Profile.css';
 import API_BASE_URL from '../../utils/config';
+import { broadcastAuthChange } from '../../utils/authSync';
 
 
 // --- ICONS ---
@@ -533,6 +534,7 @@ const Profile = () => {
         if (!ok) return;
         try {
             await fetch(`${API_BASE_URL}/auth/logout`, { credentials: 'include' });
+            broadcastAuthChange(false);
             window.location.href = '/';
         } catch (error) { console.error(error); }
     };
@@ -609,7 +611,7 @@ const Profile = () => {
                 </div>
 
                 <div className="header-info">
-                    <span className="user-id-tag"><Icons.Shield /> {profile.role ? profile.role.toUpperCase() : 'USER'} &nbsp;·&nbsp; VERIFIED</span>
+                    <span className="user-id-tag"><Icons.Shield /> {profile.role ? profile.role.toUpperCase() : 'USER'} &nbsp;·&nbsp; {profile.verified ? 'VERIFIED' : 'UNVERIFIED'}</span>
                     <h1>{profile.name}</h1>
                     <div className="user-email">{profile.email}</div>
                     {profile.bio && <div className="user-bio">{profile.bio}</div>}

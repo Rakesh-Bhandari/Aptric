@@ -42,7 +42,7 @@ const generatePassword = () => {
     return pwd.sort(() => Math.random() - 0.5).join('');
 };
 
-const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
+const Auth = ({ isOpen, onClose, setIsAuthenticated, redirectOnLogin = true }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -114,7 +114,7 @@ const Auth = ({ isOpen, onClose, setIsAuthenticated }) => {
                 } else {
                     setIsAuthenticated(true);
                     onClose();
-                    navigate('/practice');
+                    if (redirectOnLogin) navigate('/practice');
                 }
             } else {
                 setNeedsVerification(isLogin && data.code === 'EMAIL_NOT_VERIFIED');

@@ -44,7 +44,7 @@ router.get('/progress', isLoggedIn, async (req, res) => {
         conn = await dbPool.getConnection();
 
         const [userRows] = await conn.query(
-            'SELECT email, user_name, bio, profile_pic, score, level, day_streak, created_at, role FROM users WHERE user_id = ?', [userId]
+            'SELECT email, user_name, bio, profile_pic, score, level, day_streak, created_at, role, is_verified FROM users WHERE user_id = ?', [userId]
         );
         const u = userRows[0];
         const [rankRes] = await conn.query('SELECT COUNT(*)+1 as `rank` FROM users WHERE score > ?', [u.score]);
@@ -78,7 +78,7 @@ router.get('/progress', isLoggedIn, async (req, res) => {
         });
 
         res.json({
-            profile: { name: u.user_name, email: u.email, bio: u.bio, profile_pic: u.profile_pic, joined: u.created_at, role: u.role },
+            profile: { name: u.user_name, email: u.email, bio: u.bio, profile_pic: u.profile_pic, joined: u.created_at, role: u.role, verified: !!u.is_verified },
             stats: { questionsAnswered: total, accuracy: total > 0 ? ((correct / total) * 100).toFixed(0) : 0, streak: u.day_streak, score: u.score, level: u.level },
             topics, rank: rankRes[0].rank, activity, calendar: calendarMap
         });

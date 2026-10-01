@@ -3,7 +3,7 @@ import './Practice.css';
 import Markdown from '../../components/Markdown/Markdown';
 import API_BASE_URL from '../../utils/config';
 import { useToast } from '../../context/ToastContext';
-import useAntiCheat from '../../hooks/useAntiCheat';
+import { useDailyQuestions, POLL_INTERVAL_MS, MAX_POLLS } from '../../hooks/useDailyQuestions';
 import { msUntilProductMidnight } from '../../utils/time';
 
 const Icons = {
@@ -16,30 +16,17 @@ const Icons = {
     Check: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
 };
 
-const POLL_INTERVAL = 4000;
-const MAX_POLLS = 30; // 2 minutes max
-
 const Practice = () => {
     const toast = useToast();
-    useAntiCheat({
-        onTabSwitch: (count) => {
-            toast.error(`Tab switch detected! Count: ${count}`);
-        }
-    });
     const [userData, setUserData] = useState(null);
     const [userStats, setUserStats] = useState({ rank: 0, accuracy: 0, level: 'Beginner' });
-    const [questions, setQuestions] = useState([]);
+    const { questions, setQuestions, status: genStatus, message: genMessage, pollCount, retry } = useDailyQuestions();
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [genStatus, setGenStatus] = useState('loading'); // 'loading' | 'generating' | 'ready' | 'error'
-    const [genMessage, setGenMessage] = useState('');
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState(null);
     const [message, setMessage] = useState(null);
     const [countdownTime, setCountdownTime] = useState('--:--:--');
     const [questionTimer, setQuestionTimer] = useState(0);
     const timerRef = useRef(null);
-    const pollCountRef = useRef(0);
-    const pollTimerRef = useRef(null);
 
     const apiFetch = useCallback(async (endpoint, options = {}) => {
         try {
@@ -72,63 +59,16 @@ const Practice = () => {
         }
     }, [apiFetch]);
 
-    // ── Poll /api/daily-questions until status === 'ready' ──────
-    const fetchDailyQuestions = useCallback(async () => {
-        const res = await apiFetch('/api/daily-questions');
-        if (!res) {
-            setGenStatus('error');
-            setGenMessage('NETWORK_ERROR: Could not reach server.');
-            setLoading(false);
-            return;
-        }
-
-        if (res.status === 401) {
-            setGenStatus('error');
-            setGenMessage('SESSION_EXPIRED: Please log in again.');
-            setLoading(false);
-            return;
-        }
-
-        const data = await res.json();
-
-        // 202 = questions being generated, poll again
-        if (res.status === 202 || data.status === 'generating') {
-            setGenStatus('generating');
-            setGenMessage(data.message || 'AI is compiling your training data...');
-            setLoading(false);
-
-            pollCountRef.current += 1;
-            if (pollCountRef.current >= MAX_POLLS) {
-                setGenStatus('error');
-                setGenMessage('TIMEOUT: Generation is taking too long. Please refresh.');
-                return;
-            }
-            // Schedule next poll
-            pollTimerRef.current = setTimeout(fetchDailyQuestions, POLL_INTERVAL);
-            return;
-        }
-
-        // 200 = ready
-        if (data.status === 'ready' && data.questions?.length > 0) {
-            setQuestions(data.questions);
-            const firstUnanswered = data.questions.findIndex(q => !q.status || q.status === 'pending');
-            if (firstUnanswered > -1) setCurrentIndex(firstUnanswered);
-            setGenStatus('ready');
-            setLoading(false);
-            return;
-        }
-
-        setGenStatus('error');
-        setGenMessage(data.error || 'NO_QUESTIONS_FOUND: Please refresh.');
-        setLoading(false);
-    }, [apiFetch]);
+    // Once questions arrive, jump to the first unanswered one.
+    useEffect(() => {
+        if (genStatus !== 'ready') return;
+        const firstUnanswered = questions.findIndex(q => !q.status || q.status === 'pending');
+        if (firstUnanswered > -1) setCurrentIndex(firstUnanswered);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only on the transition to ready
+    }, [genStatus]);
 
     useEffect(() => {
-        const init = async () => {
-            await refreshUserData();
-            await fetchDailyQuestions();
-        };
-        init();
+        refreshUserData();
 
         const countdownInterval = setInterval(() => {
             const diff = msUntilProductMidnight();
@@ -139,10 +79,7 @@ const Practice = () => {
             setCountdownTime(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
         }, 1000);
 
-        return () => {
-            clearInterval(countdownInterval);
-            if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
-        };
+        return () => clearInterval(countdownInterval);
     }, []);
 
     useEffect(() => {
@@ -211,15 +148,15 @@ const Practice = () => {
             <p className="glitch-text">// AI_GENERATION_PROTOCOL_ACTIVE...</p>
             <p className="helper-text">{genMessage}</p>
             <p style={{ fontFamily: 'JetBrains Mono', fontSize: '0.7rem', color: '#555', marginTop: '0.5rem' }}>
-                Auto-refreshing every {POLL_INTERVAL / 1000}s &bull; Attempt {pollCountRef.current}/{MAX_POLLS}
+                Auto-refreshing every {POLL_INTERVAL_MS / 1000}s &bull; Attempt {pollCount}/{MAX_POLLS}
             </p>
-            <button onClick={() => { pollCountRef.current = 0; setGenStatus('loading'); fetchDailyQuestions(); }} className="cmd-btn" style={{ marginTop: '1rem' }}>
+            <button onClick={retry} className="cmd-btn" style={{ marginTop: '1rem' }}>
                 FORCE_RETRY
             </button>
         </div>
     );
 
-    if (loading) return <div className="loading-spinner"></div>;
+    if (genStatus === 'loading') return <div className="loading-spinner"></div>;
 
     const currentQ = questions[currentIndex];
     const isAnswered = currentQ?.status && ['correct', 'wrong', 'gave_up'].includes(currentQ.status);
@@ -308,7 +245,7 @@ const Practice = () => {
                         <div className="terminal-loader-container">
                             <p className="glitch-text">// ERROR</p>
                             <p className="helper-text">{genMessage}</p>
-                            <button onClick={() => window.location.reload()} className="cmd-btn" style={{ marginTop: '1rem' }}>
+                            <button onClick={retry} className="cmd-btn" style={{ marginTop: '1rem' }}>
                                 RETRY_SYNC
                             </button>
                         </div>

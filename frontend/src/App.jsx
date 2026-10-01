@@ -1,15 +1,13 @@
 // src/App.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { gsap } from 'gsap';
-import { useTheme } from './hooks/useTheme';
-import { useClickSpark } from './hooks/useClickSpark';
 import { PreferencesProvider, usePreferences } from './context/PreferencesContext';
 
 import Navbar from './components/Navbar/Navbar';
-import Dock from './components/Dock/Dock';
 import Footer from './components/Footer/Footer';
-import { useLocation } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import Auth from './components/Auth/Auth';
 import Admin from './pages/Admin/Admin';
 import Home from './pages/Home/Home';
@@ -27,33 +25,36 @@ import TopicQuestions from './pages/Topics/TopicQuestions';
 import SolveQuestion from './pages/Practice/SolveQuestion';
 import QuestionDetails from './pages/Admin/QuestionDetails';
 import ActivateAccount from './pages/ActivateAccount/ActivateAccount';
+import NotFound from './pages/NotFound/NotFound';
 import './assets/styles/styles.css';
 import './assets/styles/lightmode.css'
 import './App.css';
 
-// ✅ FIXED: correct relative path (was '../src/utils/config' which is wrong)
 import API_BASE_URL from './utils/config';
+import { AUTH_SYNC_KEY, broadcastAuthChange } from './utils/authSync';
 
 const AppContent = () => {
-  const location = useLocation();
-  useTheme();
-  useClickSpark();
-
   const { reduceMotion } = usePreferences();
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  // True when the modal was opened by a protected route: stay on that page after login.
+  const [stayAfterLogin, setStayAfterLogin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const spotlightRef = useRef(null);
 
+  // Login/logout in this tab: update state and tell other tabs.
+  const setAuth = useCallback((value) => {
+    setIsAuthenticated(value);
+    broadcastAuthChange(value);
+  }, []);
+
   useEffect(() => {
-    const syncLogout = (event) => {
-      if (event.key === 'login-event') {
-        window.location.reload();
-      }
+    const syncAuth = (event) => {
+      if (event.key === AUTH_SYNC_KEY) window.location.reload();
     };
-    window.addEventListener('storage', syncLogout);
-    return () => window.removeEventListener('storage', syncLogout);
+    window.addEventListener('storage', syncAuth);
+    return () => window.removeEventListener('storage', syncAuth);
   }, []);
 
   useEffect(() => {
@@ -61,10 +62,7 @@ const AppContent = () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/user`, { credentials: 'include' });
         const data = await response.json();
-        if (data.authenticated) {
-          setIsAuthenticated(true);
-          localStorage.setItem('login-success', Date.now());
-        }
+        if (data.authenticated) setIsAuthenticated(true);
       } catch (err) {
         console.error("Session check failed:", err);
       } finally {
@@ -150,20 +148,32 @@ const AppContent = () => {
   }, [reduceMotion]);
 
   const handleAuthTrigger = () => {
-    if (!isAuthenticated) setIsAuthOpen(true);
+    if (!isAuthenticated) {
+      setStayAfterLogin(false);
+      setIsAuthOpen(true);
+    }
   };
+
+  const requireAuth = useCallback(() => {
+    setStayAfterLogin(true);
+    setIsAuthOpen(true);
+  }, []);
+
+  const protect = (element) => (
+    <ProtectedRoute isAuthenticated={isAuthenticated} onRequireAuth={requireAuth}>{element}</ProtectedRoute>
+  );
 
   if (loading) return null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Navbar isAuthenticated={isAuthenticated} onAuthClick={handleAuthTrigger} setIsAuthenticated={setIsAuthenticated} />
+      <Navbar isAuthenticated={isAuthenticated} onAuthClick={handleAuthTrigger} setIsAuthenticated={setAuth} />
       <main className={reduceMotion ? '' : 'page-enter'} style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home isAuthenticated={isAuthenticated} onAuthClick={handleAuthTrigger} />} />
-          <Route path="/practice" element={<Practice />} />
+          <Route path="/practice" element={protect(<Practice />)} />
           <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile" element={protect(<Profile />)} />
           <Route path="/about" element={<About />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/help" element={<Help />} />
@@ -171,14 +181,15 @@ const AppContent = () => {
           <Route path="/admin/user/:id" element={<UserDetails />} />
           <Route path="/admin/question/:id" element={<QuestionDetails />} />
           <Route path="/topics" element={<Topics />} />
-          <Route path="/practice/topic" element={<TopicQuestions />} />
-          <Route path="/solve/:qid" element={<SolveQuestion />} />
-          <Route path="/activate/:token" element={<ActivateAccount setIsAuthenticated={setIsAuthenticated} />} />
+          <Route path="/practice/topic" element={protect(<TopicQuestions />)} />
+          <Route path="/solve/:qid" element={protect(<SolveQuestion />)} />
+          <Route path="/activate/:token" element={<ActivateAccount setIsAuthenticated={setAuth} />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setIsAuthenticated={setIsAuthenticated} />
+      <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setIsAuthenticated={setAuth} redirectOnLogin={!stayAfterLogin} />
       <Footer />
     </div>
   );
@@ -186,11 +197,13 @@ const AppContent = () => {
 
 function App() {
   return (
-    <PreferencesProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </PreferencesProvider>
+    <ErrorBoundary>
+      <PreferencesProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </PreferencesProvider>
+    </ErrorBoundary>
   );
 }
 

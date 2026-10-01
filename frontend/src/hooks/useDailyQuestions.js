@@ -1,79 +1,81 @@
 // src/hooks/useDailyQuestions.js
-// Drop-in hook for the Practice page.
 // Polls /api/daily-questions until questions are ready (status === 'ready').
-// Handles the 202 'generating' state so Vercel timeout is never hit.
+// Handles the 202 'generating' state so the serverless timeout is never hit.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import API_BASE_URL from '../utils/config';
 
-const POLL_INTERVAL_MS = 3000; // poll every 3 seconds while generating
-const MAX_POLLS = 40;           // give up after ~2 minutes
+export const POLL_INTERVAL_MS = 4000;
+export const MAX_POLLS = 30; // ~2 minutes
 
 export function useDailyQuestions() {
-    const [questions, setQuestions]   = useState([]);
-    const [logId, setLogId]           = useState(null);
-    const [status, setStatus]         = useState('loading'); // 'loading' | 'generating' | 'ready' | 'error'
-    const [message, setMessage]       = useState('');
-    const [pollCount, setPollCount]   = useState(0);
+    const [questions, setQuestions] = useState([]);
+    const [status, setStatus] = useState('loading'); // 'loading' | 'generating' | 'ready' | 'error'
+    const [message, setMessage] = useState('');
+    const [pollCount, setPollCount] = useState(0);
+    const timerRef = useRef(null);
+    const pollsRef = useRef(0);
+    const activeRef = useRef(true);
 
     const fetchQuestions = useCallback(async () => {
+        clearTimeout(timerRef.current);
+        let res, data;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/daily-questions`, {
-                credentials: 'include'
-            });
-
-            if (res.status === 401) {
-                setStatus('error');
-                setMessage('Please log in to continue.');
-                return;
-            }
-
-            const data = await res.json();
-
-            if (res.status === 202 || data.status === 'generating') {
-                // Questions not ready — keep polling
-                setStatus('generating');
-                setMessage(data.message || 'Preparing your questions...');
-                return; // useEffect will retry
-            }
-
-            if (data.status === 'ready' && data.questions?.length > 0) {
-                setQuestions(data.questions);
-                setLogId(data.logId);
-                setStatus('ready');
-                return;
-            }
-
-            setStatus('error');
-            setMessage(data.error || 'Something went wrong. Please refresh.');
+            res = await fetch(`${API_BASE_URL}/api/daily-questions`, { credentials: 'include' });
+            data = await res.json();
         } catch (err) {
             console.error('[useDailyQuestions]', err);
             setStatus('error');
-            setMessage('Network error. Please check your connection.');
-        }
-    }, []);
-
-    useEffect(() => {
-        if (status === 'ready' || status === 'error') return;
-        if (pollCount >= MAX_POLLS) {
-            setStatus('error');
-            setMessage('Question generation is taking too long. Please refresh.');
+            setMessage('NETWORK_ERROR: Could not reach server.');
             return;
         }
 
-        if (status === 'loading') {
-            // First fetch immediately
-            fetchQuestions();
-            setPollCount(1);
-        } else if (status === 'generating') {
-            // Subsequent fetches after delay
-            const timer = setTimeout(() => {
-                fetchQuestions();
-                setPollCount(c => c + 1);
-            }, POLL_INTERVAL_MS);
-            return () => clearTimeout(timer);
+        if (res.status === 401) {
+            setStatus('error');
+            setMessage('SESSION_EXPIRED: Please log in again.');
+            return;
         }
-    }, [status, pollCount, fetchQuestions]);
 
-    return { questions, setQuestions, logId, status, message };
+        if (res.status === 202 || data.status === 'generating') {
+            pollsRef.current += 1;
+            setPollCount(pollsRef.current);
+            if (pollsRef.current >= MAX_POLLS) {
+                setStatus('error');
+                setMessage('TIMEOUT: Generation is taking too long. Please refresh.');
+                return;
+            }
+            setStatus('generating');
+            setMessage(data.message || 'AI is compiling your training data...');
+            // A request still in flight at unmount must not schedule another poll.
+            if (activeRef.current) timerRef.current = setTimeout(fetchQuestions, POLL_INTERVAL_MS);
+            return;
+        }
+
+        if (data.status === 'ready' && data.questions?.length > 0) {
+            setQuestions(data.questions);
+            setStatus('ready');
+            return;
+        }
+
+        setStatus('error');
+        setMessage(data.error || 'NO_QUESTIONS_FOUND: Please refresh.');
+    }, []);
+
+    const retry = useCallback(() => {
+        pollsRef.current = 0;
+        setPollCount(0);
+        setStatus('loading');
+        fetchQuestions();
+    }, [fetchQuestions]);
+
+    useEffect(() => {
+        activeRef.current = true;
+        fetchQuestions();
+        return () => {
+            activeRef.current = false;
+            clearTimeout(timerRef.current);
+        };
+    }, [fetchQuestions]);
+
+    return { questions, setQuestions, status, message, pollCount, retry };
 }
