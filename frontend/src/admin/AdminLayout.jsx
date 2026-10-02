@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Flag, ListChecks, ListTodo, ScrollText, Sparkles, Users } from 'lucide-react';
+import { AptricMark } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/SessionContext';
 import { countActiveJobs, countByStatus, countOpenReports } from './api';
 import './Admin.css';
 
 const NAV = [
-    { to: 'review', label: 'Review queue', count: 'review' },
-    { to: 'questions', label: 'Questions' },
-    { to: 'reports', label: 'Reports', count: 'reports' },
-    { to: 'users', label: 'Users' },
-    { to: 'jobs', label: 'Generation jobs', count: 'jobs' },
-    { to: 'audit', label: 'Audit log' },
+    { to: 'review', label: 'Review queue', icon: ListChecks, count: 'review' },
+    { to: 'questions', label: 'Questions', icon: ListTodo },
+    { to: 'reports', label: 'Reports', icon: Flag, count: 'reports' },
+    { to: 'users', label: 'Users', icon: Users },
+    { to: 'jobs', label: 'Generation jobs', icon: Sparkles, count: 'jobs' },
+    { to: 'audit', label: 'Audit log', icon: ScrollText },
 ];
 
 // /admin/*. Rendered inside <RequireAuth>, so the user is signed in here. The
@@ -53,11 +55,17 @@ const AdminLayout = () => {
     return (
         <div className="adm">
             <nav className="adm-nav" aria-label="Admin">
-                <div className="adm-nav-title">Admin</div>
-                {NAV.map((item) => (
-                    <NavLink key={item.to} to={item.to} className={({ isActive }) => `adm-nav-link ${isActive ? 'active' : ''}`}>
-                        <span>{item.label}</span>
-                        {item.count && counts[item.count] > 0 && <span className="adm-nav-count">{counts[item.count]}</span>}
+                <div className="adm-nav-title">
+                    <AptricMark variant="onDark" className="adm-nav-mark" />
+                    <span>Admin</span>
+                </div>
+                {NAV.map(({ to, label, icon: Icon, count }) => (
+                    <NavLink key={to} to={to} className={({ isActive }) => `adm-nav-link ${isActive ? 'active' : ''}`}>
+                        <Icon className="adm-nav-icon" aria-hidden />
+                        <span className="adm-nav-label">{label}</span>
+                        {count && counts[count] > 0 && (
+                            <span className="adm-nav-count" aria-label={`${counts[count]} pending`}>{counts[count]}</span>
+                        )}
                     </NavLink>
                 ))}
             </nav>

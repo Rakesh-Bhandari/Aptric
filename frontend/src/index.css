@@ -39,6 +39,8 @@
   --chrome-foreground: #ffffff;
   --chrome-muted-foreground: #c3cde3;
   --chrome-accent: #ff9a3d;
+  /* Raised step on chrome (active admin nav item). */
+  --chrome-raised: #123a78;
   --accent-text: #c2410c;
   --orange-light: #ff9a3d;
   --success: #15803d;
@@ -106,6 +108,8 @@
   --mark-navy-b: #0b1f4b;
   --mark-navy-c: #081a42;
   --radius: 1rem;
+  /* Height of the sticky app header (AppShell's h-16); sticky panels offset by it. */
+  --header-h: 4rem;
   color-scheme: light;
 
   /* Aliases used by the admin area's stylesheet. */
@@ -204,6 +208,7 @@
   --color-chrome-foreground: var(--chrome-foreground);
   --color-chrome-muted-foreground: var(--chrome-muted-foreground);
   --color-chrome-accent: var(--chrome-accent);
+  --color-chrome-raised: var(--chrome-raised);
   --color-orange-light: var(--orange-light);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);

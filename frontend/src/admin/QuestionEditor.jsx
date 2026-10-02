@@ -181,31 +181,37 @@ const QuestionEditor = ({ question, onSaved, footer }) => {
             <div className={`adm-editor-body adm-view-${view}`}>
                 {view !== 'preview' && (
                     <form className="adm-form" onSubmit={(e) => { e.preventDefault(); save().catch(() => {}); }}>
-                        <div className="adm-row">
-                            <TaxonomySelect taxonomy={taxonomy} required
-                                value={{ sectionId: draft.sectionId, topicId: draft.topicId, subtopicId: draft.subtopic_id }}
-                                onChange={(v) => set({ sectionId: v.sectionId, topicId: v.topicId, subtopic_id: v.subtopicId })} />
-                        </div>
-                        <div className="adm-row">
-                            <label className="adm-field">
-                                <span>Difficulty</span>
-                                <select value={draft.difficulty} onChange={(e) => set({ difficulty: e.target.value })}>
-                                    {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </label>
-                            <label className="adm-field">
-                                <span>Est. seconds</span>
-                                <input type="number" min="5" max="3600" value={draft.est_seconds}
-                                    onChange={(e) => set({ est_seconds: e.target.value })} />
-                            </label>
-                        </div>
+                        <section className="adm-form-section" aria-labelledby="adm-ed-placement">
+                            <h3 id="adm-ed-placement">Placement</h3>
+                            <div className="adm-row">
+                                <TaxonomySelect taxonomy={taxonomy} required
+                                    value={{ sectionId: draft.sectionId, topicId: draft.topicId, subtopicId: draft.subtopic_id }}
+                                    onChange={(v) => set({ sectionId: v.sectionId, topicId: v.topicId, subtopic_id: v.subtopicId })} />
+                            </div>
+                            <div className="adm-row">
+                                <label className="adm-field">
+                                    <span>Difficulty</span>
+                                    <select value={draft.difficulty} onChange={(e) => set({ difficulty: e.target.value })}>
+                                        {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                </label>
+                                <label className="adm-field">
+                                    <span>Est. seconds</span>
+                                    <input type="number" min="5" max="3600" value={draft.est_seconds}
+                                        onChange={(e) => set({ est_seconds: e.target.value })} />
+                                </label>
+                            </div>
+                        </section>
 
-                        <label className="adm-field adm-field-wide">
-                            <span>Question <small>Markdown · math with $…$ or $$…$$</small></span>
-                            <textarea rows={6} value={draft.stem} onChange={(e) => set({ stem: e.target.value })} />
-                        </label>
+                        <section className="adm-form-section" aria-labelledby="adm-ed-question">
+                            <h3 id="adm-ed-question">Question <small>Markdown · math with $…$ or $$…$$</small></h3>
+                            <label className="adm-field adm-field-wide">
+                                <span className="sr-only">Question text</span>
+                                <textarea rows={6} value={draft.stem} onChange={(e) => set({ stem: e.target.value })} />
+                            </label>
+                        </section>
 
-                        <fieldset className="adm-options">
+                        <fieldset className="adm-form-section adm-options">
                             <legend>Options <small>select the correct one</small></legend>
                             {!draft.hasKey && <p className="adm-warn">This question has no answer key yet; saving sets the selected option as correct.</p>}
                             {draft.options.map((o, i) => (
@@ -226,17 +232,20 @@ const QuestionEditor = ({ question, onSaved, footer }) => {
                             )}
                         </fieldset>
 
-                        <label className="adm-field adm-field-wide">
-                            <span>Explanation</span>
-                            <textarea rows={5} value={draft.explanation} onChange={(e) => set({ explanation: e.target.value })} />
-                        </label>
-                        <label className="adm-field adm-field-wide">
-                            <span>Hint <small>optional</small></span>
-                            <input type="text" value={draft.hint} onChange={(e) => set({ hint: e.target.value })} />
-                        </label>
+                        <section className="adm-form-section" aria-labelledby="adm-ed-explain">
+                            <h3 id="adm-ed-explain">Explanation</h3>
+                            <label className="adm-field adm-field-wide">
+                                <span className="sr-only">Explanation</span>
+                                <textarea rows={5} value={draft.explanation} onChange={(e) => set({ explanation: e.target.value })} />
+                            </label>
+                            <label className="adm-field adm-field-wide">
+                                <span>Hint <small>optional</small></span>
+                                <input type="text" value={draft.hint} onChange={(e) => set({ hint: e.target.value })} />
+                            </label>
+                        </section>
 
-                        <div className="adm-field adm-field-wide">
-                            <span>Tags</span>
+                        <section className="adm-form-section" aria-labelledby="adm-ed-tags">
+                            <h3 id="adm-ed-tags">Tags</h3>
                             <div className="adm-chips">
                                 {[...tagCatalog.filter((t) => t.is_active || draft.tags.includes(t.slug)), ...extraTags.map((slug) => ({ slug, name: slug }))].map((t) => (
                                     <button key={t.slug} type="button" aria-pressed={draft.tags.includes(t.slug)}
@@ -245,16 +254,20 @@ const QuestionEditor = ({ question, onSaved, footer }) => {
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        </section>
                         <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
                     </form>
                 )}
                 {view !== 'edit' && <QuestionPreview draft={draft} />}
             </div>
 
-            {error && <div className="adm-error" role="alert">{error}</div>}
-            {!error && problems.length > 0 && <div className="adm-warn">{problems.join(' ')}</div>}
-            {footer?.({ dirty, saving, problems, save })}
+            {(footer || error || problems.length > 0) && (
+                <div className="adm-savebar">
+                    {error && <div className="adm-error" role="alert">{error}</div>}
+                    {!error && problems.length > 0 && <div className="adm-warn">{problems.join(' ')}</div>}
+                    {footer?.({ dirty, saving, problems, save })}
+                </div>
+            )}
         </div>
     );
 };
