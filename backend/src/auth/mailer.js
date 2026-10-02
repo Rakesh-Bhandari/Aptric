@@ -3,6 +3,7 @@
 
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
+import { HttpError } from '../http.js';
 
 let transport;
 
@@ -54,9 +55,17 @@ export function renderEmail(kind, link) {
 export async function sendAuthEmail(to, kind, link) {
   const message = renderEmail(kind, link);
   if (!config.smtp.host) {
-    if (config.isProd) throw new Error('SMTP_HOST is not set, so auth emails cannot be sent');
+    if (config.isProd) {
+      console.error('[mail] SMTP_HOST is not set, so auth emails cannot be sent');
+      throw new HttpError(503, 'email_unavailable', "We can't send emails right now. Please try again later.");
+    }
     console.info(`[mail] (SMTP not configured) ${kind} for ${to}: ${link}`);
     return;
   }
-  await getTransport().sendMail({ from: config.smtp.from, to, ...message });
+  try {
+    await getTransport().sendMail({ from: config.smtp.from, to, ...message });
+  } catch (err) {
+    console.error('[mail] send failed', err.message);
+    throw new HttpError(503, 'email_unavailable', "We couldn't send the email. Please try again in a minute.");
+  }
 }

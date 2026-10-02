@@ -1,7 +1,7 @@
 // POST /rpc/:name: the game and admin SQL functions, called as the signed-in
 // user. Only the functions below are reachable, only with their declared
-// arguments, each cast to its SQL type; the functions themselves still check
-// who may call them (grants, private.require_uid(), private.is_admin()).
+// arguments, each cast to its SQL type. Every one is SECURITY DEFINER and
+// checks the caller itself (private.require_uid(), private.is_admin(), bans).
 
 import { Router } from 'express';
 import { asUser } from '../db.js';
@@ -84,7 +84,7 @@ const router = Router();
 
 router.post('/:name', requireUser, async (req, res) => {
   const { text, params, shape } = buildCall(req.params.name, req.body ?? {});
-  const { rows } = await asUser(req.user.id, (db) => db.query(text, params));
+  const { rows } = await asUser(req.user.id, text, params);
   if (shape === 'rows') return res.json(rows);
   res.json(shape === 'void' ? null : (rows[0]?.result ?? null));
 });

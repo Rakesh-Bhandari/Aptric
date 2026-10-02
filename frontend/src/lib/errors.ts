@@ -10,6 +10,14 @@ interface MaybeError {
 export const errorCode = (error: unknown): string | undefined =>
   typeof error === 'object' && error !== null ? (error as MaybeError).code : undefined;
 
+const SERVER_DOWN = 'The server is having trouble right now. Please try again in a few minutes.';
+
+/** 5xx from the API or the platform in front of it (e.g. Vercel's FUNCTION_INVOCATION_FAILED page). */
+const isServerError = (error: unknown) => {
+  const status = typeof error === 'object' && error !== null ? (error as MaybeError).status : undefined;
+  return typeof status === 'number' && status >= 500;
+};
+
 const isNetworkError = (error: unknown) => {
   const message = typeof error === 'object' && error !== null ? (error as MaybeError).message ?? '' : String(error);
   return /failed to fetch|network ?error|load failed|networkerror/i.test(message);
@@ -28,7 +36,7 @@ export const friendlyError = (error: unknown, fallback = 'Something went wrong. 
     case '401':
     case 'refresh_token_not_found': return 'Your session has expired. Please sign in again.';
     case 'over_request_rate_limit': return 'Too many requests. Please wait a minute and try again.';
-    default: return fallback;
+    default: return isServerError(error) ? SERVER_DOWN : fallback;
   }
 };
 
@@ -47,6 +55,7 @@ export const authErrorMessage = (error: unknown): string => {
     case '401': return 'Your session has expired. Please sign in again.';
     case 'user_banned': return 'This account has been suspended.';
     case 'reauthentication_needed': return 'For your security, please sign in again before changing your password.';
-    default: return 'Something went wrong. Please try again.';
+    case 'email_unavailable': return "We couldn't send the email right now. Please try again in a few minutes.";
+    default: return isServerError(error) ? SERVER_DOWN : 'Something went wrong. Please try again.';
   }
 };

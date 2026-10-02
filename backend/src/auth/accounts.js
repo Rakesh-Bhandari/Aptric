@@ -3,7 +3,7 @@
 
 import bcrypt from 'bcryptjs';
 import { config } from '../config.js';
-import { query, transaction } from '../db.js';
+import { batch, query } from '../db.js';
 import { HttpError } from '../http.js';
 import { randomToken, sha256, signAccessToken } from './tokens.js';
 
@@ -43,8 +43,8 @@ export async function findAccountById(id) {
 }
 
 /** Inserts an account; the on_account_created trigger creates its profile. */
-export async function createAccount({ email, passwordHash = null, metadata = {}, verified = false, googleSub = null }, db = { query }) {
-  const { rows } = await db.query(
+export async function createAccount({ email, passwordHash = null, metadata = {}, verified = false, googleSub = null }) {
+  const { rows } = await query(
     `insert into private.accounts (email, password_hash, metadata, email_verified_at, google_sub)
      values ($1, $2, $3, case when $4 then now() end, $5)
      returning *`,
@@ -80,17 +80,13 @@ const sessionResponse = (account, sessionId, refreshToken) => ({
 export async function createSession(account, userAgent) {
   if (isBanned(account)) throw bannedError();
   const refreshToken = randomToken();
-  const { rows } = await query(
-    `with s as (
-       insert into private.sessions (account_id, token_hash, user_agent, expires_at)
-       values ($1, $2, left($3, 512), now() + make_interval(days => $4))
-       returning id
-     ), touch as (
-       update private.accounts set last_sign_in_at = now() where id = $1
-     )
-     select id from s`,
-    [account.id, sha256(refreshToken), userAgent ?? null, config.refreshTokenDays],
-  );
+  const [{ rows }] = await batch([
+    [`insert into private.sessions (account_id, token_hash, user_agent, expires_at)
+      values ($1, $2, left($3, 512), now() + make_interval(days => $4))
+      returning id`,
+    [account.id, sha256(refreshToken), userAgent ?? null, config.refreshTokenDays]],
+    ['update private.accounts set last_sign_in_at = now() where id = $1', [account.id]],
+  ]);
   return sessionResponse(account, rows[0].id, refreshToken);
 }
 
@@ -99,23 +95,21 @@ export async function refreshSession(refreshToken) {
   const invalid = new HttpError(401, 'refresh_token_not_found', 'Your session has expired. Please sign in again.');
   if (typeof refreshToken !== 'string' || !refreshToken) throw invalid;
   const next = randomToken();
-  return transaction(async (client) => {
-    const { rows } = await client.query(
-      `update private.sessions s
-       set token_hash = $2, last_used_at = now(), expires_at = now() + make_interval(days => $3)
-       from private.accounts a
-       where s.token_hash = $1 and s.expires_at > now() and a.id = s.account_id
-       returning s.id as session_id, a.*`,
-      [sha256(refreshToken), sha256(next), config.refreshTokenDays],
-    );
-    const row = rows[0];
-    if (!row) throw invalid;
-    if (isBanned(row)) {
-      await client.query('delete from private.sessions where account_id = $1', [row.id]);
-      throw bannedError();
-    }
-    return sessionResponse(row, row.session_id, next);
-  });
+  const { rows } = await query(
+    `update private.sessions s
+     set token_hash = $2, last_used_at = now(), expires_at = now() + make_interval(days => $3)
+     from private.accounts a
+     where s.token_hash = $1 and s.expires_at > now() and a.id = s.account_id
+     returning s.id as session_id, a.*`,
+    [sha256(refreshToken), sha256(next), config.refreshTokenDays],
+  );
+  const row = rows[0];
+  if (!row) throw invalid;
+  if (isBanned(row)) {
+    await query('delete from private.sessions where account_id = $1', [row.id]);
+    throw bannedError();
+  }
+  return sessionResponse(row, row.session_id, next);
 }
 
 export async function endSession(refreshToken) {
@@ -131,10 +125,10 @@ export async function sessionCreatedAt(sessionId) {
 /** New password; every other session of the account is signed out. */
 export async function changePassword(accountId, keepSessionId, password) {
   const hash = await hashPassword(password);
-  await transaction(async (client) => {
-    await client.query('update private.accounts set password_hash = $2 where id = $1', [accountId, hash]);
-    await client.query('delete from private.sessions where account_id = $1 and id is distinct from $2', [accountId, keepSessionId ?? null]);
-  });
+  await batch([
+    ['update private.accounts set password_hash = $2 where id = $1', [accountId, hash]],
+    ['delete from private.sessions where account_id = $1 and id is distinct from $2::uuid', [accountId, keepSessionId ?? null]],
+  ]);
 }
 
 // Single-use links ------------------------------------------------------------
@@ -156,26 +150,25 @@ export async function createLinkToken(accountId, purpose, minutes = config.email
 export async function consumeLinkToken(token, purpose) {
   const expired = new HttpError(400, 'otp_expired', 'This link has expired or was already used.');
   if (typeof token !== 'string' || !token) throw expired;
-  return transaction(async (client) => {
-    const { rows } = await client.query(
-      `update private.auth_tokens set used_at = now()
+  // One statement: spend the link, confirm the address, and retire the
+  // account's other unused links of the same kind.
+  const { rows } = await query(
+    `with spent as (
+       update private.auth_tokens set used_at = now()
        where token_hash = $1 and purpose = $2 and used_at is null and expires_at > now()
-       returning account_id`,
-      [sha256(token), purpose],
-    );
-    if (!rows[0]) throw expired;
-    const { rows: accounts } = await client.query(
-      `update private.accounts
-       set email_verified_at = coalesce(email_verified_at, case when $2 <> 'oauth' then now() end)
-       where id = $1
-       returning *`,
-      [rows[0].account_id, purpose],
-    );
-    // Other links of the same kind die with this one.
-    await client.query(
-      'update private.auth_tokens set used_at = now() where account_id = $1 and purpose = $2 and used_at is null',
-      [rows[0].account_id, purpose],
-    );
-    return accounts[0];
-  });
+       returning account_id
+     ), others as (
+       update private.auth_tokens t set used_at = now()
+       from spent
+       where t.account_id = spent.account_id and t.purpose = $2 and t.used_at is null and t.token_hash <> $1
+     )
+     update private.accounts a
+     set email_verified_at = coalesce(a.email_verified_at, case when $2 <> 'oauth' then now() end)
+     from spent
+     where a.id = spent.account_id
+     returning a.*`,
+    [sha256(token), purpose],
+  );
+  if (!rows[0]) throw expired;
+  return rows[0];
 }

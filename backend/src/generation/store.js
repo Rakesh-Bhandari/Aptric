@@ -1,4 +1,4 @@
-// Store for the generation pipeline over a direct Postgres connection. All
+// Store for the generation pipeline (through public.backend_sql). All
 // writes go through the gen_* SECURITY DEFINER functions (migration
 // 20261001000012), as the database owner.
 
