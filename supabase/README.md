@@ -102,7 +102,7 @@ Errors: `401` no/invalid session, `403` not an admin, `400` bad body, `404` unkn
 
 **Setup.**
 
-Set `OPEN_ROUTER_API_KEY` in the API's environment (`backend/.env`, or the Vercel project). Optional: `QUESTION_MODEL` (default `google/gemini-2.0-flash-001`), `QUESTION_VERIFY_MODEL` (default `openai/gpt-4o-mini`), `LLM_BASE_URL` (any OpenAI-compatible API with `json_schema` response_format; default OpenRouter), `EMBEDDING_MODEL` / `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY`, `SITE_URL`, `GENERATE_*`. Unit tests: `cd backend && npm test`.
+Set `OPEN_ROUTER_API_KEY` in the API's environment (`backend/.env`, or the Vercel project). Optional: `QUESTION_MODEL` (default `google/gemini-2.5-flash`), `QUESTION_VERIFY_MODEL` (default `openai/gpt-4o-mini`), `LLM_BASE_URL` (any OpenAI-compatible API with `json_schema` response_format; default OpenRouter), `EMBEDDING_MODEL` / `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY`, `SITE_URL`, `GENERATE_*`. Unit tests: `cd backend && npm test`.
 
 Review queue: `select q.*, j.solver_model from public.questions q join public.question_generation_jobs j on j.id = q.generation_job_id where q.status = 'in_review';`
 
