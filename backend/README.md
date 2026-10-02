@@ -44,7 +44,7 @@ Then point the frontend at it: `VITE_API_URL=http://localhost:5000` in `frontend
    | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | any SMTP provider (Resend: `smtp.resend.com`, 465, `resend`, API key) |
 
    Optional: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, `OPEN_ROUTER_API_KEY` (+ the `QUESTION_*`, `EMBEDDING_*`, `GENERATE_*` settings), `CORS_ORIGINS`.
-3. Deploy, check `GET <API_URL>/health` → `{"status":"ok","database":"ok"}`.
+3. Deploy, check `GET <API_URL>/health` → `{"status":"ok","database":"ok","migrations":"ok"}`. A 503 names the problem: missing environment variables (`server_misconfigured`), an unreachable database, or migrations not yet applied (`npx supabase db push`).
 4. In the frontend's Vercel project set `VITE_API_URL=<API_URL>` and redeploy it.
 
 `api/index.js` allows up to 300 s per request (`vercel.json`), enough for one generation batch.

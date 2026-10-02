@@ -2,13 +2,19 @@
 // in localStorage, shared across tabs, and its short-lived access token is
 // refreshed on demand (one refresh at a time across tabs).
 
-const rawUrl = import.meta.env.VITE_API_URL as string | undefined;
+const rawUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
 
+// Throwing here would leave a blank page; log loudly and fall back to the
+// local API instead, so the app still renders and shows "can't reach server".
 if (!rawUrl) {
-  throw new Error('Missing VITE_API_URL (see frontend/.env.example).');
+  console.error('Missing VITE_API_URL (see frontend/.env.example); set it in Vercel and redeploy. Using http://localhost:5000.');
 }
 
-export const API_URL = rawUrl.replace(/\/+$/, '');
+// A value without a scheme ("aptric-api.vercel.app") would be fetched relative
+// to the frontend and land on its index.html, so assume https.
+const withScheme = (url: string) => (/^https?:\/\//i.test(url) ? url : `https://${url}`);
+
+export const API_URL = withScheme(rawUrl || 'http://localhost:5000').replace(/\/+$/, '');
 
 export interface AuthUser {
   id: string;

@@ -16,10 +16,29 @@ pg.types.setTypeParser(pg.types.builtins.DATE, (v) => v);
 
 let pool;
 
+/**
+ * The connection string without its ssl* parameters. pg lets `sslmode=require`
+ * in the URL override the `ssl` option below and then verifies the
+ * certificate chain, which fails against Supabase's pooler
+ * ("self-signed certificate in certificate chain"); DATABASE_SSL decides
+ * instead.
+ */
+export function connectionString(url) {
+  try {
+    const parsed = new URL(url);
+    for (const key of [...parsed.searchParams.keys()]) {
+      if (/^ssl/i.test(key)) parsed.searchParams.delete(key);
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 export function getPool() {
   if (!pool) {
     pool = new pg.Pool({
-      connectionString: config.databaseUrl,
+      connectionString: connectionString(config.databaseUrl),
       ssl: config.databaseSsl ? { rejectUnauthorized: false } : false,
       max: config.databasePoolMax,
       idleTimeoutMillis: 10_000,

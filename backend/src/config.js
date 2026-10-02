@@ -68,9 +68,20 @@ export const config = {
 
 export const googleEnabled = () => Boolean(config.google.clientId && config.google.clientSecret);
 
-/** Throws on missing required settings; called when the app starts. */
+/** Problems with the environment (empty when the API can start). */
+export function configProblems() {
+  const problems = ['DATABASE_URL', 'JWT_SECRET']
+    .filter((name) => !process.env[name])
+    .map((name) => `${name} is not set`);
+  if (config.jwtSecret && config.jwtSecret.length < 32) problems.push('JWT_SECRET must be at least 32 characters');
+  if (config.databaseUrl && !/^postgres(ql)?:\/\//.test(config.databaseUrl)) {
+    problems.push('DATABASE_URL must be a postgresql:// connection string');
+  }
+  return problems;
+}
+
+/** Throws on missing required settings; called when the local server starts. */
 export function assertConfig() {
-  const missing = ['DATABASE_URL', 'JWT_SECRET'].filter((name) => !process.env[name]);
-  if (missing.length) throw new Error(`Missing environment variables: ${missing.join(', ')} (see backend/.env.example)`);
-  if (config.jwtSecret.length < 32) throw new Error('JWT_SECRET must be at least 32 characters');
+  const problems = configProblems();
+  if (problems.length) throw new Error(`${problems.join('; ')} (see backend/.env.example)`);
 }
