@@ -52,6 +52,12 @@
   --warning-soft-foreground: #713f12;
   --streak: #f06a00;
   --gold: #c58a00;
+  /* Charts: radar stroke/points (3:1+ on cards) and the 5-step activity scale (--muted, then heat-1..4). */
+  --chart-accent: #e86600;
+  --heat-1: #ffe0c2;
+  --heat-2: #ffb066;
+  --heat-3: #ff7800;
+  --heat-4: #d95a00;
   --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
   --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
   --shadow-sm: 0 1px 2px rgb(11 31 75 / 0.06), 0 4px 12px rgb(11 31 75 / 0.04);
@@ -108,6 +114,11 @@
   --warning-soft-foreground: #fde68a;
   --streak: #ff8a1f;
   --gold: #fbbf24;
+  --chart-accent: #ff9a3d;
+  --heat-1: #4f3324;
+  --heat-2: #8f4615;
+  --heat-3: #d9650c;
+  --heat-4: #ff9a3d;
   --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
   --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
@@ -160,6 +171,11 @@
   --color-warning-soft-foreground: var(--warning-soft-foreground);
   --color-streak: var(--streak);
   --color-gold: var(--gold);
+  --color-chart-accent: var(--chart-accent);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 4px);
   --radius-sm: calc(var(--radius) - 8px);

@@ -9,7 +9,7 @@ const css = readFileSync(resolve(__dirname, '../index.css'), 'utf8');
 const block = (selector: string) => {
   const start = css.indexOf(`${selector} {`);
   const body = css.slice(start, css.indexOf('}', start));
-  return Object.fromEntries([...body.matchAll(/--([a-z-]+):\s*(#[0-9a-f]{6})/gi)].map((m) => [m[1], m[2]]));
+  return Object.fromEntries([...body.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-f]{6})/gi)].map((m) => [m[1], m[2]]));
 };
 
 const light = block(':root');
@@ -91,5 +91,19 @@ describe('status fills', () => {
 describe('focus ring', () => {
   it.each([['light', light], ['dark', dark]] as const)('is visible in %s mode', (_name, t) => {
     for (const bg of ['card', 'background', 'navy']) expect(ratio(t.ring, t[bg])).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// Charts (WCAG 1.4.11): the radar stroke and the top activity step need 3:1 on
+// the card they sit on; the activity scale must get steadily stronger from
+// --muted (no activity) to --heat-4 (darker in light mode, brighter in dark).
+describe('chart colours', () => {
+  it.each([['light', light], ['dark', dark]] as const)('stand out on the card in %s mode', (_name, t) => {
+    expect(ratio(t['chart-accent'], t.card)).toBeGreaterThanOrEqual(3);
+    expect(ratio(t['heat-4'], t.card)).toBeGreaterThanOrEqual(3);
+  });
+  it.each([['light', light, -1], ['dark', dark, 1]] as const)('activity scale is monotonic in %s mode', (_name, t, dir) => {
+    const steps = ['muted', 'heat-1', 'heat-2', 'heat-3', 'heat-4'].map((k) => luminance(t[k]));
+    for (let i = 1; i < steps.length; i++) expect(Math.sign(steps[i] - steps[i - 1])).toBe(dir);
   });
 });
