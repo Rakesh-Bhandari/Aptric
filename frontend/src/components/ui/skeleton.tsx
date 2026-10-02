@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 /** Placeholder block. Pulses unless the player prefers reduced motion. */
 export const Skeleton = ({ className, ...props }: HTMLAttributes<HTMLDivElement>) => (
-  <div aria-hidden className={cn('rounded-md bg-muted motion-safe:animate-pulse', className)} {...props} />
+  <div aria-hidden className={cn('rounded-md bg-navy-soft motion-safe:animate-pulse dark:bg-muted', className)} {...props} />
 );
 
 /** Wrap a page's skeleton so screen readers hear one "Loading" instead of nothing. */

@@ -35,7 +35,7 @@ const DailyCard = () => {
     return (
       <Card className="border-dashed">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><CalendarClock className="size-5 text-primary" aria-hidden /> Today's challenge is on its way</CardTitle>
+          <CardTitle className="flex items-center gap-2"><CalendarClock className="size-5 text-accent-text" aria-hidden /> Today's challenge is on its way</CardTitle>
           <CardDescription>A fresh set of questions arrives every day at midnight. Meanwhile, practice keeps your skills sharp.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -240,7 +240,7 @@ const Today = () => {
           <LeagueCard />
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2"><BookOpen className="size-5 text-primary" aria-hidden /> Keep practising</CardTitle>
+              <CardTitle className="flex items-center gap-2"><BookOpen className="size-5 text-accent-text" aria-hidden /> Keep practising</CardTitle>
               <CardDescription>Short sessions of 10 questions. Half XP, no pressure.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">

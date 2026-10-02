@@ -4,36 +4,58 @@
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 /*
- * Colour tokens. Every foreground/background pair used for text meets WCAG AA
- * (4.5:1) in both themes; muted text is checked against card and background.
+ * Colour tokens (Aptric brand: navy + orange). Every foreground/background pair
+ * used for text meets WCAG AA (4.5:1) in both themes; src/test/contrast.test.ts
+ * checks them. Orange (#ff7800) is a fill colour: text on it is navy, and orange
+ * *text* on light surfaces uses --accent-text.
  */
 :root {
-  --background: #f6f7fb;
-  --foreground: #121826;
+  --background: #f7f9fc;
+  --foreground: #26354d;
+  --heading: #0b1f4b;
   --card: #ffffff;
-  --card-foreground: #121826;
-  --muted: #eceef5;
-  --muted-foreground: #4a5368;
-  --border: #d9dde8;
-  --input: #c4c9d6;
-  --ring: #4f46e5;
-  --primary: #4f46e5;
-  --primary-strong: #4338ca;
-  --primary-foreground: #ffffff;
-  --primary-soft: #eef0ff;
-  --primary-soft-foreground: #3730a3;
+  --card-foreground: #26354d;
+  --muted: #eef2f8;
+  --muted-foreground: #5e6a80;
+  --border: #e3e8f0;
+  --input: #cbd3e0;
+  --ring: #e86600;
+  --primary: #ff7800;
+  --primary-strong: #e86600;
+  --primary-foreground: #06132f;
+  --primary-soft: #fff1e6;
+  --primary-soft-foreground: #9a3412;
+  --navy: #0b1f4b;
+  --navy-strong: #06132f;
+  --navy-foreground: #ffffff;
+  --navy-soft: #e8edf7;
+  --navy-soft-foreground: #0b1f4b;
+  --navy-muted-foreground: #c3cde3;
+  /* Fixed brand navy for logos on fixed light surfaces (same in both themes). */
+  --brand-navy: #0b1f4b;
+  --accent-text: #c2410c;
+  --orange-light: #ff9a3d;
   --success: #15803d;
-  --success-soft: #e8f7ee;
+  --success-soft: #e7f6ed;
   --success-soft-foreground: #14532d;
-  --danger: #c2261d;
-  --danger-soft: #fdecea;
+  --danger: #c62828;
+  --danger-soft: #fdecec;
   --danger-soft-foreground: #7f1d1d;
-  --warning: #b45309;
-  --warning-soft: #fff4e0;
-  --warning-soft-foreground: #7c2d12;
-  --streak: #ea580c;
-  --gold: #b7791f;
-  --radius: 0.875rem;
+  --warning: #a16207;
+  --warning-soft: #fef6dc;
+  --warning-soft-foreground: #713f12;
+  --streak: #f06a00;
+  --gold: #c58a00;
+  --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
+  --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
+  --shadow-sm: 0 1px 2px rgb(11 31 75 / 0.06), 0 4px 12px rgb(11 31 75 / 0.04);
+  --shadow-md: 0 1px 2px rgb(11 31 75 / 0.06), 0 8px 24px rgb(11 31 75 / 0.08);
+  --shadow-lg: 0 2px 6px rgb(11 31 75 / 0.08), 0 20px 48px rgb(11 31 75 / 0.14);
+  /* Navy leg of the AptricMark; lifted in dark mode so it stays visible. */
+  --mark-navy-a: #0d2662;
+  --mark-navy-b: #0b1f4b;
+  --mark-navy-c: #081a42;
+  --radius: 1rem;
   color-scheme: light;
 
   /* Aliases used by the admin area's stylesheet. */
@@ -46,37 +68,55 @@
 }
 
 [data-theme='dark'] {
-  --background: #0d111c;
-  --foreground: #e8ebf4;
-  --card: #151a28;
-  --card-foreground: #e8ebf4;
-  --muted: #1e2435;
-  --muted-foreground: #a7afc4;
-  --border: #2a3247;
-  --input: #3a4460;
-  --ring: #a5b4fc;
-  --primary: #8b93ff;
-  --primary-strong: #a5acff;
-  --primary-foreground: #0d111c;
-  --primary-soft: #232a4d;
-  --primary-soft-foreground: #c7ccff;
+  --background: #06132f;
+  --foreground: #e8edf7;
+  --heading: #f5f7fc;
+  --card: #0e2552;
+  --card-foreground: #e8edf7;
+  --muted: #15306a;
+  --muted-foreground: #a3b0c8;
+  --border: #1e3563;
+  --input: #2d4a85;
+  --ring: #ff9a3d;
+  --primary: #ff7800;
+  --primary-strong: #ff9a3d;
+  --primary-foreground: #06132f;
+  --primary-soft: #3a2412;
+  --primary-soft-foreground: #ffc999;
+  --navy: #1d3f85;
+  --navy-strong: #244a96;
+  --navy-foreground: #ffffff;
+  --navy-soft: #15306a;
+  --navy-soft-foreground: #dce4f5;
+  --navy-muted-foreground: #c3cde3;
+  --accent-text: #ff9a3d;
+  --orange-light: #ff9a3d;
   --success: #4ade80;
-  --success-soft: #12301f;
+  --success-soft: #0f3326;
   --success-soft-foreground: #bbf7d0;
   --danger: #f87171;
-  --danger-soft: #3a1717;
+  --danger-soft: #3d1a24;
   --danger-soft-foreground: #fecaca;
   --warning: #fbbf24;
-  --warning-soft: #33260b;
+  --warning-soft: #36290c;
   --warning-soft-foreground: #fde68a;
-  --streak: #fb923c;
-  --gold: #facc15;
+  --streak: #ff8a1f;
+  --gold: #fbbf24;
+  --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
+  --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
+  --shadow-md: 0 2px 4px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 4px 8px rgb(0 0 0 / 0.3), 0 20px 48px rgb(0 0 0 / 0.45);
+  --mark-navy-a: #2c55ad;
+  --mark-navy-b: #22468f;
+  --mark-navy-c: #1b3a78;
   color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-heading: var(--heading);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-muted: var(--muted);
@@ -89,6 +129,15 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-navy: var(--navy);
+  --color-navy-strong: var(--navy-strong);
+  --color-navy-foreground: var(--navy-foreground);
+  --color-navy-soft: var(--navy-soft);
+  --color-navy-soft-foreground: var(--navy-soft-foreground);
+  --color-navy-muted-foreground: var(--navy-muted-foreground);
+  --color-accent-text: var(--accent-text);
+  --color-brand-navy: var(--brand-navy);
+  --color-orange-light: var(--orange-light);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-success-soft-foreground: var(--success-soft-foreground);
@@ -103,9 +152,21 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 4px);
   --radius-sm: calc(var(--radius) - 8px);
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --animate-pop: pop 180ms ease-out;
   --animate-fade-in: fade-in 200ms ease-out;
+}
+
+/* Brand gradients as utilities: bg-gradient-navy, bg-gradient-orange. */
+@utility bg-gradient-navy {
+  background-image: var(--gradient-navy);
+}
+@utility bg-gradient-orange {
+  background-image: var(--gradient-orange);
 }
 
 @keyframes pop {

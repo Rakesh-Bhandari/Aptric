@@ -27,12 +27,20 @@ const ratio = (a: string, b: string) => {
 
 const TEXT_PAIRS: [string, string][] = [
   ['foreground', 'background'], ['foreground', 'card'], ['foreground', 'muted'],
+  ['heading', 'background'], ['heading', 'card'], ['card-foreground', 'card'],
   ['muted-foreground', 'background'], ['muted-foreground', 'card'], ['muted-foreground', 'muted'],
-  ['primary-foreground', 'primary'], ['primary', 'card'], ['primary', 'background'],
+  ['primary-foreground', 'primary'], ['primary-foreground', 'primary-strong'],
   ['primary-soft-foreground', 'primary-soft'],
+  ['navy-foreground', 'navy'], ['navy-foreground', 'navy-strong'], ['navy-soft-foreground', 'navy-soft'],
+  ['navy-muted-foreground', 'navy'], ['navy-muted-foreground', 'navy-strong'],
+  ['accent-text', 'card'], ['accent-text', 'background'], ['accent-text', 'primary-soft'],
   ['success-soft-foreground', 'success-soft'], ['danger-soft-foreground', 'danger-soft'], ['warning-soft-foreground', 'warning-soft'],
   ['success', 'card'], ['danger', 'card'],
 ];
+
+// Orange (--primary) is a fill in light mode; orange *text* there uses --accent-text
+// (checked above). On the navy surfaces of dark mode, orange is fine as text.
+const DARK_ONLY_PAIRS: [string, string][] = [['primary', 'card'], ['primary', 'background']];
 
 describe.each([['light', light], ['dark', dark]] as const)('%s theme contrast', (_name, tokens) => {
   it.each(TEXT_PAIRS)('%s on %s meets AA', (fg, bg) => {
@@ -42,10 +50,39 @@ describe.each([['light', light], ['dark', dark]] as const)('%s theme contrast', 
   });
 });
 
+describe('dark theme orange text', () => {
+  it.each(DARK_ONLY_PAIRS)('%s on %s meets AA', (fg, bg) => {
+    expect(ratio(dark[fg], dark[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// The navy-on-white brand text and white-on-navy panels from the spec.
+describe('brand surfaces', () => {
+  it('navy reads on the light page and white reads on both gradient ends', () => {
+    expect(ratio(light.navy, light.background)).toBeGreaterThanOrEqual(4.5);
+    expect(ratio('#ffffff', '#0b1f4b')).toBeGreaterThanOrEqual(4.5);
+    expect(ratio('#ffffff', '#123a78')).toBeGreaterThanOrEqual(4.5);
+    // Muted text inside navy-gradient cards (Card variant="navy").
+    expect(ratio(light['navy-muted-foreground'], '#123a78')).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 // Filled status chips: white text in light mode, page background in dark.
+// Orange primary fills carry navy text (--primary-foreground) in both themes.
 describe('status fills', () => {
-  it.each(['success', 'danger', 'warning', 'primary'])('text on %s meets AA in both themes', (fill) => {
+  it.each(['success', 'danger', 'warning'])('text on %s meets AA in both themes', (fill) => {
     expect(ratio('#ffffff', light[fill])).toBeGreaterThanOrEqual(4.5);
     expect(ratio(dark.background, dark[fill])).toBeGreaterThanOrEqual(4.5);
+  });
+  it('navy text on primary meets AA in both themes', () => {
+    expect(ratio(light['primary-foreground'], light.primary)).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(dark['primary-foreground'], dark.primary)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// Focus rings need 3:1 against the surfaces they sit on (WCAG 1.4.11).
+describe('focus ring', () => {
+  it.each([['light', light], ['dark', dark]] as const)('is visible in %s mode', (_name, t) => {
+    for (const bg of ['card', 'background', 'navy']) expect(ratio(t.ring, t[bg])).toBeGreaterThanOrEqual(3);
   });
 });

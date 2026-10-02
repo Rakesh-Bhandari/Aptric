@@ -70,7 +70,7 @@ const Terms = () => (
           ) : sec.id === 'contact' ? (
             <p className="mt-2 text-muted-foreground">
               If you have questions about these Terms, please reach out to us at{' '}
-              <a href="mailto:aptricofficials@gmail.com" className="font-medium text-primary underline">aptricofficials@gmail.com</a>.
+              <a href="mailto:aptricofficials@gmail.com" className="font-medium text-accent-text underline">aptricofficials@gmail.com</a>.
               We will respond within 3–5 business days.
             </p>
           ) : (

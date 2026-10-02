@@ -115,7 +115,7 @@ export const AppShell = () => {
                   to={to} end={end}
                   className={({ isActive }) => cn(
                     'flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground',
-                    isActive && 'text-primary',
+                    isActive && 'text-accent-text',
                   )}
                 >
                   {({ isActive }) => (

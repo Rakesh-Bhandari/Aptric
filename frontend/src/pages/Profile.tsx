@@ -205,7 +205,7 @@ const GoalsForm = () => {
         <FieldHint>
           Your day (and streak) resets at midnight here.
           {browserTz && browserTz !== profile.timezone && (
-            <> This device is set to {browserTz}. <button type="button" className="font-medium text-primary underline" onClick={() => void patch({ timezone: browserTz }, 'Time zone updated.')}>Use it</button></>
+            <> This device is set to {browserTz}. <button type="button" className="font-medium text-accent-text underline" onClick={() => void patch({ timezone: browserTz }, 'Time zone updated.')}>Use it</button></>
           )}
         </FieldHint>
       </div>

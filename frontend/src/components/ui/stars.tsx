@@ -10,7 +10,7 @@ export const MasteryStars = ({ stars, className }: { stars: number; className?: 
       <Star
         key={i}
         aria-hidden
-        className={cn('size-4', i < stars ? 'fill-gold text-gold' : 'fill-transparent text-muted-foreground/50')}
+        className={cn('size-4', i < stars ? 'fill-primary text-primary' : 'fill-transparent text-muted-foreground/50')}
       />
     ))}
   </span>

@@ -74,7 +74,7 @@ export const NotFound = ({ title = "We can't find that page", message = 'The lin
   title?: string; message?: string;
 }) => (
   <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-6 py-16 text-center">
-    <p className="text-6xl font-black text-primary" aria-hidden>404</p>
+    <p className="text-6xl font-black text-accent-text" aria-hidden>404</p>
     <div className="space-y-2">
       <h1 className="text-2xl font-bold">{title}</h1>
       <p className="text-muted-foreground">{message}</p>

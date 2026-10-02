@@ -8,7 +8,7 @@ export const AnswerNews = ({ result }: { result: AnswerResult | null }) => {
   return (
     <ul className="mt-3 space-y-1.5 text-sm">
       {p.leveled_up && (
-        <li className="flex items-center gap-2 font-semibold"><TrendingUp className="size-4 text-primary" aria-hidden /> You reached level {p.level}!</li>
+        <li className="flex items-center gap-2 font-semibold"><TrendingUp className="size-4 text-accent-text" aria-hidden /> You reached level {p.level}!</li>
       )}
       {p.new_badges.map((b) => (
         <li key={`${b.slug}-${b.topic ?? ''}`} className="flex items-center gap-2">

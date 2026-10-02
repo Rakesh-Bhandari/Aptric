@@ -61,7 +61,7 @@ const AuthCallback = () => {
         </>
       ) : (
         <div role="status" className="flex flex-col items-center gap-4">
-          <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
+          <Loader2 className="size-10 animate-spin text-accent-text" aria-hidden />
           <h1 className="text-xl font-semibold">Signing you in…</h1>
         </div>
       )}

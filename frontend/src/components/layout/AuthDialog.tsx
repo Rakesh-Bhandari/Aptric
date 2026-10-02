@@ -130,7 +130,7 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
       <div className="flex items-center justify-between">
         <Label htmlFor={ids.password}>Password</Label>
         {mode === 'signin' && (
-          <button type="button" className="text-sm font-medium text-primary hover:underline" onClick={() => switchMode('forgot')}>
+          <button type="button" className="text-sm font-medium text-accent-text hover:underline" onClick={() => switchMode('forgot')}>
             Forgot password?
           </button>
         )}
@@ -203,12 +203,12 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
             )}
             <Button type="submit" className="w-full" size="lg" loading={busy}>Sign in</Button>
             <div className="flex flex-col items-center gap-1 text-sm">
-              <button type="button" className="font-medium text-primary hover:underline" onClick={() => switchMode('magic')}>
+              <button type="button" className="font-medium text-accent-text hover:underline" onClick={() => switchMode('magic')}>
                 Email me a sign-in link instead
               </button>
               <p className="text-muted-foreground">
                 New here?{' '}
-                <button type="button" className="font-medium text-primary hover:underline" onClick={() => switchMode('signup')}>Create an account</button>
+                <button type="button" className="font-medium text-accent-text hover:underline" onClick={() => switchMode('signup')}>Create an account</button>
               </p>
             </div>
           </form>
@@ -230,7 +230,7 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
             </p>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <button type="button" className="font-medium text-primary hover:underline" onClick={() => switchMode('signin')}>Sign in</button>
+              <button type="button" className="font-medium text-accent-text hover:underline" onClick={() => switchMode('signin')}>Sign in</button>
             </p>
           </form>
         )}
