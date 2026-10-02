@@ -176,11 +176,11 @@ const Podium = ({ top, metric, label }: { top: LeaderboardEntry[]; metric: (e: L
         const s = PODIUM[i];
         const name = displayName(e);
         return (
-          <li key={e.user_id} className={cn('flex min-w-0 flex-col items-center text-center', s.order)} aria-current={e.is_me ? 'true' : undefined}>
+          <li key={e.user_id} className={cn('relative flex min-w-0 flex-col items-center text-center', s.order)} aria-current={e.is_me ? 'true' : undefined}>
             {i === 0 && <Crown className="mb-1 size-6 text-medal-gold" aria-hidden />}
             <Avatar src={e.avatar_url} name={name} className={cn('ring-4 text-lg', s.avatar)} />
             <span className="mt-2 w-full truncate px-1 text-sm font-bold">
-              {e.handle ? <Link to={`/u/${e.handle}`} className="underline-offset-2 hover:underline">{name}</Link> : name}
+              {e.handle ? <Link to={`/u/${e.handle}`} className="underline-offset-2 after:absolute after:inset-0 hover:underline">{name}</Link> : name}
             </span>
             <span className={cn('text-xs font-bold tabular-nums sm:text-sm', s.metric)}>{metric(e)}</span>
             {e.is_me && <span className="mt-1 rounded-full bg-primary px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-primary-foreground">You</span>}
@@ -201,7 +201,7 @@ const BoardSwitcher = ({ value, onChange }: { value: Board; onChange: (b: Board)
         key={b.value} type="button" role="radio" aria-checked={value === b.value}
         onClick={() => onChange(b.value)}
         className={cn(
-          'min-h-10 rounded-full border px-4 text-sm font-semibold transition-colors duration-200',
+          'min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors duration-200',
           value === b.value
             ? 'border-primary bg-primary-soft text-primary-soft-foreground'
             : 'bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground',
@@ -297,7 +297,7 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
           <ContestStateBadge c={c} />
           {c.my_entry && c.state !== 'ended' && <span className="text-xs font-semibold text-success">✓ You're in</span>}
         </div>
-        <CardTitle className="pt-1 text-lg">{c.title}</CardTitle>
+        <CardTitle className="pt-1">{c.title}</CardTitle>
         {c.description && <CardDescription className="line-clamp-2">{c.description}</CardDescription>}
       </CardHeader>
       <CardContent className="flex-1 space-y-3">

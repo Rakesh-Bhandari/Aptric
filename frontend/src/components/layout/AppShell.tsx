@@ -41,7 +41,7 @@ const UserMenu = () => {
   return (
     <Dropdown.Root>
       <Dropdown.Trigger
-        className="rounded-full transition-shadow hover:ring-2 hover:ring-primary/70 data-[state=open]:ring-2 data-[state=open]:ring-primary"
+        className="rounded-full p-1 transition-shadow hover:ring-2 hover:ring-primary/70 data-[state=open]:ring-2 data-[state=open]:ring-primary"
         aria-label="Account menu"
       >
         <Avatar src={profile.avatar_url} name={name} className="ring-white/25" />
@@ -121,7 +121,7 @@ export const AppShell = () => {
           )}
         >
           <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4 sm:gap-4 sm:px-6">
-            <Link to="/" className="flex shrink-0 items-center rounded-md" aria-label="Aptric home">
+            <Link to="/" className="flex min-h-11 shrink-0 items-center rounded-md" aria-label="Aptric home">
               <AptricLogo variant="onDark" size="sm" className="sm:hidden" />
               <AptricLogo variant="onDark" className="hidden sm:inline-flex" />
             </Link>
@@ -159,7 +159,7 @@ export const AppShell = () => {
           </div>
         </header>
 
-        <main id="main" tabIndex={-1} className={cn('flex-1 focus:outline-none', overlay && '-mt-16')}>
+        <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
           <ErrorBoundary resetKey={pathname}>
             <Suspense fallback={<PageSkeleton />}>
               <Outlet />

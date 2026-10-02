@@ -61,7 +61,8 @@ const DailyCard = () => {
   if (!today.data) {
     return (
       <LoadingRegion label="Loading today's challenge">
-        <Skeleton className="h-64 rounded-lg" />
+        {/* Close to the loaded card height so the cards below do not jump. */}
+        <Skeleton className="h-80 rounded-lg sm:h-72" />
       </LoadingRegion>
     );
   }
@@ -124,19 +125,19 @@ const DailyCard = () => {
         </div>
 
         <div className="space-y-2">
-          <ol
+          <div
             role="progressbar" aria-label="Daily challenge progress" aria-valuemin={0} aria-valuemax={total} aria-valuenow={answered}
             aria-valuetext={`${answered} of ${total} answered, ${correct} correct`}
             className="flex gap-1.5"
           >
             {set.questions.map((q) => (
-              <li
+              <span
                 key={q.id}
                 className={cn('h-2 flex-1 rounded-full transition-colors duration-200',
                   !q.attempt ? 'bg-navy-foreground/15' : q.attempt.is_correct ? 'bg-primary bg-gradient-orange' : 'bg-on-navy-danger')}
               />
             ))}
-          </ol>
+          </div>
           <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-hidden>
             <span className="font-semibold">{done ? `You got ${correct} of ${total} right` : `${answered} of ${total} answered`}</span>
             {answered > 0 && <span className="text-on-navy-success">{correct} correct</span>}

@@ -19,9 +19,9 @@ import { NotFound } from '@/components/layout/ErrorBoundary';
 import { practiceHref } from '@/lib/routes';
 
 const OUTCOME: Record<Outcome, { label: string; icon: typeof Check; className: string; emoji: string }> = {
-  correct: { label: 'Correct', icon: Check, className: 'bg-success text-white dark:text-background', emoji: '🟩' },
-  hinted: { label: 'Correct with a hint', icon: Lightbulb, className: 'bg-warning text-white dark:text-background', emoji: '🟨' },
-  wrong: { label: 'Wrong', icon: X, className: 'bg-danger text-white dark:text-background', emoji: '🟥' },
+  correct: { label: 'Correct', icon: Check, className: 'bg-success text-status-foreground', emoji: '🟩' },
+  hinted: { label: 'Correct with a hint', icon: Lightbulb, className: 'bg-warning text-status-foreground', emoji: '🟨' },
+  wrong: { label: 'Wrong', icon: X, className: 'bg-danger text-status-foreground', emoji: '🟥' },
   gave_up: { label: 'Gave up', icon: Eye, className: 'bg-muted-foreground text-background', emoji: '⬛' },
   unanswered: { label: 'Skipped', icon: Minus, className: 'bg-muted text-muted-foreground border', emoji: '⬜' },
 };
@@ -145,8 +145,7 @@ const SessionSummary = () => {
               <HeroStat icon={<Target />} label="Accuracy" value={accuracy} />
               <HeroStat icon={<Clock />} label="Time" value={formatDuration(timeMs)} hint={answered ? `${formatDuration(timeMs / answered)} each` : undefined} />
               <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-bold text-primary-foreground [&_svg]:size-4">
-                <Sparkles aria-hidden />
-                <dt className="sr-only">XP earned</dt>
+                <dt className="contents"><Sparkles aria-hidden /><span className="sr-only">XP earned</span></dt>
                 <dd className="tabular-nums">+{xp} XP{local?.bonusXp ? <span className="font-medium"> (incl. {local.bonusXp} bonus)</span> : null}</dd>
               </div>
             </dl>
@@ -298,11 +297,11 @@ const ScoreRing = ({ correct, total, perfect }: { correct: number; total: number
   );
 };
 
-const BURST_COLORS = ['bg-primary', 'bg-orange-light', 'bg-white', 'bg-success'];
+const BURST_COLORS = ['bg-primary', 'bg-orange-light', 'bg-navy-foreground', 'bg-success'];
 
-/** CSS-only confetti. Reduced motion skips the animation, which ends invisible. */
+/** CSS-only confetti; .confetti hides it under reduced motion (OS or in-app). */
 const Burst = () => (
-  <span aria-hidden className="pointer-events-none absolute inset-0 motion-reduce:hidden">
+  <span aria-hidden className="confetti pointer-events-none absolute inset-0">
     {Array.from({ length: 14 }, (_, i) => {
       const angle = (i / 14) * Math.PI * 2;
       const dist = 84 + (i % 3) * 14;
@@ -323,8 +322,7 @@ const Burst = () => (
 
 const HeroStat = ({ icon, label, value, hint }: { icon: ReactNode; label: string; value: ReactNode; hint?: string }) => (
   <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm [&_svg]:size-4 [&_svg]:text-navy-muted-foreground">
-    {icon}
-    <dt className="sr-only">{label}</dt>
+    <dt className="contents">{icon}<span className="sr-only">{label}</span></dt>
     <dd className="font-bold tabular-nums">{value}{hint && <span className="font-medium text-navy-muted-foreground"> · {hint}</span>}</dd>
   </div>
 );

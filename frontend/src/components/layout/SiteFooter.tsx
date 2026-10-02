@@ -35,7 +35,7 @@ export const SiteFooter = ({ variant = 'compact', links, columns, className, chi
     return (
       <footer className={cn('bg-chrome-deep text-chrome-muted-foreground', className)}>
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-6 text-center sm:px-6 md:flex-row md:gap-6 md:text-left">
-          <Link to="/" aria-label="Aptric home" className="rounded-md">
+          <Link to="/" aria-label="Aptric home" className="inline-flex min-h-11 items-center rounded-md">
             <AptricLogo size="sm" variant="onDark" />
           </Link>
           <p className="text-sm md:flex-1">{TAGLINE}</p>
@@ -50,7 +50,7 @@ export const SiteFooter = ({ variant = 'compact', links, columns, className, chi
       <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <div className="flex flex-col gap-10 md:flex-row md:justify-between">
           <div className="flex flex-col items-center gap-4 text-center md:items-start md:text-left">
-            <Link to="/" aria-label="Aptric home" className="rounded-md">
+            <Link to="/" aria-label="Aptric home" className="inline-flex min-h-11 items-center rounded-md">
               <AptricLogo stacked size="sm" variant="onDark" className="md:items-start" />
             </Link>
             <p className="max-w-xs text-sm">{TAGLINE}</p>

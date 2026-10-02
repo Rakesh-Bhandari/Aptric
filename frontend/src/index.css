@@ -19,7 +19,7 @@
   --muted-foreground: #5e6a80;
   --border: #e3e8f0;
   --input: #cbd3e0;
-  --ring: #e86600;
+  --ring: #d95f00;
   --primary: #ff7800;
   --primary-strong: #e86600;
   --primary-foreground: #06132f;
@@ -52,6 +52,8 @@
   --warning: #a16207;
   --warning-soft: #fef6dc;
   --warning-soft-foreground: #713f12;
+  /* Icons and numbers on solid success/danger/warning fills (outcome squares, answer badges). */
+  --status-foreground: #ffffff;
   --streak: #f06a00;
   --gold: #c58a00;
   /* Charts: radar stroke/points (3:1+ on cards) and the 5-step activity scale (--muted, then heat-1..4). */
@@ -154,6 +156,7 @@
   --warning: #fbbf24;
   --warning-soft: #36290c;
   --warning-soft-foreground: #fde68a;
+  --status-foreground: #06132f;
   --streak: #ff8a1f;
   --gold: #fbbf24;
   --chart-accent: #ff9a3d;
@@ -219,6 +222,7 @@
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-soft-foreground: var(--warning-soft-foreground);
+  --color-status-foreground: var(--status-foreground);
   --color-streak: var(--streak);
   --color-gold: var(--gold);
   --color-chart-accent: var(--chart-accent);

@@ -187,6 +187,7 @@ update public.profiles set role = 'admin' where handle = '<your-handle>';
 ```bash
 # frontend
 cd frontend && npm run lint && npm run typecheck && npm test
+cd frontend && npm run e2e        # Playwright: axe, 360px layout, reduced motion, layout shift (mocked API)
 
 # API
 cd backend && npm test

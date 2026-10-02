@@ -17,15 +17,27 @@ export const PageHeader = ({ title, description, actions, className }: {
   </div>
 );
 
-export const StatTile = ({ label, value, hint, icon, className }: {
-  label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; className?: string;
+/**
+ * Stat tile (Progress KPIs, profile stats): muted label, big navy number and a
+ * tinted icon chip. Use tone="orange" for streak/level-style stats.
+ */
+export const StatTile = ({ label, value, hint, icon, tone = 'navy', className }: {
+  label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: 'navy' | 'orange'; className?: string;
 }) => (
-  <div className={cn('rounded-lg border bg-card p-3 shadow-sm sm:p-4', className)}>
-    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground [&_svg]:size-4">
-      {icon}
-      <span>{label}</span>
+  <div className={cn('flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm sm:p-5', className)}>
+    <div className="flex items-start justify-between gap-2">
+      <span className="text-xs font-semibold text-muted-foreground sm:text-sm">{label}</span>
+      {icon && (
+        <span
+          className={cn('grid size-8 shrink-0 place-items-center rounded-full [&_svg]:size-4',
+            tone === 'orange' ? 'bg-primary-soft text-primary-soft-foreground' : 'bg-navy-soft text-navy-soft-foreground')}
+          aria-hidden
+        >
+          {icon}
+        </span>
+      )}
     </div>
-    <div className="mt-1 text-xl font-extrabold tabular-nums tracking-tight text-heading sm:text-2xl">{value}</div>
-    {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
+    <span className="text-2xl font-extrabold leading-none tracking-tight text-heading tabular-nums sm:text-3xl">{value}</span>
+    {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
   </div>
 );

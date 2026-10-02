@@ -24,7 +24,7 @@ const BrandDialogContent = ({ title, description, children, className, hideClose
     <DialogPrimitive.Content
       className={cn(
         'fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-card text-card-foreground shadow-lg motion-safe:animate-fade-in',
-        'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl',
+        'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg',
         'dark:border dark:border-white/10',
         className,
       )}
@@ -46,7 +46,7 @@ const BrandDialogContent = ({ title, description, children, className, hideClose
           </div>
           {!hideClose && (
             <DialogPrimitive.Close
-              className="-m-2 rounded-full p-2 text-chrome-muted-foreground transition-colors hover:bg-white/10 hover:text-chrome-foreground"
+              className="-m-3 rounded-full p-3 text-chrome-muted-foreground transition-colors hover:bg-white/10 hover:text-chrome-foreground"
               aria-label="Close"
             >
               <X className="size-5" />
@@ -65,7 +65,7 @@ const PlainDialogContent = ({ title, description, children, className, hideClose
     <DialogPrimitive.Content
       className={cn(
         'fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-3xl border bg-card p-5 pb-safe text-card-foreground shadow-lg motion-safe:animate-fade-in',
-        'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:p-6',
+        'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:p-6',
         className,
       )}
     >
@@ -79,7 +79,7 @@ const PlainDialogContent = ({ title, description, children, className, hideClose
           )}
         </div>
         {!hideClose && (
-          <DialogPrimitive.Close className="-m-2 rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Close">
+          <DialogPrimitive.Close className="-m-3 rounded-full p-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Close">
             <X className="size-5" />
           </DialogPrimitive.Close>
         )}

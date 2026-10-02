@@ -31,4 +31,4 @@ export const useReveal = (root: RefObject<HTMLElement | null>) => {
 /** True when the OS or the in-app switch asks for reduced motion. */
 export const prefersReducedMotion = () =>
   document.documentElement.dataset.reduceMotion === 'true' ||
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

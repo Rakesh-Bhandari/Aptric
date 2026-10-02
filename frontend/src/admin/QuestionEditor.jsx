@@ -219,7 +219,7 @@ const QuestionEditor = ({ question, onSaved, footer }) => {
                                     <input type="radio" name="correct" aria-label={`Option ${String.fromCharCode(65 + i)} is correct`}
                                         checked={i === draft.correct_index} onChange={() => set({ correct_index: i })} />
                                     <span className="adm-option-letter">{String.fromCharCode(65 + i)}</span>
-                                    <textarea rows={1} value={o} onChange={(e) => setOption(i, e.target.value)} />
+                                    <textarea rows={1} value={o} aria-label={`Option ${String.fromCharCode(65 + i)}`} onChange={(e) => setOption(i, e.target.value)} />
                                     <div className="adm-option-tools">
                                         <button type="button" title="Move up" onClick={() => moveOption(i, -1)} disabled={i === 0}>↑</button>
                                         <button type="button" title="Move down" onClick={() => moveOption(i, 1)} disabled={i === draft.options.length - 1}>↓</button>
