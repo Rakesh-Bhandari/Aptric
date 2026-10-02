@@ -50,7 +50,7 @@ export const config = {
   generation: {
     llmBaseUrl: trimSlash(env('LLM_BASE_URL', 'https://openrouter.ai/api/v1')),
     llmApiKey: env('OPEN_ROUTER_API_KEY', env('OPENROUTER_API_KEY')),
-    questionModel: env('QUESTION_MODEL', 'google/gemini-2.0-flash-001'),
+    questionModel: env('QUESTION_MODEL', 'google/gemini-2.5-flash'),
     verifyModel: env('QUESTION_VERIFY_MODEL', 'openai/gpt-4o-mini'),
     // Any OpenAI-compatible /embeddings API that can return 384 dimensions
     // (the database column is vector(384)).
