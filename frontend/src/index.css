@@ -63,6 +63,8 @@
   --on-navy-danger: #fca5a5;
   --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
   --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
+  /* Landing hero and CTA band: Dark Navy into navy (navy in both themes). */
+  --gradient-hero: linear-gradient(160deg, #06132f 0%, #0b1f4b 55%, #123a78 100%);
   --shadow-sm: 0 1px 2px rgb(11 31 75 / 0.06), 0 4px 12px rgb(11 31 75 / 0.04);
   --shadow-md: 0 1px 2px rgb(11 31 75 / 0.06), 0 8px 24px rgb(11 31 75 / 0.08);
   --shadow-lg: 0 2px 6px rgb(11 31 75 / 0.08), 0 20px 48px rgb(11 31 75 / 0.14);
@@ -124,6 +126,7 @@
   --tier-diamond: #9db8ff;
   --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
   --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
+  --gradient-hero: linear-gradient(160deg, #06132f 0%, #0b1f4b 55%, #123a78 100%);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
   --shadow-md: 0 2px 4px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.3);
   --shadow-lg: 0 4px 8px rgb(0 0 0 / 0.3), 0 20px 48px rgb(0 0 0 / 0.45);
@@ -202,6 +205,21 @@
 }
 @utility bg-gradient-orange {
   background-image: var(--gradient-orange);
+}
+@utility bg-gradient-hero {
+  background-image: var(--gradient-hero);
+}
+/* Orange-gradient text (the hero's accent word). Only on navy: orange text fails AA on light surfaces. */
+@utility text-gradient-orange {
+  background-image: var(--gradient-orange);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+/* Faint dot grid for navy hero surfaces. Decorative. */
+@utility bg-dots {
+  background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.07) 1px, transparent 0);
+  background-size: 24px 24px;
 }
 /* Room for the fixed bottom tab bar (3.5rem tabs + its safe-area padding); a utility so md:pb-0 can override it. */
 @utility pb-tabbar {
@@ -288,6 +306,22 @@
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
+}
+
+/*
+ * Scroll reveal (landing page): elements with data-reveal fade up once
+ * useReveal() marks them data-revealed. Only hidden when motion is allowed, so
+ * reduced motion (OS or in-app) always shows the content straight away.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-reduce-motion='true']) [data-reveal] {
+    transition: opacity 600ms ease-out, transform 600ms ease-out;
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  :root:not([data-reduce-motion='true']) [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+    transform: translateY(16px);
+  }
 }
 
 /* Rendered question/explanation Markdown. */
