@@ -52,17 +52,23 @@
   --warning-soft-foreground: #713f12;
   --streak: #f06a00;
   --gold: #c58a00;
-  /* Charts: radar stroke/points (3:1+ on cards) and the 5-step activity scale (--muted, then heat-1..4). */
-  --chart-accent: #e86600;
-  --heat-1: #ffe0c2;
-  --heat-2: #ffb066;
-  --heat-3: #ff7800;
-  --heat-4: #d95a00;
+  /* League tiers (icons, chips and tier names on cards). */
+  --tier-bronze: #9a5426;
+  --tier-silver: #5b687e;
+  --tier-gold: #a16207;
+  --tier-platinum: #0f766e;
+  --tier-diamond: #2f5fc4;
+  /* Status colours on navy-gradient panels (same in both themes). */
+  --on-navy-success: #4ade80;
+  --on-navy-danger: #fca5a5;
   --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
   --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
+  /* Landing hero and CTA band: Dark Navy into navy (navy in both themes). */
+  --gradient-hero: linear-gradient(160deg, #06132f 0%, #0b1f4b 55%, #123a78 100%);
   --shadow-sm: 0 1px 2px rgb(11 31 75 / 0.06), 0 4px 12px rgb(11 31 75 / 0.04);
   --shadow-md: 0 1px 2px rgb(11 31 75 / 0.06), 0 8px 24px rgb(11 31 75 / 0.08);
   --shadow-lg: 0 2px 6px rgb(11 31 75 / 0.08), 0 20px 48px rgb(11 31 75 / 0.14);
+  --shadow-top: 0 -1px 2px rgb(11 31 75 / 0.04), 0 -8px 24px rgb(11 31 75 / 0.08);
   /* Navy leg of the AptricMark; lifted in dark mode so it stays visible. */
   --mark-navy-a: #0d2662;
   --mark-navy-b: #0b1f4b;
@@ -114,16 +120,18 @@
   --warning-soft-foreground: #fde68a;
   --streak: #ff8a1f;
   --gold: #fbbf24;
-  --chart-accent: #ff9a3d;
-  --heat-1: #4f3324;
-  --heat-2: #8f4615;
-  --heat-3: #d9650c;
-  --heat-4: #ff9a3d;
+  --tier-bronze: #f0a46a;
+  --tier-silver: #c3cde3;
+  --tier-gold: #fbbf24;
+  --tier-platinum: #5eead4;
+  --tier-diamond: #9db8ff;
   --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
   --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
+  --gradient-hero: linear-gradient(160deg, #06132f 0%, #0b1f4b 55%, #123a78 100%);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
   --shadow-md: 0 2px 4px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.3);
   --shadow-lg: 0 4px 8px rgb(0 0 0 / 0.3), 0 20px 48px rgb(0 0 0 / 0.45);
+  --shadow-top: 0 -8px 24px rgb(0 0 0 / 0.35);
   --mark-navy-a: #2c55ad;
   --mark-navy-b: #22468f;
   --mark-navy-c: #1b3a78;
@@ -171,11 +179,13 @@
   --color-warning-soft-foreground: var(--warning-soft-foreground);
   --color-streak: var(--streak);
   --color-gold: var(--gold);
-  --color-chart-accent: var(--chart-accent);
-  --color-heat-1: var(--heat-1);
-  --color-heat-2: var(--heat-2);
-  --color-heat-3: var(--heat-3);
-  --color-heat-4: var(--heat-4);
+  --color-tier-bronze: var(--tier-bronze);
+  --color-tier-silver: var(--tier-silver);
+  --color-tier-gold: var(--tier-gold);
+  --color-tier-platinum: var(--tier-platinum);
+  --color-tier-diamond: var(--tier-diamond);
+  --color-on-navy-success: var(--on-navy-success);
+  --color-on-navy-danger: var(--on-navy-danger);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 4px);
   --radius-sm: calc(var(--radius) - 8px);
@@ -185,9 +195,12 @@
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --animate-pop: pop 180ms ease-out;
+  --animate-pop-in: pop-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-burst: burst 900ms ease-out both;
   --animate-fade-in: fade-in 200ms ease-out;
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   --animate-breathe: breathe 1.8s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
 }
 
 /* Brand gradients as utilities: bg-gradient-navy, bg-gradient-orange. */
@@ -197,7 +210,26 @@
 @utility bg-gradient-orange {
   background-image: var(--gradient-orange);
 }
+@utility bg-gradient-hero {
+  background-image: var(--gradient-hero);
+}
+/* Orange-gradient text (the hero's accent word). Only on navy: orange text fails AA on light surfaces. */
+@utility text-gradient-orange {
+  background-image: var(--gradient-orange);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+/* Faint dot grid for navy hero surfaces. Decorative. */
+@utility bg-dots {
+  background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.07) 1px, transparent 0);
+  background-size: 24px 24px;
+}
 /* Room for the fixed bottom tab bar (3.5rem tabs + its safe-area padding); a utility so md:pb-0 can override it. */
+/* Upward shadow for bars pinned to the bottom of the screen. */
+@utility shadow-top {
+  box-shadow: var(--shadow-top);
+}
 @utility pb-tabbar {
   padding-bottom: calc(3.5rem + max(0.5rem, env(safe-area-inset-bottom)));
 }
@@ -205,6 +237,18 @@
 @keyframes pop {
   from { transform: scale(0.96); opacity: 0.6; }
   to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Confetti dot flying out from the centre; --burst-x/--burst-y set the direction. */
+@keyframes burst {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(1); opacity: 0; }
 }
 
 @keyframes shimmer {
@@ -216,6 +260,25 @@
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(0.94); opacity: 0.6; }
 }
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgb(255 120 0 / 0.55); }
+  70%, 100% { box-shadow: 0 0 0 7px rgb(255 120 0 / 0); }
+}
+
+/* Placement result confetti: brand-colour shapes that fall once. Hidden under reduced motion. */
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -12px, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate3d(var(--drift, 0px), 260px, 0) rotate(var(--spin, 540deg)); opacity: 0; }
+}
+.confetti-piece {
+  animation: confetti-fall var(--dur, 1.6s) cubic-bezier(0.2, 0.6, 0.4, 1) var(--delay, 0s) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti { display: none; }
+}
+[data-reduce-motion='true'] .confetti { display: none; }
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
@@ -265,39 +328,107 @@
   scroll-behavior: auto !important;
 }
 
+/*
+ * Scroll reveal (landing page): elements with data-reveal fade up once
+ * useReveal() marks them data-revealed. Only hidden when motion is allowed, so
+ * reduced motion (OS or in-app) always shows the content straight away.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-reduce-motion='true']) [data-reveal] {
+    transition: opacity 600ms ease-out, transform 600ms ease-out;
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  :root:not([data-reduce-motion='true']) [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
 /* Rendered question/explanation Markdown. */
 .prose-question {
-  line-height: 1.65;
+  line-height: 1.7;
   overflow-wrap: anywhere;
+  min-width: 0;
 }
-.prose-question p + p,
-.prose-question p + ul,
-.prose-question p + ol,
-.prose-question ul + p,
-.prose-question ol + p {
-  margin-top: 0.75em;
+.prose-question > * + * { margin-top: 0.8em; }
+.prose-question h1, .prose-question h2, .prose-question h3, .prose-question h4 {
+  color: var(--heading);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.prose-question h1, .prose-question h2 { font-size: 1.2em; }
+.prose-question h3, .prose-question h4 { font-size: 1.05em; }
+.prose-question * + h1, .prose-question * + h2, .prose-question * + h3, .prose-question * + h4 { margin-top: 1.2em; }
+.prose-question strong { color: var(--heading); font-weight: 700; }
+.prose-question a {
+  color: var(--accent-text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .prose-question ul { list-style: disc; padding-left: 1.25rem; }
 .prose-question ol { list-style: decimal; padding-left: 1.25rem; }
+.prose-question li + li { margin-top: 0.3em; }
+.prose-question li::marker { color: var(--muted-foreground); }
+.prose-question blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 0.9em;
+  color: var(--muted-foreground);
+}
+.prose-question hr { border: 0; border-top: 1px solid var(--border); }
 .prose-question code {
-  font-size: 0.9em;
+  font-size: 0.88em;
   background: var(--muted);
-  padding: 0.1em 0.35em;
-  border-radius: 0.3em;
+  color: var(--heading);
+  padding: 0.12em 0.4em;
+  border-radius: 0.4em;
 }
 .prose-question pre {
   background: var(--muted);
   padding: 0.75rem 1rem;
-  border-radius: var(--radius-md, 0.6rem);
+  border-radius: calc(var(--radius) - 4px);
   overflow-x: auto;
-  margin: 0.75em 0;
+  line-height: 1.5;
 }
-.prose-question pre code { background: none; padding: 0; }
-.prose-question table { border-collapse: collapse; margin: 0.75em 0; display: block; overflow-x: auto; }
-.prose-question th, .prose-question td { border: 1px solid var(--border); padding: 0.35rem 0.6rem; text-align: left; }
-.prose-question img { max-width: 100%; height: auto; }
-.prose-question .math-display { overflow-x: auto; overflow-y: hidden; margin: 0.75em 0; }
-.prose-question .katex { font-size: 1.05em; }
+.prose-question pre code { background: none; padding: 0; overflow-wrap: normal; }
+.prose-question table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  font-size: 0.92em;
+  line-height: 1.45;
+  overflow-wrap: normal;
+  -webkit-overflow-scrolling: touch;
+}
+.prose-question th, .prose-question td {
+  padding: 0.5rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.prose-question th + th, .prose-question td + td { border-left: 1px solid var(--border); }
+.prose-question tr:last-child td { border-bottom: 0; }
+.prose-question th { background: var(--background); color: var(--heading); font-weight: 700; white-space: nowrap; }
+[data-theme='dark'] .prose-question th { background: var(--muted); }
+.prose-question img { max-width: 100%; height: auto; border-radius: calc(var(--radius) - 4px); }
+/* KaTeX inherits the text colour, so it reads in both themes. */
+.prose-question .katex { font-size: 1.08em; color: inherit; }
+.prose-question .math-display,
+.prose-question .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  padding: 0.25em 0;
+  overflow-wrap: normal;
+  -webkit-overflow-scrolling: touch;
+}
+.prose-question .math-display > .katex-display { margin: 0; overflow: visible; }
+.prose-question .math-display .katex { font-size: 1.15em; }
 
 /* Safe-area padding for the mobile bottom bar. */
 .pb-safe { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }

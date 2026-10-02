@@ -1,4 +1,5 @@
-import { Page } from '@/components/ui/page';
+import { CalendarClock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const SECTIONS: { id: string; title: string; body?: string; items?: string[] }[] = [
   {
@@ -46,7 +47,7 @@ const SECTIONS: { id: string; title: string; body?: string; items?: string[] }[]
   {
     id: 'changes',
     title: 'Changes to These Terms',
-    body: `We reserve the right to update these Terms at any time. Continued use of the Platform after changes are posted constitutes your acceptance of the updated terms. The "Last updated" date at the bottom of this page reflects the most recent revision. For material changes, we will notify users via the platform.`,
+    body: `We reserve the right to update these Terms at any time. Continued use of the Platform after changes are posted constitutes your acceptance of the updated terms. The "Last updated" date at the top of this page reflects the most recent revision. For material changes, we will notify users via the platform.`,
   },
   {
     id: 'contact',
@@ -55,31 +56,81 @@ const SECTIONS: { id: string; title: string; body?: string; items?: string[] }[]
   },
 ];
 
+const LAST_UPDATED = 'March 2025';
+
+/** Long-form legal page: a readable column, numbered sections with orange anchors, and a contents list on wide screens. */
 const Terms = () => (
-  <Page className="max-w-3xl">
-    <h1 className="text-3xl font-bold tracking-tight">Terms &amp; Conditions</h1>
-    <p className="mt-2 text-muted-foreground">Please read these terms carefully before using Aptric. Last updated: March 2025.</p>
-    <div className="mt-8 space-y-8">
-      {SECTIONS.map((sec, i) => (
-        <section key={sec.id} aria-labelledby={`terms-${sec.id}`}>
-          <h2 id={`terms-${sec.id}`} className="text-lg font-semibold">{i + 1}. {sec.title}</h2>
-          {sec.items ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-              {sec.items.map((item) => <li key={item}>{item}</li>)}
-            </ul>
-          ) : sec.id === 'contact' ? (
-            <p className="mt-2 text-muted-foreground">
-              If you have questions about these Terms, please reach out to us at{' '}
-              <a href="mailto:aptricofficials@gmail.com" className="font-medium text-accent-text underline">aptricofficials@gmail.com</a>.
-              We will respond within 3–5 business days.
-            </p>
-          ) : (
-            <p className="mt-2 text-muted-foreground">{sec.body}</p>
-          )}
-        </section>
-      ))}
+  <div className="bg-background">
+    <header className="border-b bg-card">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+        <Badge variant="default" className="gap-1.5">
+          <CalendarClock aria-hidden /> Last updated {LAST_UPDATED}
+        </Badge>
+        <h1 className="mt-4 font-display text-[clamp(2rem,5vw,2.75rem)] font-extrabold leading-tight tracking-tight text-heading">
+          Terms &amp; Conditions
+        </h1>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+          Please read these terms carefully before using Aptric. They cover your account, fair use, your data and how we can change these terms.
+        </p>
+      </div>
+    </header>
+
+    <div className="mx-auto grid max-w-5xl gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-14">
+      <nav aria-label="On this page" className="hidden lg:block">
+        <div className="sticky top-24">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">On this page</p>
+          <ol className="mt-3 space-y-1 border-l-2 border-border">
+            {SECTIONS.map((sec, i) => (
+              <li key={sec.id}>
+                <a
+                  href={`#${sec.id}`}
+                  className="-ml-0.5 block border-l-2 border-transparent py-1.5 pl-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-heading"
+                >
+                  <span className="tabular-nums text-accent-text">{i + 1}.</span> {sec.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </nav>
+
+      <article className="max-w-[68ch] space-y-10">
+        {SECTIONS.map((sec, i) => (
+          <section key={sec.id} id={sec.id} aria-labelledby={`terms-${sec.id}`} className="group scroll-mt-24">
+            <h2 id={`terms-${sec.id}`} className="flex items-baseline gap-3 font-display text-xl font-extrabold tracking-tight text-heading sm:text-2xl">
+              <span className="grid size-8 shrink-0 self-center place-items-center rounded-full bg-primary-soft text-sm font-bold tabular-nums text-accent-text">
+                {i + 1}<span className="sr-only">.</span>
+              </span>
+              <span>
+                {sec.title}
+                <a
+                  href={`#${sec.id}`}
+                  className="ml-2 rounded-sm text-accent-text no-underline opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 max-lg:opacity-60"
+                >
+                  #<span className="sr-only">Link to this section</span>
+                </a>
+              </span>
+            </h2>
+            <div className="mt-3 pl-11 text-base leading-7 text-foreground">
+              {sec.items ? (
+                <ul className="list-disc space-y-2 pl-5 marker:text-accent-text">
+                  {sec.items.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              ) : sec.id === 'contact' ? (
+                <p>
+                  If you have questions about these Terms, please reach out to us at{' '}
+                  <a href="mailto:aptricofficials@gmail.com" className="font-semibold text-accent-text underline underline-offset-4">aptricofficials@gmail.com</a>.
+                  We will respond within 3–5 business days.
+                </p>
+              ) : (
+                <p>{sec.body}</p>
+              )}
+            </div>
+          </section>
+        ))}
+      </article>
     </div>
-  </Page>
+  </div>
 );
 
 export default Terms;

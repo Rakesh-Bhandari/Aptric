@@ -36,6 +36,12 @@ const TEXT_PAIRS: [string, string][] = [
   ['accent-text', 'card'], ['accent-text', 'background'], ['accent-text', 'primary-soft'],
   ['success-soft-foreground', 'success-soft'], ['danger-soft-foreground', 'danger-soft'], ['warning-soft-foreground', 'warning-soft'],
   ['success', 'card'], ['danger', 'card'],
+  // Selected onboarding goal cards: title and hint on the soft-orange fill.
+  ['heading', 'primary-soft'], ['muted-foreground', 'primary-soft'],
+  // League tier names and icons on cards.
+  ['tier-bronze', 'card'], ['tier-silver', 'card'], ['tier-gold', 'card'], ['tier-platinum', 'card'], ['tier-diamond', 'card'],
+  // Text on the navy-gradient hero (Daily card, placement intro): both gradient stops.
+  ['navy-foreground', 'brand-navy'], ['navy-muted-foreground', 'brand-navy'], ['on-navy-success', 'brand-navy'], ['on-navy-danger', 'brand-navy'],
   // App chrome: header, footer, auth banner, dark tab bar.
   ['chrome-foreground', 'chrome'], ['chrome-foreground', 'chrome-deep'],
   ['chrome-muted-foreground', 'chrome'], ['chrome-muted-foreground', 'chrome-deep'],
@@ -71,6 +77,9 @@ describe('brand surfaces', () => {
     expect(ratio('#ffffff', '#123a78')).toBeGreaterThanOrEqual(4.5);
     // Muted text inside navy-gradient cards (Card variant="navy").
     expect(ratio(light['navy-muted-foreground'], '#123a78')).toBeGreaterThanOrEqual(4.5);
+    // Correct / wrong counts on the Daily card.
+    expect(ratio(light['on-navy-success'], '#123a78')).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(light['on-navy-danger'], '#123a78')).toBeGreaterThanOrEqual(4.5);
   });
 });
 

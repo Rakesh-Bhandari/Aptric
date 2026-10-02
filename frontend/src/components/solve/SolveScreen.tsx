@@ -1,5 +1,7 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, Check, Clock, Flag, Lightbulb, Repeat, SkipForward, Sparkles, X } from 'lucide-react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import * as Dropdown from '@radix-ui/react-dropdown-menu';
+import { ArrowRight, Check, Clock, Eye, Flag, Lightbulb, MoreHorizontal, Repeat, SkipForward, Sparkles, X } from 'lucide-react';
 import { Markdown } from '@/components/markdown/Markdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +14,7 @@ import { DIFFICULTY_LABEL, OPTION_KEYS, OPTION_LETTERS } from '@/lib/game';
 import type { Difficulty, QuestionOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ReportDialog } from './ReportDialog';
+import { SESSION_TIMER_SLOT } from './SessionHeader';
 
 export interface SolveQuestion {
   id: string;
@@ -41,6 +44,9 @@ export interface Reveal {
 
 export type SolveKind = 'daily' | 'practice' | 'contest' | 'placement';
 
+const KIND_LABEL: Record<SolveKind, string> = { daily: 'Daily', practice: 'Practice', contest: 'Contest', placement: 'Placement' };
+const DIFFICULTY_BADGE = { easy: 'success', medium: 'default', hard: 'danger' } as const;
+
 interface Props {
   question: SolveQuestion;
   kind: SolveKind;
@@ -62,6 +68,22 @@ interface Props {
   resultExtras?: ReactNode;
 }
 
+/** The SessionHeader's timer slot, once it's on the page (null without a header, e.g. in tests). */
+const useTimerSlot = () => {
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => setSlot(document.getElementById(SESSION_TIMER_SLOT)), []);
+  return slot;
+};
+
+const Kbd = ({ children, className }: { children: ReactNode; className?: string }) => (
+  <kbd className={cn('inline-grid min-w-6 place-items-center rounded-md border border-b-2 bg-card px-1.5 font-sans text-[11px] font-semibold leading-5 text-heading', className)}>
+    {children}
+  </kbd>
+);
+
+const menuItem =
+  'flex min-h-11 cursor-pointer select-none items-center gap-2.5 rounded-md px-3 text-sm font-medium outline-none transition-colors data-[highlighted]:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:text-muted-foreground';
+
 export const SolveScreen = ({
   question, kind, worth, initialHint = null, onSubmit, onHint, hintCost, onGiveUp, onSkip, onNext, nextLabel,
   onPracticeSimilar, resultExtras,
@@ -77,6 +99,7 @@ export const SolveScreen = ({
   const stemId = useId();
   const resultRef = useRef<HTMLDivElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const timerSlot = useTimerSlot();
 
   const answered = !!reveal;
   const overTime = elapsed > question.est_seconds * 1000;
@@ -148,37 +171,54 @@ export const SolveScreen = ({
     return 'dim';
   };
 
+  const timer = (
+    <span
+      role="timer"
+      aria-label={`Time on this question: ${formatDuration(elapsed)}. Target about ${formatDuration(question.est_seconds * 1000)}.`}
+      className={cn(
+        'inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-sm font-semibold tabular-nums transition-colors',
+        overTime && !answered ? 'bg-warning-soft text-warning-soft-foreground' : 'bg-muted text-heading',
+      )}
+    >
+      <Clock className="size-3.5" aria-hidden />
+      {formatClock(elapsed)}
+    </span>
+  );
+
+  const showHintButton = !!onHint && question.has_hint && !hint && !answered;
+  const lastKey = OPTION_KEYS[Math.min(question.options.length, 9) - 1];
+  const correctLetter = reveal?.correctOptionId
+    ? OPTION_LETTERS[question.options.findIndex((o) => o.id === reveal.correctOptionId)]
+    : null;
+
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 pb-8 pt-2 sm:px-6">
-      {/* Meta row: topic, difficulty, timer */}
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <Badge variant="muted" className="max-w-full truncate">{question.topic} · {question.subtopic}</Badge>
-        <Badge variant={question.difficulty === 'hard' ? 'danger' : question.difficulty === 'medium' ? 'warning' : 'success'}>
-          {DIFFICULTY_LABEL[question.difficulty]}
-        </Badge>
-        {worth && <span className="text-muted-foreground">Worth {worth}</span>}
-        <span
-          role="timer"
-          aria-label={`Time on this question: ${formatDuration(elapsed)}. Target about ${formatDuration(question.est_seconds * 1000)}.`}
-          className={cn(
-            'ml-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-sm font-semibold tabular-nums',
-            overTime && !answered ? 'border-warning/50 bg-warning-soft text-warning-soft-foreground' : 'bg-card',
+    <div className="mx-auto flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-4 px-4 pt-4 sm:gap-5 sm:px-6 sm:pt-6">
+      {timerSlot && createPortal(timer, timerSlot)}
+
+      {/* Meta row: where this question sits, difficulty, kind */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+        <p className="flex w-full min-w-0 items-center gap-1 text-sm text-muted-foreground sm:w-auto sm:flex-1">
+          <span className="truncate">{question.section}</span>
+          <span aria-hidden className="opacity-70">›</span>
+          <span className="truncate font-medium text-foreground">{question.topic}</span>
+          {question.subtopic && question.subtopic !== question.topic && (
+            <span className="hidden truncate sm:inline">· {question.subtopic}</span>
           )}
-        >
-          <Clock className="size-4" aria-hidden />
-          {formatClock(elapsed)}
-          <span className="font-sans text-xs font-normal text-muted-foreground" aria-hidden>/ {formatClock(question.est_seconds * 1000)}</span>
-        </span>
+        </p>
+        <Badge variant={DIFFICULTY_BADGE[question.difficulty]}>{DIFFICULTY_LABEL[question.difficulty]}</Badge>
+        <Badge variant="navy">{KIND_LABEL[kind]}</Badge>
+        {worth && <span className="text-xs font-medium text-muted-foreground">Worth {worth}</span>}
+        {!timerSlot && <span className="ml-auto">{timer}</span>}
       </div>
 
       {/* Question */}
-      <section aria-labelledby={stemId} className="rounded-lg border bg-card p-4 sm:p-6">
+      <section aria-labelledby={stemId} className="min-w-0 rounded-lg border bg-card p-5 shadow-sm sm:p-7">
         <h2 id={stemId} className="sr-only">Question</h2>
-        <Markdown text={question.stem} className="text-base sm:text-lg" />
+        <Markdown text={question.stem} className="text-[17px] leading-[1.7] text-heading sm:text-lg" />
       </section>
 
       {/* Options */}
-      <div role="group" aria-label="Answer options" className="grid gap-2.5">
+      <div role="group" aria-label="Answer options" className="grid gap-2.5 sm:gap-3">
         {question.options.map((o, i) => {
           const state = optionState(o.id);
           return (
@@ -191,33 +231,35 @@ export const SolveScreen = ({
               aria-keyshortcuts={OPTION_KEYS[i]}
               onClick={() => setPicked(o.id)}
               className={cn(
-                'group flex min-h-14 w-full items-center gap-3 rounded-lg border-2 bg-card px-3 py-3 text-left transition-colors sm:px-4',
-                'disabled:cursor-default',
-                state === 'idle' && 'hover:border-primary/60 hover:bg-primary-soft/40',
-                state === 'picked' && 'border-primary bg-primary-soft text-primary-soft-foreground',
+                'group flex min-h-14 w-full items-center gap-3 rounded-lg border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-sm sm:gap-4 sm:px-4',
+                'transition-[border-color,background-color,box-shadow,color] duration-200 ease-out disabled:cursor-default',
+                state === 'idle' && 'border-border hover:border-navy/35 hover:shadow-md dark:hover:border-navy-soft-foreground/40',
+                state === 'picked' && 'border-primary bg-primary-soft text-heading shadow-md',
                 state === 'correct' && 'border-success bg-success-soft text-success-soft-foreground',
                 state === 'wrong' && 'border-danger bg-danger-soft text-danger-soft-foreground',
-                state === 'dim' && 'opacity-60',
+                state === 'dim' && 'border-border text-muted-foreground shadow-none',
               )}
             >
               <span
                 aria-hidden
                 className={cn(
-                  'grid size-8 shrink-0 place-items-center rounded-md border text-sm font-bold',
-                  state === 'picked' && 'border-primary bg-primary text-primary-foreground',
-                  state === 'correct' && 'border-success bg-success text-white dark:text-background',
-                  state === 'wrong' && 'border-danger bg-danger text-white dark:text-background',
+                  'grid size-9 shrink-0 place-items-center rounded-lg text-sm font-bold shadow-[inset_0_-2px_0_rgb(0_0_0/0.18)] transition-colors duration-200 ease-out',
+                  state === 'idle' && 'bg-navy text-navy-foreground',
+                  state === 'picked' && 'bg-primary text-primary-foreground',
+                  state === 'correct' && 'bg-success text-white dark:text-background',
+                  state === 'wrong' && 'bg-danger text-white dark:text-background',
+                  state === 'dim' && 'bg-muted text-muted-foreground shadow-none',
                 )}
               >
-                {state === 'correct' ? <Check className="size-4" /> : state === 'wrong' ? <X className="size-4" /> : OPTION_LETTERS[i]}
+                {state === 'correct' ? <Check className="size-5" strokeWidth={3} /> : state === 'wrong' ? <X className="size-5" strokeWidth={3} /> : OPTION_LETTERS[i]}
               </span>
-              <span className="min-w-0 flex-1 text-base">
+              <span className="min-w-0 flex-1 text-base leading-snug sm:text-[17px]">
                 <span className="sr-only">Option {OPTION_LETTERS[i]}: </span>
                 <Markdown text={o.body} inline />
                 {state === 'correct' && <span className="sr-only"> (correct answer)</span>}
                 {state === 'wrong' && <span className="sr-only"> (your answer, incorrect)</span>}
               </span>
-              <kbd aria-hidden className="hidden rounded border bg-muted px-1.5 text-xs text-muted-foreground sm:inline">{OPTION_KEYS[i]}</kbd>
+              {!answered && <Kbd className="hidden opacity-70 group-hover:opacity-100 sm:inline-grid">{OPTION_KEYS[i]}</Kbd>}
             </button>
           );
         })}
@@ -225,104 +267,129 @@ export const SolveScreen = ({
 
       {/* Hint */}
       {hint && !reveal && (
-        <div className="rounded-lg border border-warning/40 bg-warning-soft p-4 text-warning-soft-foreground" role="note" aria-label="Hint">
-          <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold"><Lightbulb className="size-4" aria-hidden /> Hint</p>
+        <div className="rounded-lg border border-warning/40 bg-warning-soft p-4 text-warning-soft-foreground motion-safe:animate-fade-in" role="note" aria-label="Hint">
+          <p className="mb-1 flex items-center gap-1.5 text-sm font-bold"><Lightbulb className="size-4" aria-hidden /> Hint</p>
           <Markdown text={hint} className="text-sm" />
         </div>
       )}
 
       {error && <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger-soft-foreground">{error}</p>}
 
-      {/* Actions */}
-      {!reveal && (
-        <div className="sticky bottom-0 -mx-4 mt-auto space-y-2 border-t bg-background/95 px-4 pb-safe pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
-          <Button size="lg" className="w-full" onClick={() => void submit()} disabled={!picked} loading={busy === 'submit'}>
-            {kind === 'placement' ? 'Save answer' : 'Check answer'}
-            <kbd aria-hidden className="ml-1 hidden rounded border border-primary-foreground/30 px-1.5 text-xs font-normal opacity-80 sm:inline">Enter</kbd>
-          </Button>
-          <div className="flex flex-wrap justify-center gap-2">
-            {onHint && question.has_hint && !hint && (
-              <Button variant="outline" onClick={() => void showHint()} loading={busy === 'hint'} disabled={!!busy}>
-                <Lightbulb /> Show hint {hintCost ? `(−${hintCost})` : ''}
-                {hintCost ? <span className="sr-only"> costs {hintCost} XP</span> : null}
-              </Button>
-            )}
-            {onGiveUp && (
-              <Button variant="ghost" onClick={() => void giveUp()} loading={busy === 'giveup'} disabled={!!busy}>
-                <Flag /> Give up &amp; see answer
-              </Button>
-            )}
-            {onSkip && (
-              <Button variant="ghost" onClick={() => onSkip(read())} disabled={!!busy}>
-                <SkipForward /> I don't know, skip
-              </Button>
-            )}
-          </div>
-          <p className="hidden text-center text-xs text-muted-foreground sm:block">
-            Tip: press <kbd className="rounded border px-1">1</kbd>–<kbd className="rounded border px-1">{Math.min(question.options.length, 9)}</kbd> to choose, <kbd className="rounded border px-1">Enter</kbd> to check.
-          </p>
-        </div>
-      )}
-
-      {/* Result */}
+      {/* Result: feedback banner, then the explanation */}
       {reveal && (
-        <div
-          ref={resultRef}
-          tabIndex={-1}
-          role="region"
-          aria-label="Result"
-          className={cn(
-            'rounded-lg border-2 p-4 focus:outline-none sm:p-5 motion-safe:animate-pop',
-            reveal.isCorrect ? 'border-success/50 bg-success-soft/60' : 'border-danger/40 bg-danger-soft/50',
-          )}
-        >
-          <div aria-live="assertive" className="flex flex-wrap items-center gap-2">
-            <span className={cn('grid size-9 place-items-center rounded-full text-white dark:text-background', reveal.isCorrect ? 'bg-success' : 'bg-danger')} aria-hidden>
-              {reveal.isCorrect ? <Check className="size-5" /> : <X className="size-5" />}
-            </span>
-            <h2 className="text-lg font-bold">
-              {reveal.isCorrect ? (reveal.usedHint ? 'Correct, with a hint' : 'Correct!') : reveal.gaveUp ? "Here's the answer" : 'Not quite'}
-            </h2>
-            {reveal.reward && (
-              <Badge variant={reveal.isCorrect ? 'success' : 'muted'} className="text-sm"><Sparkles /> {reveal.reward}</Badge>
+        <div ref={resultRef} tabIndex={-1} role="region" aria-label="Result" className="scroll-mb-28 space-y-3 focus:outline-none">
+          <div
+            aria-live="assertive"
+            className={cn(
+              'flex items-start gap-3 rounded-lg border p-3.5 motion-safe:animate-pop sm:p-4',
+              reveal.isCorrect ? 'border-success/40 bg-success-soft text-success-soft-foreground' : 'border-danger/30 bg-danger-soft text-danger-soft-foreground',
             )}
-            {reveal.timeMs != null && <span className="text-sm text-muted-foreground">in {formatDuration(reveal.timeMs)}</span>}
-          </div>
-
-          {!reveal.isCorrect && reveal.correctOptionId && (
-            <p className="mt-3 text-sm">
-              The right answer is <strong>option {OPTION_LETTERS[question.options.findIndex((o) => o.id === reveal.correctOptionId)]}</strong>.
-            </p>
-          )}
-
-          {reveal.explanation ? (
-            <div className="mt-3 rounded-md bg-card p-3 sm:p-4">
-              <h3 className="mb-1 text-sm font-semibold">Explanation</h3>
-              <Markdown text={reveal.explanation} />
+          >
+            <span className={cn('grid size-9 shrink-0 place-items-center rounded-full text-white dark:text-background', reveal.isCorrect ? 'bg-success' : 'bg-danger')} aria-hidden>
+              {reveal.isCorrect ? <Check className="size-5" strokeWidth={3} /> : <X className="size-5" strokeWidth={3} />}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h2 className="text-lg font-extrabold tracking-tight">
+                  {reveal.isCorrect ? (reveal.usedHint ? 'Correct, with a hint' : 'Correct!') : reveal.gaveUp ? "Here's the answer" : 'Not quite'}
+                </h2>
+                {reveal.reward && (
+                  <Badge variant="solid" className="text-sm motion-safe:animate-pop-in"><Sparkles /> {reveal.reward}</Badge>
+                )}
+              </div>
+              {!reveal.isCorrect && correctLetter && (
+                <p className="mt-0.5 text-sm">
+                  The right answer is <strong>option {correctLetter}</strong>.
+                </p>
+              )}
+              {reveal.timeMs != null && <p className="mt-0.5 text-sm opacity-85">Answered in {formatDuration(reveal.timeMs)}</p>}
             </div>
-          ) : kind === 'contest' ? (
-            <p className="mt-3 text-sm text-muted-foreground">Answers and explanations open when the contest ends.</p>
-          ) : null}
+          </div>
 
           {resultExtras}
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <Button ref={nextRef} size="lg" onClick={onNext} className="sm:flex-1">
-              {nextLabel} <ArrowRight />
-            </Button>
-            {onPracticeSimilar && (
-              <Button size="lg" variant="outline" onClick={onPracticeSimilar}>
-                <Repeat /> Practice similar
-              </Button>
-            )}
-          </div>
-          <div className="mt-2 flex justify-center">
-            <Button variant="link" size="sm" className="text-muted-foreground" onClick={() => setReportOpen(true)}>
-              Something wrong with this question? Report it
-            </Button>
-          </div>
+          {reveal.explanation ? (
+            <section className="min-w-0 rounded-lg border border-l-4 border-l-navy bg-card p-4 shadow-sm dark:border-l-navy-strong sm:p-5">
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Explanation</h3>
+              <Markdown text={reveal.explanation} className="text-base text-foreground" />
+            </section>
+          ) : kind === 'contest' ? (
+            <p className="text-sm text-muted-foreground">Answers and explanations open when the contest ends.</p>
+          ) : null}
         </div>
       )}
+
+      {/* Keyboard hints (desktop only) */}
+      <p className="hidden items-center justify-center gap-1.5 text-xs text-muted-foreground sm:flex" aria-hidden>
+        {answered ? (
+          <><Kbd>Enter</Kbd> for {nextLabel.toLowerCase()}</>
+        ) : (
+          <><Kbd>1</Kbd>–<Kbd>{lastKey}</Kbd> to choose <span className="px-1">·</span> <Kbd>Enter</Kbd> to check</>
+        )}
+      </p>
+
+      {/* Action bar: sticky to the bottom on phones, inline on larger screens. */}
+      <div className="sticky bottom-0 z-20 -mx-4 mt-auto border-t bg-card px-4 pb-safe pt-3 shadow-top sm:bottom-4 sm:mx-0 sm:mb-8 sm:rounded-full sm:border sm:p-2 sm:shadow-md">
+        <div className="flex items-center gap-2">
+          {!answered && showHintButton && (
+            <Button
+              variant="ghost"
+              onClick={() => void showHint()}
+              loading={busy === 'hint'}
+              disabled={!!busy}
+              aria-label={hintCost ? `Show hint (−${hintCost}), costs ${hintCost} XP` : 'Show hint'}
+              className="shrink-0 px-3"
+            >
+              {busy !== 'hint' && <Lightbulb className="text-warning" />}
+              Hint
+              {hintCost ? <span className="rounded-full bg-primary-soft px-1.5 text-xs font-bold text-primary-soft-foreground">−{hintCost} XP</span> : null}
+            </Button>
+          )}
+          {!answered && onSkip && (
+            <Button variant="ghost" onClick={() => onSkip(read())} disabled={!!busy} className="shrink-0 px-3">
+              <SkipForward /> <span className="sm:hidden">Skip</span><span className="hidden sm:inline">I don't know, skip</span>
+            </Button>
+          )}
+          {answered && onPracticeSimilar && (
+            <Button variant="outline" onClick={onPracticeSimilar} className="shrink-0 px-3 sm:px-4" aria-label="Practice similar">
+              <Repeat /> <span className="hidden sm:inline">Practice similar</span>
+            </Button>
+          )}
+
+          {answered ? (
+            <Button ref={nextRef} size="lg" onClick={onNext} className="min-w-0 flex-1 sm:order-3 sm:ml-auto sm:min-w-48 sm:flex-none">
+              {nextLabel} <ArrowRight />
+            </Button>
+          ) : (
+            <Button size="lg" className="min-w-0 flex-1 sm:order-3 sm:ml-auto sm:min-w-48 sm:flex-none" onClick={() => void submit()} disabled={!picked} loading={busy === 'submit'}>
+              {kind === 'placement' ? 'Save answer' : 'Check answer'}
+            </Button>
+          )}
+
+          <Dropdown.Root modal={false}>
+            <Dropdown.Trigger asChild>
+              <Button variant="ghost" size="icon" aria-label="More actions" className="shrink-0 text-muted-foreground hover:text-foreground">
+                <MoreHorizontal className="size-5" />
+              </Button>
+            </Dropdown.Trigger>
+            <Dropdown.Portal>
+              <Dropdown.Content
+                align="end" side="top" sideOffset={8}
+                className="z-50 min-w-56 rounded-lg border bg-card p-1.5 text-card-foreground shadow-lg motion-safe:animate-fade-in"
+              >
+                {onGiveUp && (
+                  <Dropdown.Item className={menuItem} disabled={answered || !!busy} onSelect={() => void giveUp()}>
+                    <Eye /> Give up &amp; see answer
+                  </Dropdown.Item>
+                )}
+                <Dropdown.Item className={menuItem} onSelect={() => setReportOpen(true)}>
+                  <Flag /> Report a problem
+                </Dropdown.Item>
+              </Dropdown.Content>
+            </Dropdown.Portal>
+          </Dropdown.Root>
+        </div>
+      </div>
       <ReportDialog questionId={question.id} open={reportOpen} onOpenChange={setReportOpen} />
     </div>
   );

@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary';
 import { HeaderOverlayContext } from './headerOverlay';
 import { PageSkeleton } from './PageSkeleton';
-import { SiteFooter, type FooterLink } from './SiteFooter';
+import { SiteFooter, type FooterColumn, type FooterLink } from './SiteFooter';
 
 const NAV = [
   { to: '/', label: 'Today', icon: Home, end: true },
@@ -101,6 +101,12 @@ export const AppShell = () => {
       { label: 'Create account', onClick: () => openAuth({ mode: 'signup', next: '/' }) },
       { label: 'Terms & privacy', to: '/terms' },
     ];
+  // Visitors get the rich footer: anchors into the landing page, account actions, legal.
+  const footerColumns: FooterColumn[] | undefined = signedIn ? undefined : [
+    { title: 'Explore', links: [{ label: 'Features', to: '/#features' }, { label: 'How it works', to: '/#how-it-works' }, { label: 'Sections', to: '/#sections' }] },
+    { title: 'Account', links: footerLinks.slice(0, 2) },
+    { title: 'Company', links: [{ label: 'Terms & privacy', to: '/terms' }, { label: 'Contact us', href: 'mailto:aptricofficials@gmail.com' }] },
+  ];
 
   return (
     <HeaderOverlayContext.Provider value={setOverlay}>
@@ -161,7 +167,7 @@ export const AppShell = () => {
           </ErrorBoundary>
         </main>
 
-        {status !== 'loading' && <SiteFooter variant={signedIn ? 'compact' : 'full'} links={footerLinks} />}
+        {status !== 'loading' && <SiteFooter variant={signedIn ? 'compact' : 'full'} links={footerLinks} columns={footerColumns} />}
 
         {signedIn && (
           <nav

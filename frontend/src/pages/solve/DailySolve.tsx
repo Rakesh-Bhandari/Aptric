@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { CalendarClock } from 'lucide-react';
 import { SessionHeader } from '@/components/solve/SessionHeader';
 import { SolveScreen, type Reveal } from '@/components/solve/SolveScreen';
-import { outcomeOf, saveSummary, type SessionItem } from '@/components/solve/session';
+import { outcomeOf, saveSummary, segmentOf, type SessionItem } from '@/components/solve/session';
 import { Button } from '@/components/ui/button';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { useToast } from '@/context/ToastContext';
@@ -92,6 +92,10 @@ const DailySolve = () => {
     items.current.push({
       questionId: question.id, subtopicId: null, subtopic: question.subtopic, difficulty: question.difficulty,
       outcome: outcomeOf(reveal), xp: r.xp_awarded, timeMs,
+      review: {
+        stem: question.stem, options: question.options.map((o) => ({ id: o.id, body: o.body })),
+        selectedOptionId, correctOptionId: r.correct_option_id, explanation: r.explanation,
+      },
     });
     return reveal;
   };
@@ -118,6 +122,10 @@ const DailySolve = () => {
         total={total}
         onExit={() => { void invalidateProgress(); navigate('/'); }}
         exitLabel="Save and exit (your answers so far are kept)"
+        results={[
+          ...set.questions.flatMap((q) => (q.attempt ? [q.attempt.is_correct ? 'correct' as const : 'wrong' as const] : [])),
+          ...items.current.map((i) => segmentOf(i.outcome)),
+        ]}
       />
       <SolveScreen
         key={question.id}

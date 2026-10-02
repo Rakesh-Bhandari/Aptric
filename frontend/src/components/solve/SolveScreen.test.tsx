@@ -80,7 +80,9 @@ describe('SolveScreen', () => {
   it('asks before giving up, then shows the answer', async () => {
     const onGiveUp = vi.fn(async () => reveal(null));
     const { user } = setup({ onGiveUp });
-    await user.click(screen.getByRole('button', { name: /give up & see answer/i }));
+    // Give up lives in the action bar's overflow menu.
+    await user.click(screen.getByRole('button', { name: /more actions/i }));
+    await user.click(await screen.findByRole('menuitem', { name: /give up & see answer/i }));
     expect(await screen.findByRole('dialog', { name: /give up on this question/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /show me the answer/i }));
     expect(await screen.findByRole('heading', { name: "Here's the answer" })).toBeInTheDocument();
