@@ -52,6 +52,15 @@
   --warning-soft-foreground: #713f12;
   --streak: #f06a00;
   --gold: #c58a00;
+  /* League tiers (icons, chips and tier names on cards). */
+  --tier-bronze: #9a5426;
+  --tier-silver: #5b687e;
+  --tier-gold: #a16207;
+  --tier-platinum: #0f766e;
+  --tier-diamond: #2f5fc4;
+  /* Status colours on navy-gradient panels (same in both themes). */
+  --on-navy-success: #4ade80;
+  --on-navy-danger: #fca5a5;
   --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
   --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
   --shadow-sm: 0 1px 2px rgb(11 31 75 / 0.06), 0 4px 12px rgb(11 31 75 / 0.04);
@@ -108,6 +117,11 @@
   --warning-soft-foreground: #fde68a;
   --streak: #ff8a1f;
   --gold: #fbbf24;
+  --tier-bronze: #f0a46a;
+  --tier-silver: #c3cde3;
+  --tier-gold: #fbbf24;
+  --tier-platinum: #5eead4;
+  --tier-diamond: #9db8ff;
   --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
   --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
@@ -160,6 +174,13 @@
   --color-warning-soft-foreground: var(--warning-soft-foreground);
   --color-streak: var(--streak);
   --color-gold: var(--gold);
+  --color-tier-bronze: var(--tier-bronze);
+  --color-tier-silver: var(--tier-silver);
+  --color-tier-gold: var(--tier-gold);
+  --color-tier-platinum: var(--tier-platinum);
+  --color-tier-diamond: var(--tier-diamond);
+  --color-on-navy-success: var(--on-navy-success);
+  --color-on-navy-danger: var(--on-navy-danger);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 4px);
   --radius-sm: calc(var(--radius) - 8px);
@@ -172,6 +193,7 @@
   --animate-fade-in: fade-in 200ms ease-out;
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   --animate-breathe: breathe 1.8s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
 }
 
 /* Brand gradients as utilities: bg-gradient-navy, bg-gradient-orange. */
@@ -200,6 +222,25 @@
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(0.94); opacity: 0.6; }
 }
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgb(255 120 0 / 0.55); }
+  70%, 100% { box-shadow: 0 0 0 7px rgb(255 120 0 / 0); }
+}
+
+/* Placement result confetti: brand-colour shapes that fall once. Hidden under reduced motion. */
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -12px, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate3d(var(--drift, 0px), 260px, 0) rotate(var(--spin, 540deg)); opacity: 0; }
+}
+.confetti-piece {
+  animation: confetti-fall var(--dur, 1.6s) cubic-bezier(0.2, 0.6, 0.4, 1) var(--delay, 0s) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti { display: none; }
+}
+[data-reduce-motion='true'] .confetti { display: none; }
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
