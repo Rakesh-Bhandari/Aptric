@@ -27,6 +27,8 @@ const PlacementRetake = lazy(() => import('@/pages/Onboarding').then((m) => ({ d
 const AuthCallback = lazy(() => import('@/pages/AuthCallback'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const Terms = lazy(() => import('@/pages/Terms'));
+// Dev-only token preview; import.meta.env.DEV is false in builds, so the chunk is dropped.
+const StyleGuide = import.meta.env.DEV ? lazy(() => import('@/pages/dev/StyleGuide')) : null;
 
 // The admin area is for admins only: loaded on demand, kept in JS.
 const AdminLayout = lazy(() => import('@/admin/AdminLayout'));
@@ -71,6 +73,7 @@ const router = createBrowserRouter([
             children: [{ element: <RequireAuth />, children: [{ index: true, element: <Today /> }] }],
           },
           { path: 'terms', element: <Terms /> },
+          ...(StyleGuide ? [{ path: 'dev/styleguide', element: <StyleGuide /> }] : []),
           { path: 'auth/callback', element: <AuthCallback /> },
           { path: 'auth/reset-password', element: <ResetPassword /> },
           {

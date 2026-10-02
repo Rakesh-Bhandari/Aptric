@@ -120,7 +120,7 @@ const SessionSummary = () => {
   return (
     <Page className="max-w-2xl space-y-5">
       <div className="space-y-1">
-        <p className="text-sm font-medium text-primary">{local?.title ?? (result ? `Daily challenge · ${formatDay(result.set_date)}` : 'Session')}</p>
+        <p className="text-sm font-medium text-accent-text">{local?.title ?? (result ? `Daily challenge · ${formatDay(result.set_date)}` : 'Session')}</p>
         <h1 className="text-3xl font-bold tracking-tight">{headline}</h1>
         {incomplete && (
           <p className="text-muted-foreground">
@@ -161,7 +161,7 @@ const SessionSummary = () => {
           <CardContent>
             <ul className="space-y-2 text-sm">
               {local?.leveledUpTo && (
-                <li className="flex items-center gap-2"><TrendingUp className="size-4 text-primary" aria-hidden /> You reached <strong>level {local.leveledUpTo}</strong>.</li>
+                <li className="flex items-center gap-2"><TrendingUp className="size-4 text-accent-text" aria-hidden /> You reached <strong>level {local.leveledUpTo}</strong>.</li>
               )}
               {local?.newBadges?.map((b) => (
                 <li key={`${b.slug}-${b.topic ?? ''}`} className="flex items-center gap-2">

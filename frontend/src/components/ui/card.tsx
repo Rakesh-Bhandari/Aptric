@@ -1,8 +1,23 @@
 import type { HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
-export const Card = ({ className, ...props }: HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('rounded-lg border bg-card text-card-foreground shadow-xs', className)} {...props} />
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  /** `navy`: the navy gradient with white text, for feature and hero cards. */
+  variant?: 'default' | 'navy';
+}
+
+export const Card = ({ className, variant = 'default', ...props }: CardProps) => (
+  <div
+    className={cn(
+      'rounded-lg border shadow-sm',
+      variant === 'navy'
+        ? // Headings and muted text inside follow the panel, not the page theme.
+          'border-transparent bg-gradient-navy text-navy-foreground [--heading:var(--navy-foreground)] [--muted-foreground:var(--navy-muted-foreground)]'
+        : 'bg-card text-card-foreground',
+      className,
+    )}
+    {...props}
+  />
 );
 
 export const CardHeader = ({ className, ...props }: HTMLAttributes<HTMLDivElement>) => (
@@ -10,7 +25,7 @@ export const CardHeader = ({ className, ...props }: HTMLAttributes<HTMLDivElemen
 );
 
 export const CardTitle = ({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-  <h2 className={cn('text-base font-semibold leading-tight', className)} {...props} />
+  <h2 className={cn('text-base font-bold leading-tight tracking-tight text-heading', className)} {...props} />
 );
 
 export const CardDescription = ({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) => (

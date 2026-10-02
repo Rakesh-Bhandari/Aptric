@@ -2,7 +2,7 @@ import { forwardRef, type InputHTMLAttributes, type LabelHTMLAttributes, type Se
 import { cn } from '@/lib/utils';
 
 const field =
-  'w-full rounded-md border border-input bg-card px-3 text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring disabled:opacity-60 aria-[invalid=true]:border-danger sm:text-sm';
+  'w-full rounded-md border border-input bg-card px-3.5 text-base text-foreground transition-[border-color,box-shadow] duration-150 placeholder:text-muted-foreground hover:border-muted-foreground/60 focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring/40 disabled:opacity-60 aria-[invalid=true]:border-danger sm:text-sm';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => (
   <input ref={ref} className={cn(field, 'h-11', className)} {...props} />
@@ -20,7 +20,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
 Select.displayName = 'Select';
 
 export const Label = ({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) => (
-  <label className={cn('text-sm font-medium', className)} {...props} />
+  <label className={cn('text-sm font-semibold text-heading', className)} {...props} />
 );
 
 export const FieldHint = ({ className, error, ...props }: React.HTMLAttributes<HTMLParagraphElement> & { error?: boolean }) => (

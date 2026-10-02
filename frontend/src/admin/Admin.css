@@ -42,7 +42,7 @@
 }
 .adm-nav-link:hover { color: var(--text); background: rgba(127, 127, 127, 0.08); }
 .adm-nav-link.active {
-    color: var(--primary);
+    color: var(--accent-text);
     background: var(--primary-soft);
     border-color: rgba(76, 175, 80, 0.25);
 }
@@ -51,7 +51,7 @@
     padding: 0 0.4rem;
     border-radius: 999px;
     background: var(--primary);
-    color: #fff;
+    color: var(--primary-foreground);
     font-size: 0.75rem;
     text-align: center;
     line-height: 1.4rem;
@@ -67,7 +67,7 @@
 .adm-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
 .adm-sub { color: var(--text-muted); font-size: 0.85rem; }
 
-.adm a { color: var(--primary); }
+.adm a { color: var(--accent-text); }
 
 /* --- Cards, lists --- */
 .adm-card {
@@ -135,7 +135,7 @@
 .adm-btn-danger { color: var(--error); border-color: rgba(239, 68, 68, 0.5); }
 .adm-btn-danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.1); border-color: var(--error); }
 .adm .adm-btn-primary { color: var(--primary-foreground); }
-.adm-link { background: none; border: none; padding: 0; color: var(--primary); cursor: pointer; font: inherit; font-size: 0.85rem; }
+.adm-link { background: none; border: none; padding: 0; color: var(--accent-text); cursor: pointer; font: inherit; font-size: 0.85rem; }
 .adm-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 
 .adm input[type='text'], .adm input[type='search'], .adm input[type='number'], .adm select, .adm textarea {
@@ -173,7 +173,7 @@
     font-size: 0.8rem;
     cursor: pointer;
 }
-.adm-chip.on { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+.adm-chip.on { color: var(--accent-text); border-color: var(--primary); background: var(--primary-soft); }
 
 .adm-tabs, .adm-segmented { display: flex; gap: 0.25rem; flex-wrap: wrap; }
 .adm-tabs button, .adm-segmented button {
@@ -187,7 +187,7 @@
     font-size: 0.85rem;
     text-transform: capitalize;
 }
-.adm-tabs button.active, .adm-segmented button.active { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+.adm-tabs button.active, .adm-segmented button.active { color: var(--accent-text); border-color: var(--primary); background: var(--primary-soft); }
 
 .adm-bulk {
     display: flex;

@@ -58,7 +58,8 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
     const root = document.documentElement;
     root.dataset.theme = resolvedTheme;
     root.style.colorScheme = resolvedTheme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'dark' ? '#0d111c' : '#f6f7fb');
+    // index.html has one theme-color per OS scheme; an explicit app theme overrides both.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', resolvedTheme === 'dark' ? '#06132f' : '#f7f9fc'));
   }, [resolvedTheme]);
 
   useEffect(() => {

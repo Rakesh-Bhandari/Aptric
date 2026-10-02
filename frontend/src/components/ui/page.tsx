@@ -10,7 +10,7 @@ export const PageHeader = ({ title, description, actions, className }: {
 }) => (
   <div className={cn('mb-5 flex flex-wrap items-end justify-between gap-3 sm:mb-6', className)}>
     <div className="min-w-0 space-y-1">
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+      <h1 className="font-display text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">{title}</h1>
       {description && <p className="text-muted-foreground">{description}</p>}
     </div>
     {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -20,12 +20,12 @@ export const PageHeader = ({ title, description, actions, className }: {
 export const StatTile = ({ label, value, hint, icon, className }: {
   label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; className?: string;
 }) => (
-  <div className={cn('rounded-lg border bg-card p-3 sm:p-4', className)}>
+  <div className={cn('rounded-lg border bg-card p-3 shadow-sm sm:p-4', className)}>
     <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground [&_svg]:size-4">
       {icon}
       <span>{label}</span>
     </div>
-    <div className="mt-1 text-xl font-bold tabular-nums sm:text-2xl">{value}</div>
+    <div className="mt-1 text-xl font-extrabold tabular-nums tracking-tight text-heading sm:text-2xl">{value}</div>
     {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
   </div>
 );

@@ -6,7 +6,7 @@ export const Tabs = TabsPrimitive.Root;
 
 export const TabsList = ({ className, ...props }: ComponentProps<typeof TabsPrimitive.List>) => (
   <TabsPrimitive.List
-    className={cn('inline-flex w-full items-center gap-1 overflow-x-auto rounded-lg bg-muted p-1 sm:w-auto', className)}
+    className={cn('inline-flex w-full items-center gap-1 overflow-x-auto rounded-full border bg-card p-1 shadow-sm sm:w-auto', className)}
     {...props}
   />
 );
@@ -14,8 +14,11 @@ export const TabsList = ({ className, ...props }: ComponentProps<typeof TabsPrim
 export const TabsTrigger = ({ className, ...props }: ComponentProps<typeof TabsPrimitive.Trigger>) => (
   <TabsPrimitive.Trigger
     className={cn(
-      'inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors sm:flex-none',
-      'hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm [&_svg]:size-4',
+      'inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm font-semibold text-muted-foreground transition-colors duration-200 sm:flex-none',
+      'hover:bg-muted hover:text-foreground [&_svg]:size-4',
+      // Active: navy fill in light mode; orange fill in dark, where navy would vanish.
+      'data-[state=active]:bg-navy data-[state=active]:text-navy-foreground data-[state=active]:shadow-sm',
+      'dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground',
       className,
     )}
     {...props}

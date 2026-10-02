@@ -129,7 +129,7 @@ const GoalStep = ({ onDone }: { onDone: () => void }) => {
   return (
     <form className="space-y-7" onSubmit={submit}>
       <fieldset>
-        <legend className="mb-3 flex items-center gap-2 font-semibold"><GraduationCap className="size-5 text-primary" aria-hidden /> What are you preparing for?</legend>
+        <legend className="mb-3 flex items-center gap-2 font-semibold"><GraduationCap className="size-5 text-accent-text" aria-hidden /> What are you preparing for?</legend>
         {exams.isPending ? (
           <LoadingRegion className="grid grid-cols-2 gap-2">{[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12" />)}</LoadingRegion>
         ) : (
@@ -145,7 +145,7 @@ const GoalStep = ({ onDone }: { onDone: () => void }) => {
         )}
       </fieldset>
       <fieldset>
-        <legend className="mb-1 flex items-center gap-2 font-semibold"><Target className="size-5 text-primary" aria-hidden /> How many questions a day?</legend>
+        <legend className="mb-1 flex items-center gap-2 font-semibold"><Target className="size-5 text-accent-text" aria-hidden /> How many questions a day?</legend>
         <p className="mb-3 text-sm text-muted-foreground">Start small. You can change this any time in Settings.</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {DAILY_TARGETS.map((n) => (
@@ -172,7 +172,7 @@ const PlacementIntro = ({ onStart, onSkip, retake }: { onStart: () => void; onSk
         { icon: Lightbulb, text: "No hints and no XP. If you don't know, just skip." },
         { icon: Target, text: "We'll set your daily challenge level from your score. You can retake it after a week." },
       ].map(({ icon: Icon, text }) => (
-        <li key={text} className="flex gap-3"><Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden /><span>{text}</span></li>
+        <li key={text} className="flex gap-3"><Icon className="mt-0.5 size-5 shrink-0 text-accent-text" aria-hidden /><span>{text}</span></li>
       ))}
     </ul>
     <div className="space-y-2">
@@ -294,7 +294,7 @@ const PlacementResultView = ({ result, onDone, doneLabel }: { result: PlacementR
         ))}
       </ol>
       <p className="mt-3 text-sm text-muted-foreground">
-        Questions you missed are waiting in <Link to="/progress?tab=mistakes" className="font-medium text-primary underline">Mistakes</Link> with full explanations.
+        Questions you missed are waiting in <Link to="/progress?tab=mistakes" className="font-medium text-accent-text underline">Mistakes</Link> with full explanations.
       </p>
     </div>
     <Button size="lg" className="w-full" onClick={onDone}>{doneLabel} <ArrowRight /></Button>
