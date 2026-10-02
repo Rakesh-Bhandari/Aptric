@@ -36,11 +36,18 @@ const TEXT_PAIRS: [string, string][] = [
   ['accent-text', 'card'], ['accent-text', 'background'], ['accent-text', 'primary-soft'],
   ['success-soft-foreground', 'success-soft'], ['danger-soft-foreground', 'danger-soft'], ['warning-soft-foreground', 'warning-soft'],
   ['success', 'card'], ['danger', 'card'],
+  // App chrome: header, footer, auth banner, dark tab bar.
+  ['chrome-foreground', 'chrome'], ['chrome-foreground', 'chrome-deep'],
+  ['chrome-muted-foreground', 'chrome'], ['chrome-muted-foreground', 'chrome-deep'],
+  ['chrome-accent', 'chrome'], ['chrome-accent', 'chrome-deep'],
 ];
 
 // Orange (--primary) is a fill in light mode; orange *text* there uses --accent-text
 // (checked above). On the navy surfaces of dark mode, orange is fine as text.
-const DARK_ONLY_PAIRS: [string, string][] = [['primary', 'card'], ['primary', 'background']];
+// The tab bar sits on --chrome in dark mode, with muted and accent labels.
+const DARK_ONLY_PAIRS: [string, string][] = [
+  ['primary', 'card'], ['primary', 'background'], ['muted-foreground', 'chrome'], ['accent-text', 'chrome'],
+];
 
 describe.each([['light', light], ['dark', dark]] as const)('%s theme contrast', (_name, tokens) => {
   it.each(TEXT_PAIRS)('%s on %s meets AA', (fg, bg) => {

@@ -1,9 +1,10 @@
 import { useId, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FieldHint, Input, Label } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import type { AuthMode } from '@/context/AuthDialogContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -11,7 +12,6 @@ import {
 } from '@/lib/auth';
 import { authErrorMessage, errorCode } from '@/lib/errors';
 import { passwordStrength } from '@/lib/password';
-import { cn } from '@/lib/utils';
 
 type Mode = AuthMode | 'sent';
 
@@ -130,7 +130,7 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
       <div className="flex items-center justify-between">
         <Label htmlFor={ids.password}>Password</Label>
         {mode === 'signin' && (
-          <button type="button" className="text-sm font-medium text-accent-text hover:underline" onClick={() => switchMode('forgot')}>
+          <button type="button" className="text-sm font-semibold text-accent-text hover:underline" onClick={() => switchMode('forgot')}>
             Forgot password?
           </button>
         )}
@@ -151,28 +151,31 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
         </button>
       </div>
       {mode === 'signup' && password && (
-        <div id={`${ids.password}-strength`} className="space-y-1">
-          <div className="flex gap-1" aria-hidden>
-            {[0, 1, 2, 3].map((i) => (
-              <span key={i} className={cn('h-1 flex-1 rounded-full', i < strength.score ? strength.color : 'bg-muted')} />
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">Password strength: {strength.label}</p>
+        <div id={`${ids.password}-strength`} className="space-y-1.5 pt-0.5">
+          <Progress value={strength.score} max={4} label="Password strength" valueText={strength.label} className="h-1.5" />
+          <p className="text-xs text-muted-foreground">
+            Password strength: <span className="font-semibold text-heading">{strength.label}</span>
+          </p>
         </div>
       )}
     </div>
   );
 
   const errorNote = error && (
-    <p id={ids.error} role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger-soft-foreground">
-      {error}
+    <p id={ids.error} role="alert" className="flex items-start gap-2 rounded-md border-l-4 border-danger bg-danger-soft px-3 py-2.5 text-sm font-medium text-danger-soft-foreground">
+      <AlertCircle className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden />
+      <span>{error}</span>
     </p>
   );
 
   const googleButton = (
     <>
-      <Button variant="outline" className="w-full" onClick={() => void google()} disabled={busy}>
-        <svg viewBox="0 0 24 24" aria-hidden className="size-4">
+      <Button
+        variant="outline" size="lg"
+        className="w-full border-[1.5px] border-input text-heading hover:border-navy hover:bg-navy-soft hover:text-heading dark:border-input dark:hover:border-foreground/60 dark:hover:bg-muted dark:hover:text-foreground"
+        onClick={() => void google()} disabled={busy}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden className="size-5!">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
           <path fill="#FBBC05" d="M5.84 14.09A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.43.34-2.09V7.07H2.18A11 11 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" />
@@ -180,8 +183,8 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
         </svg>
         Continue with Google
       </Button>
-      <div className="relative py-1 text-center text-xs text-muted-foreground">
-        <span className="relative z-10 bg-card px-2">or use your email</span>
+      <div className="relative py-1 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="relative z-10 bg-card px-3">or use your email</span>
         <span className="absolute inset-x-0 top-1/2 h-px bg-border" aria-hidden />
       </div>
     </>
@@ -191,7 +194,7 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent title={title} description={description}>
+      <DialogContent variant="brand" title={title} description={description}>
         {mode === 'signin' && (
           <form className="space-y-4" onSubmit={signIn} noValidate={false}>
             {googleButton}
@@ -203,12 +206,12 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
             )}
             <Button type="submit" className="w-full" size="lg" loading={busy}>Sign in</Button>
             <div className="flex flex-col items-center gap-1 text-sm">
-              <button type="button" className="font-medium text-accent-text hover:underline" onClick={() => switchMode('magic')}>
+              <button type="button" className="font-semibold text-accent-text hover:underline" onClick={() => switchMode('magic')}>
                 Email me a sign-in link instead
               </button>
               <p className="text-muted-foreground">
                 New here?{' '}
-                <button type="button" className="font-medium text-accent-text hover:underline" onClick={() => switchMode('signup')}>Create an account</button>
+                <button type="button" className="font-semibold text-accent-text hover:underline" onClick={() => switchMode('signup')}>Create an account</button>
               </p>
             </div>
           </form>
@@ -226,11 +229,11 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
             {errorNote}
             <Button type="submit" className="w-full" size="lg" loading={busy}>Create account</Button>
             <p className="text-center text-xs text-muted-foreground">
-              By creating an account you agree to our <a className="underline" href="/terms" target="_blank" rel="noreferrer">terms</a>.
+              By creating an account you agree to our <a className="font-medium text-accent-text underline" href="/terms" target="_blank" rel="noreferrer">terms</a>.
             </p>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <button type="button" className="font-medium text-accent-text hover:underline" onClick={() => switchMode('signin')}>Sign in</button>
+              <button type="button" className="font-semibold text-accent-text hover:underline" onClick={() => switchMode('signin')}>Sign in</button>
             </p>
           </form>
         )}
@@ -242,16 +245,18 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
             <Button type="submit" className="w-full" size="lg" loading={busy}>
               {mode === 'magic' ? 'Send me a link' : 'Send reset link'}
             </Button>
-            <Button variant="ghost" className="w-full" onClick={() => switchMode('signin')}>Back to sign in</Button>
+            <p className="text-center text-sm">
+              <button type="button" className="font-semibold text-accent-text hover:underline" onClick={() => switchMode('signin')}>Back to sign in</button>
+            </p>
           </form>
         )}
 
         {mode === 'sent' && (
           <div className="space-y-4 text-center">
-            <div className="mx-auto grid size-14 place-items-center rounded-full bg-primary-soft text-primary-soft-foreground">
-              <Mail className="size-7" aria-hidden />
+            <div className="mx-auto grid size-16 place-items-center rounded-full bg-primary-soft text-primary-soft-foreground ring-8 ring-primary-soft/50">
+              <Mail className="size-8" aria-hidden />
             </div>
-            <p>{sentMessage}</p>
+            <p className="text-heading">{sentMessage}</p>
             <FieldHint>Nothing yet? Check your spam folder, or wait a minute and try again.</FieldHint>
             <Button variant="outline" className="w-full" onClick={() => switchMode('signin')}>Back to sign in</Button>
           </div>

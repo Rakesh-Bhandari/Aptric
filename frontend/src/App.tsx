@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-rou
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppShell, FocusLayout } from '@/components/layout/AppShell';
 import { NotFound, RouteError } from '@/components/layout/ErrorBoundary';
-import { PageSkeleton } from '@/components/layout/PageSkeleton';
+import { ShellLoader } from '@/components/layout/PageSkeleton';
 import { RequireAuth } from '@/components/layout/RouteGuards';
 import { AuthDialogProvider } from '@/context/AuthDialogContext';
 import { PreferencesProvider } from '@/context/PreferencesContext';
@@ -53,7 +53,7 @@ const Root = () => (
 /** "/": Today for players, the landing page for visitors. */
 const Home = () => {
   const { status } = useSession();
-  if (status === 'loading') return <PageSkeleton />;
+  if (status === 'loading') return <ShellLoader />;
   if (status === 'signed_out') return <Landing />;
   return <Outlet />;
 };

@@ -4,7 +4,8 @@ import { LogIn, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthDialog } from '@/context/AuthDialogContext';
 import { useSession } from '@/context/SessionContext';
-import { PageSkeleton } from './PageSkeleton';
+import { AptricMark } from '@/components/brand/AptricMark';
+import { ShellLoader } from './PageSkeleton';
 
 /** Layout route for signed-in-only pages. Also sends unfinished sign-ups to /onboarding. */
 export const RequireAuth = ({ allowOnboarding = false }: { allowOnboarding?: boolean }) => {
@@ -16,13 +17,14 @@ export const RequireAuth = ({ allowOnboarding = false }: { allowOnboarding?: boo
     if (status === 'signed_out') openAuth({ mode: 'signin', next: `${pathname}${search}` });
   }, [status, openAuth, pathname, search]);
 
-  if (status === 'loading') return <PageSkeleton />;
+  if (status === 'loading') return <ShellLoader />;
   if (status === 'signed_out') {
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-6 py-16 text-center">
-        <h1 className="text-2xl font-bold">Sign in to continue</h1>
+      <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-6 py-16 text-center sm:py-24">
+        <AptricMark className="h-14" />
+        <h1 className="font-display text-2xl font-extrabold tracking-tight text-heading">Sign in to continue</h1>
         <p className="text-muted-foreground">You need an account to see this page. It's free.</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-3">
           <Button onClick={() => openAuth({ mode: 'signin', next: `${pathname}${search}` })}><LogIn /> Sign in</Button>
           <Button variant="outline" asChild><Link to="/">Home</Link></Button>
         </div>
@@ -31,8 +33,9 @@ export const RequireAuth = ({ allowOnboarding = false }: { allowOnboarding?: boo
   }
   if (profileError) {
     return (
-      <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 px-6 py-16 text-center">
-        <h1 className="text-2xl font-bold">We couldn't load your account</h1>
+      <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 px-6 py-16 text-center sm:py-24">
+        <AptricMark className="h-14 opacity-40" />
+        <h1 className="font-display text-2xl font-extrabold tracking-tight text-heading">We couldn't load your account</h1>
         <p className="text-muted-foreground">Check your connection and try again.</p>
         <Button onClick={() => void refreshProfile()}><RotateCcw /> Try again</Button>
       </div>
