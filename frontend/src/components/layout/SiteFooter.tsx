@@ -5,32 +5,30 @@ import { cn } from '@/lib/utils';
 
 export const TAGLINE = 'Daily aptitude practice for placements and competitive exams';
 
-export interface FooterLink { label: string; to?: string; onClick?: () => void }
+export interface FooterLink { label: string; to?: string; href?: string; onClick?: () => void }
+export interface FooterColumn { title: string; links: FooterLink[] }
 
 const linkClass =
   'inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-chrome-muted-foreground transition-colors hover:text-chrome-foreground md:min-h-0';
 
+const FooterItem = ({ label, to, href, onClick }: FooterLink) =>
+  to ? <Link to={to} className={linkClass}>{label}</Link>
+    : href ? <a href={href} className={linkClass}>{label}</a>
+      : <button type="button" onClick={onClick} className={linkClass}>{label}</button>;
+
 const FooterLinks = ({ links, className }: { links: FooterLink[]; className?: string }) => (
   <ul className={cn('flex flex-wrap items-center gap-x-5', className)}>
-    {links.map(({ label, to, onClick }) => (
-      <li key={label}>
-        {to ? (
-          <Link to={to} className={linkClass}>{label}</Link>
-        ) : (
-          <button type="button" onClick={onClick} className={linkClass}>{label}</button>
-        )}
-      </li>
-    ))}
+    {links.map((link) => <li key={link.label}><FooterItem {...link} /></li>)}
   </ul>
 );
 
 /**
  * Dark Navy footer. `compact` (the signed-in app) is a single row; `full` (visitors,
- * the landing page) stacks the logo over the tagline. `children` lets the landing
- * page add extra columns later.
+ * the landing page) shows the stacked logo and tagline beside `columns` of links
+ * (or the flat `links` when no columns are given). `children` adds extra content.
  */
-export const SiteFooter = ({ variant = 'compact', links, className, children }: {
-  variant?: 'compact' | 'full'; links: FooterLink[]; className?: string; children?: ReactNode;
+export const SiteFooter = ({ variant = 'compact', links, columns, className, children }: {
+  variant?: 'compact' | 'full'; links: FooterLink[]; columns?: FooterColumn[]; className?: string; children?: ReactNode;
 }) => {
   const year = new Date().getFullYear();
   if (variant === 'compact') {
@@ -49,16 +47,29 @@ export const SiteFooter = ({ variant = 'compact', links, className, children }: 
   }
   return (
     <footer className={cn('bg-chrome-deep text-chrome-muted-foreground', className)}>
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
-          <div className="flex flex-col items-center gap-3 sm:items-start">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+        <div className="flex flex-col gap-10 md:flex-row md:justify-between">
+          <div className="flex flex-col items-center gap-4 text-center md:items-start md:text-left">
             <Link to="/" aria-label="Aptric home" className="rounded-md">
-              <AptricLogo size="md" variant="onDark" />
+              <AptricLogo stacked size="sm" variant="onDark" className="md:items-start" />
             </Link>
             <p className="max-w-xs text-sm">{TAGLINE}</p>
           </div>
           {children}
-          <FooterLinks links={links} className="justify-center sm:justify-end" />
+          {columns ? (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 md:gap-x-14">
+              {columns.map((col) => (
+                <nav key={col.title} aria-label={col.title}>
+                  <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-chrome-accent">{col.title}</h2>
+                  <ul className="mt-3 md:space-y-2">
+                    {col.links.map((link) => <li key={link.label}><FooterItem {...link} /></li>)}
+                  </ul>
+                </nav>
+              ))}
+            </div>
+          ) : (
+            <FooterLinks links={links} className="justify-center md:justify-end" />
+          )}
         </div>
         <div className="mt-8 border-t border-white/10 pt-5 text-center text-xs sm:text-left">© {year} Aptric. Built for students who practise every day.</div>
       </div>

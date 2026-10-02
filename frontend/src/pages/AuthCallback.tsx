@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Loader2, XCircle } from 'lucide-react';
+import { XCircle } from 'lucide-react';
+import { AptricMark } from '@/components/brand/AptricMark';
+import { AuthCard, AuthPage } from '@/components/layout/AuthCard';
 import { Button } from '@/components/ui/button';
 import { safeNext, verifyLink, type LinkType } from '@/lib/auth';
 import { authErrorMessage } from '@/lib/errors';
@@ -49,23 +51,30 @@ const AuthCallback = () => {
     finish().catch(() => setError("We couldn't reach the sign-in service. Check your connection and try again."));
   }, [navigate]);
 
+  if (error) {
+    return (
+      <AuthCard
+        title="That link didn't work"
+        description="Links work once and expire after an hour."
+        icon={<XCircle className="mt-0.5 size-6 shrink-0 text-chrome-accent" aria-hidden />}
+      >
+        <p role="alert" className="rounded-md border-l-4 border-danger bg-danger-soft px-3 py-2.5 text-sm font-medium text-danger-soft-foreground">{error}</p>
+        <p className="mt-4 text-sm text-muted-foreground">Sign in again or ask for a new link from the home page.</p>
+        <Button asChild size="lg" className="mt-5 w-full"><Link to="/">Back to the home page</Link></Button>
+      </AuthCard>
+    );
+  }
+
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-6 py-20 text-center">
-      {error ? (
-        <>
-          <XCircle className="size-12 text-danger" aria-hidden />
-          <h1 className="text-2xl font-bold">That link didn't work</h1>
-          <p role="alert" className="text-muted-foreground">{error}</p>
-          <p className="text-sm text-muted-foreground">Links work once and expire after an hour. Sign in again or ask for a new link.</p>
-          <Button asChild><Link to="/">Back to the home page</Link></Button>
-        </>
-      ) : (
-        <div role="status" className="flex flex-col items-center gap-4">
-          <Loader2 className="size-10 animate-spin text-accent-text" aria-hidden />
-          <h1 className="text-xl font-semibold">Signing you in…</h1>
+    <AuthPage>
+      <div role="status" className="flex flex-col items-center gap-5 text-center">
+        <AptricMark className="h-16 motion-safe:animate-breathe" />
+        <h1 className="font-display text-xl font-extrabold tracking-tight text-heading">Signing you in…</h1>
+        <div aria-hidden className="h-1 w-40 overflow-hidden rounded-full bg-muted">
+          <div className="h-full w-full bg-[linear-gradient(90deg,transparent,var(--primary),transparent)] motion-safe:animate-shimmer" />
         </div>
-      )}
-    </div>
+      </div>
+    </AuthPage>
   );
 };
 
