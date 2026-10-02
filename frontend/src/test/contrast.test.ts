@@ -40,6 +40,8 @@ const TEXT_PAIRS: [string, string][] = [
   ['heading', 'primary-soft'], ['muted-foreground', 'primary-soft'],
   // League tier names and icons on cards.
   ['tier-bronze', 'card'], ['tier-silver', 'card'], ['tier-gold', 'card'], ['tier-platinum', 'card'], ['tier-diamond', 'card'],
+  // Rank 1–3 medals (league, leaderboards, contest standings): navy numbers on metal fills.
+  ['medal-foreground', 'medal-gold'], ['medal-foreground', 'medal-silver'], ['medal-foreground', 'medal-bronze'],
   // Text on the navy-gradient hero (Daily card, placement intro): both gradient stops.
   ['navy-foreground', 'brand-navy'], ['navy-muted-foreground', 'brand-navy'], ['on-navy-success', 'brand-navy'], ['on-navy-danger', 'brand-navy'],
   // App chrome: header, footer, auth banner, dark tab bar.

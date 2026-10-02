@@ -26,6 +26,7 @@ const TOKENS: [group: string, names: string[]][] = [
   ['Orange', ['primary', 'primary-strong', 'primary-foreground', 'orange-light', 'primary-soft', 'primary-soft-foreground', 'ring', 'streak']],
   ['Navy', ['navy', 'navy-strong', 'navy-foreground', 'navy-soft', 'navy-soft-foreground', 'navy-muted-foreground']],
   ['Status', ['success', 'success-soft', 'success-soft-foreground', 'danger', 'danger-soft', 'danger-soft-foreground', 'warning', 'warning-soft', 'warning-soft-foreground', 'gold']],
+  ['League', ['medal-gold', 'medal-silver', 'medal-bronze', 'metal-bronze-lo', 'metal-silver-lo', 'metal-gold-lo', 'metal-platinum-lo', 'metal-diamond-lo']],
 ];
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (

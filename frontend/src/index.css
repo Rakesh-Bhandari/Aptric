@@ -52,12 +52,44 @@
   --warning-soft-foreground: #713f12;
   --streak: #f06a00;
   --gold: #c58a00;
+  /* Charts: radar stroke/points (3:1+ on cards) and the 5-step activity scale (--muted, then heat-1..4). */
+  --chart-accent: #e86600;
+  --heat-1: #ffe0c2;
+  --heat-2: #ffb066;
+  --heat-3: #ff7800;
+  --heat-4: #d95a00;
   /* League tiers (icons, chips and tier names on cards). */
   --tier-bronze: #9a5426;
   --tier-silver: #5b687e;
   --tier-gold: #a16207;
   --tier-platinum: #0f766e;
   --tier-diamond: #2f5fc4;
+  /*
+   * Tier emblem metals (shield/gem fills on the navy league banner) and podium
+   * medals (rank 1–3 fills with navy text). Same in both themes: they sit on
+   * navy or carry their own navy text.
+   */
+  --metal-bronze-hi: #f0b183;
+  --metal-bronze-lo: #a85d2c;
+  --metal-silver-hi: #f1f4f9;
+  --metal-silver-lo: #8d9bb3;
+  --metal-gold-hi: #ffdb70;
+  --metal-gold-lo: #d08a00;
+  --metal-platinum-hi: #b4f5e8;
+  --metal-platinum-lo: #2a9d90;
+  --metal-diamond-hi: #d3e0ff;
+  --metal-diamond-lo: #5b82e6;
+  --medal-gold: #f7c23c;
+  --medal-silver: #ccd5e3;
+  --medal-bronze: #e3a06e;
+  --medal-foreground: #06132f;
+  /* Fixed palettes for the theme picker's preview swatches (never themed). */
+  --preview-light-bg: #f7f9fc;
+  --preview-light-card: #ffffff;
+  --preview-light-line: #e3e8f0;
+  --preview-dark-bg: #06132f;
+  --preview-dark-card: #0e2552;
+  --preview-dark-line: #1e3563;
   /* Status colours on navy-gradient panels (same in both themes). */
   --on-navy-success: #4ade80;
   --on-navy-danger: #fca5a5;
@@ -120,6 +152,11 @@
   --warning-soft-foreground: #fde68a;
   --streak: #ff8a1f;
   --gold: #fbbf24;
+  --chart-accent: #ff9a3d;
+  --heat-1: #4f3324;
+  --heat-2: #8f4615;
+  --heat-3: #d9650c;
+  --heat-4: #ff9a3d;
   --tier-bronze: #f0a46a;
   --tier-silver: #c3cde3;
   --tier-gold: #fbbf24;
@@ -179,11 +216,36 @@
   --color-warning-soft-foreground: var(--warning-soft-foreground);
   --color-streak: var(--streak);
   --color-gold: var(--gold);
+  --color-chart-accent: var(--chart-accent);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
   --color-tier-bronze: var(--tier-bronze);
   --color-tier-silver: var(--tier-silver);
   --color-tier-gold: var(--tier-gold);
   --color-tier-platinum: var(--tier-platinum);
   --color-tier-diamond: var(--tier-diamond);
+  --color-metal-bronze-hi: var(--metal-bronze-hi);
+  --color-metal-bronze-lo: var(--metal-bronze-lo);
+  --color-metal-silver-hi: var(--metal-silver-hi);
+  --color-metal-silver-lo: var(--metal-silver-lo);
+  --color-metal-gold-hi: var(--metal-gold-hi);
+  --color-metal-gold-lo: var(--metal-gold-lo);
+  --color-metal-platinum-hi: var(--metal-platinum-hi);
+  --color-metal-platinum-lo: var(--metal-platinum-lo);
+  --color-metal-diamond-hi: var(--metal-diamond-hi);
+  --color-metal-diamond-lo: var(--metal-diamond-lo);
+  --color-medal-gold: var(--medal-gold);
+  --color-medal-silver: var(--medal-silver);
+  --color-medal-bronze: var(--medal-bronze);
+  --color-medal-foreground: var(--medal-foreground);
+  --color-preview-light-bg: var(--preview-light-bg);
+  --color-preview-light-card: var(--preview-light-card);
+  --color-preview-light-line: var(--preview-light-line);
+  --color-preview-dark-bg: var(--preview-dark-bg);
+  --color-preview-dark-card: var(--preview-dark-card);
+  --color-preview-dark-line: var(--preview-dark-line);
   --color-on-navy-success: var(--on-navy-success);
   --color-on-navy-danger: var(--on-navy-danger);
   --radius-lg: var(--radius);
