@@ -1,27 +1,49 @@
-import { Award, Flame, TrendingUp } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Award, Flame, Snowflake, Sparkles, TrendingDown, TrendingUp } from 'lucide-react';
 import type { AnswerResult } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
-/** Inline celebration shown in the result card when an answer levels you up or earns a badge. */
+const Chip = ({ className, children }: { className?: string; children: ReactNode }) => (
+  <li
+    className={cn(
+      'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold motion-safe:animate-pop-in [&_svg]:size-4 [&_svg]:shrink-0',
+      className,
+    )}
+  >
+    {children}
+  </li>
+);
+
+/** Celebration chips under the answer banner: level up, badges, bonus XP, streak, rating. */
 export const AnswerNews = ({ result }: { result: AnswerResult | null }) => {
   const p = result?.progress;
-  if (!p || (!p.leveled_up && !p.new_badges.length && !p.rating_change && !p.freezes_earned)) return null;
+  if (!result || !p) return null;
+  const streakDone = p.set_complete && result.current_streak > 0;
+  if (!p.leveled_up && !p.new_badges.length && !p.rating_change && !p.freezes_earned && !p.bonus_xp && !streakDone) return null;
   return (
-    <ul className="mt-3 space-y-1.5 text-sm">
+    <ul className="flex flex-wrap gap-2" aria-label="Progress news">
       {p.leveled_up && (
-        <li className="flex items-center gap-2 font-semibold"><TrendingUp className="size-4 text-accent-text" aria-hidden /> You reached level {p.level}!</li>
+        <Chip className="bg-gradient-navy text-navy-foreground"><TrendingUp className="text-orange-light" aria-hidden /> Level {p.level} reached!</Chip>
+      )}
+      {p.bonus_xp > 0 && (
+        <Chip className="bg-primary text-primary-foreground"><Sparkles aria-hidden /> +{p.bonus_xp} bonus XP</Chip>
+      )}
+      {streakDone && (
+        <Chip className="bg-primary-soft text-primary-soft-foreground"><Flame className="text-streak" aria-hidden /> {result.current_streak}-day streak</Chip>
       )}
       {p.new_badges.map((b) => (
-        <li key={`${b.slug}-${b.topic ?? ''}`} className="flex items-center gap-2">
-          <Award className="size-4 text-gold" aria-hidden /> New badge: <span aria-hidden>{b.icon}</span> <strong>{b.name}</strong>{b.topic ? ` (${b.topic})` : ''}
-        </li>
+        <Chip key={`${b.slug}-${b.topic ?? ''}`} className="bg-navy-soft text-navy-soft-foreground">
+          <Award className="text-gold" aria-hidden /> New badge: <span aria-hidden>{b.icon}</span> {b.name}{b.topic ? ` (${b.topic})` : ''}
+        </Chip>
       ))}
       {p.freezes_earned > 0 && (
-        <li className="flex items-center gap-2"><Flame className="size-4 text-streak" aria-hidden /> You earned a streak freeze.</li>
+        <Chip className="bg-navy-soft text-navy-soft-foreground"><Snowflake aria-hidden /> Streak freeze earned</Chip>
       )}
       {p.rating_change && (
-        <li className="flex items-center gap-2">
-          Rating {p.rating_change.delta >= 0 ? 'up' : 'down'} {Math.abs(p.rating_change.delta)} to <strong>{p.rating_change.after}</strong>
-        </li>
+        <Chip className={p.rating_change.delta >= 0 ? 'bg-success-soft text-success-soft-foreground' : 'bg-danger-soft text-danger-soft-foreground'}>
+          {p.rating_change.delta >= 0 ? <TrendingUp aria-hidden /> : <TrendingDown aria-hidden />}
+          Rating {p.rating_change.delta >= 0 ? 'up' : 'down'} {Math.abs(p.rating_change.delta)} to {p.rating_change.after}
+        </Chip>
       )}
     </ul>
   );

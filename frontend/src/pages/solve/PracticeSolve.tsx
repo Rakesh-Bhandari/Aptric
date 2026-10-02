@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PartyPopper } from 'lucide-react';
 import { SessionHeader } from '@/components/solve/SessionHeader';
 import { SolveScreen, type Reveal } from '@/components/solve/SolveScreen';
-import { outcomeOf, saveSummary, type SessionItem } from '@/components/solve/session';
+import { outcomeOf, saveSummary, segmentOf, type SessionItem } from '@/components/solve/session';
 import { Button } from '@/components/ui/button';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import * as api from '@/lib/api';
@@ -54,13 +54,20 @@ const Runner = ({ batch, title, againHref }: { batch: PracticeBatch; title: stri
     items.current.push({
       questionId: question.id, subtopicId: question.subtopicId, subtopic: question.subtopic, difficulty: question.difficulty,
       outcome: outcomeOf(reveal), xp: r.xp_awarded, timeMs,
+      review: {
+        stem: question.stem, options: question.options.map((o) => ({ id: o.id, body: o.body })),
+        selectedOptionId, correctOptionId: r.correct_option_id, explanation: r.explanation,
+      },
     });
     return reveal;
   };
 
   return (
     <>
-      <SessionHeader title={title} index={index} total={questions.length} onExit={finish} exitLabel="End practice" />
+      <SessionHeader
+        title={title} index={index} total={questions.length} onExit={finish} exitLabel="End practice"
+        results={items.current.map((i) => segmentOf(i.outcome))}
+      />
       <SolveScreen
         key={question.id}
         question={question}
