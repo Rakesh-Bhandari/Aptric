@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/context/ToastContext';
 import { SolveScreen, type Reveal, type SolveQuestion } from './SolveScreen';
 
@@ -94,5 +94,50 @@ describe('SolveScreen', () => {
     const { user } = setup({ onSubmit });
     await user.keyboard('1{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent(/already answered/i);
+  });
+
+  describe('exam guard', () => {
+    afterEach(() => {
+      sessionStorage.clear();
+      vi.restoreAllMocks();
+    });
+
+    it('blocks copying, the context menu and select-all on the question', () => {
+      setup();
+      expect(document.documentElement).toHaveAttribute('data-protected');
+      const stem = document.querySelector('.katex')!;
+      expect(fireEvent.copy(stem)).toBe(false);
+      expect(fireEvent.cut(stem)).toBe(false);
+      expect(fireEvent.contextMenu(stem)).toBe(false);
+      expect(fireEvent.keyDown(stem, { key: 'a', ctrlKey: true })).toBe(false);
+      expect(fireEvent.keyDown(stem, { key: 'p', metaKey: true })).toBe(false);
+    });
+
+    it('hides the question while away and warns on return', async () => {
+      const { user } = setup();
+      const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+      act(() => { window.dispatchEvent(new Event('blur')); });
+      // A second signal for the same departure doesn't count twice.
+      act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+      expect(screen.getByText('Question hidden')).toBeInTheDocument();
+
+      hasFocus.mockReturnValue(true);
+      act(() => { window.dispatchEvent(new Event('focus')); });
+      const dialog = await screen.findByRole('dialog', { name: /tab switch detected/i });
+      expect(dialog).toHaveTextContent('1 tab switch this session');
+      expect(screen.queryByText('Question hidden')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /back to the question/i }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(screen.getByText('1 tab switch')).toBeInTheDocument();
+    });
+
+    it('stops watching once the question is answered', async () => {
+      const { user } = setup();
+      await user.keyboard('2{Enter}');
+      await screen.findByRole('heading', { name: 'Correct!' });
+      act(() => { window.dispatchEvent(new Event('blur')); });
+      expect(screen.queryByText('Question hidden')).not.toBeInTheDocument();
+    });
   });
 });

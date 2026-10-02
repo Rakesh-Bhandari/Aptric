@@ -381,6 +381,23 @@
   }
 }
 
+/*
+ * Question screens (useCopyProtection sets data-protected on <html>): no text
+ * selection, no long-press callout, and nothing to print. Form fields stay usable.
+ */
+[data-protected] body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+[data-protected] :is(input, textarea, select, [contenteditable='true']) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+@media print {
+  [data-protected] body { display: none !important; }
+}
+
 /* Reduced motion: the OS setting, or the in-app switch (data-reduce-motion). */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

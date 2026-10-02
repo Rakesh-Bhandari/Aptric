@@ -1,16 +1,18 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { ArrowRight, Check, Clock, Eye, Flag, Lightbulb, MoreHorizontal, Repeat, SkipForward, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Check, Clock, EyeOff, Eye, Flag, Lightbulb, MoreHorizontal, Repeat, ShieldAlert, SkipForward, Sparkles, X } from 'lucide-react';
 import { Markdown } from '@/components/markdown/Markdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useToast } from '@/context/ToastContext';
 import { useElapsed } from '@/hooks/useElapsed';
+import { useCopyProtection, useTabSwitchGuard } from '@/hooks/useExamGuard';
 import { prefersReducedMotion } from '@/hooks/useReveal';
 import { useSolveKeys } from '@/hooks/useSolveKeys';
 import { friendlyError } from '@/lib/errors';
-import { formatClock, formatDuration } from '@/lib/format';
+import { formatClock, formatDuration, plural } from '@/lib/format';
 import { DIFFICULTY_LABEL, OPTION_KEYS, OPTION_LETTERS } from '@/lib/game';
 import type { Difficulty, QuestionOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -103,6 +105,9 @@ export const SolveScreen = ({
   const timerSlot = useTimerSlot();
 
   const answered = !!reveal;
+  useCopyProtection();
+  // Leaving the page only matters while the question is still open.
+  const guard = useTabSwitchGuard(!answered);
   const overTime = elapsed > question.est_seconds * 1000;
 
   // Move focus to the result so keyboard and screen-reader users land on it.
@@ -193,7 +198,12 @@ export const SolveScreen = ({
     : null;
 
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-4 px-4 pt-4 sm:gap-5 sm:px-6 sm:pt-6">
+    <div
+      className={cn(
+        'mx-auto flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-4 px-4 pt-4 sm:gap-5 sm:px-6 sm:pt-6',
+        (guard.away || guard.warning) && 'blur-lg',
+      )}
+    >
       {timerSlot && createPortal(timer, timerSlot)}
 
       {/* Meta row: where this question sits, difficulty, kind */}
@@ -209,6 +219,11 @@ export const SolveScreen = ({
         <Badge variant={DIFFICULTY_BADGE[question.difficulty]}>{DIFFICULTY_LABEL[question.difficulty]}</Badge>
         <Badge variant="navy">{KIND_LABEL[kind]}</Badge>
         {worth && <span className="text-xs font-medium text-muted-foreground">Worth {worth}</span>}
+        {guard.count > 0 && (
+          <Badge variant="danger" title="Times you left this page during a question">
+            <ShieldAlert /> {plural(guard.count, 'tab switch', 'tab switches')}
+          </Badge>
+        )}
         {!timerSlot && <span className="ml-auto">{timer}</span>}
       </div>
 
@@ -393,6 +408,35 @@ export const SolveScreen = ({
         </div>
       </div>
       <ReportDialog questionId={question.id} open={reportOpen} onOpenChange={setReportOpen} />
+
+      {/* Hide the question while the player is away, so it can't be read from another window or a screenshot. */}
+      {guard.away && createPortal(
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-background p-6 text-center" aria-hidden>
+          <div className="space-y-2">
+            <EyeOff className="mx-auto size-8 text-muted-foreground" />
+            <p className="text-lg font-bold text-heading">Question hidden</p>
+            <p className="text-sm text-muted-foreground">Come back to this tab to continue.</p>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      <Dialog open={!!guard.warning} onOpenChange={(open) => { if (!open) guard.acknowledge(); }}>
+        <DialogContent title={<span className="flex items-center gap-2"><ShieldAlert className="size-5 text-danger" aria-hidden /> Tab switch detected</span>} hideClose>
+          <div className="space-y-3 text-sm text-foreground">
+            <p>
+              You left this question for <strong>{formatDuration(guard.warning?.awayMs ?? 0)}</strong>.
+              {' '}That's <strong>{plural(guard.warning?.count ?? 0, 'tab switch', 'tab switches')}</strong> this session.
+            </p>
+            <p className="text-muted-foreground">
+              {kind === 'contest'
+                ? 'Switching tabs or apps during a contest breaks fair play. Stay on this page until you have answered.'
+                : 'Stay on this page until you have answered, so your practice matches real exam conditions.'}
+            </p>
+            <Button className="w-full" onClick={guard.acknowledge}>Back to the question</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
