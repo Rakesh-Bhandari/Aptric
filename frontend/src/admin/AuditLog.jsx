@@ -56,36 +56,34 @@ export const AuditEntries = ({ rows }) => {
         return next;
     });
     return (
-        <div className="adm-table-wrap">
-            <table className="adm-table adm-audit">
-                <thead>
-                    <tr><th>When</th><th>Who</th><th>Action</th><th>Entity</th><th>Changes</th></tr>
-                </thead>
-                <tbody>
-                    {rows.map((r) => {
-                        const link = entityLink(r);
-                        return (
-                            <tr key={r.id}>
-                                <td title={r.created_at}>{formatDate(r.created_at)}</td>
-                                <td>{r.actor ? <Link to={`/admin/users/${r.actor.id}`}>@{r.actor.handle ?? r.actor.id.slice(0, 8)}</Link> : <span className="adm-sub">system</span>}</td>
-                                <td><span className={`adm-action adm-action-${r.action}`}>{r.action}</span></td>
-                                <td>
-                                    <div>{r.entity_type}</div>
-                                    <div className="adm-sub adm-mono">
-                                        {link ? <Link to={link.to}>{r.entity_id?.slice(0, 8)}</Link> : r.entity_id?.slice(0, 8)}
-                                    </div>
-                                </td>
-                                <td>
-                                    {open.has(r.id)
-                                        ? <><Changes before={r.before} after={r.after} /><button type="button" className="adm-link" onClick={() => toggle(r.id)}>hide</button></>
-                                        : <button type="button" className="adm-link" onClick={() => toggle(r.id)}>show</button>}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
+        <ol className="adm-timeline">
+            {rows.map((r) => {
+                const link = entityLink(r);
+                return (
+                    <li key={r.id} className="adm-timeline-item">
+                        <span className="adm-timeline-dot" aria-hidden />
+                        <div className="adm-timeline-body">
+                            <div className="adm-timeline-head">
+                                <span className={`adm-action adm-action-${r.action}`}>{r.action}</span>
+                                <span className="adm-timeline-entity">{r.entity_type}</span>
+                                <span className="adm-sub adm-mono">
+                                    {link ? <Link to={link.to}>{r.entity_id?.slice(0, 8)}</Link> : r.entity_id?.slice(0, 8)}
+                                </span>
+                                <span className="adm-sub">
+                                    by {r.actor ? <Link to={`/admin/users/${r.actor.id}`}>@{r.actor.handle ?? r.actor.id.slice(0, 8)}</Link> : 'system'}
+                                </span>
+                                <time dateTime={r.created_at} title={r.created_at}>{formatDate(r.created_at)}</time>
+                            </div>
+                            <div className="adm-timeline-changes">
+                                {open.has(r.id)
+                                    ? <><Changes before={r.before} after={r.after} /><button type="button" className="adm-link" aria-expanded="true" onClick={() => toggle(r.id)}>Hide changes</button></>
+                                    : <button type="button" className="adm-link" aria-expanded="false" onClick={() => toggle(r.id)}>Show changes</button>}
+                            </div>
+                        </div>
+                    </li>
+                );
+            })}
+        </ol>
     );
 };
 

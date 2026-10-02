@@ -48,6 +48,8 @@ const TEXT_PAIRS: [string, string][] = [
   ['chrome-foreground', 'chrome'], ['chrome-foreground', 'chrome-deep'],
   ['chrome-muted-foreground', 'chrome'], ['chrome-muted-foreground', 'chrome-deep'],
   ['chrome-accent', 'chrome'], ['chrome-accent', 'chrome-deep'],
+  // Admin sidebar: active item on the raised navy step.
+  ['chrome-foreground', 'chrome-raised'], ['chrome-muted-foreground', 'chrome-raised'],
 ];
 
 // Orange (--primary) is a fill in light mode; orange *text* there uses --accent-text

@@ -144,7 +144,7 @@ const ReviewQueue = () => {
                                     <span className="adm-review-stem">{plain(r.stem, 110)}</span>
                                     <span className="adm-review-sub">
                                         <Badge value={r.difficulty} /> {r.subtopic.name} · {r.source} · {timeAgo(r.created_at)}
-                                        {r.open_reports > 0 && <span className="adm-flag"> · {r.open_reports} report{r.open_reports > 1 ? 's' : ''}</span>}
+                                        {r.open_reports > 0 && <span className="adm-flag">· {r.open_reports} report{r.open_reports > 1 ? 's' : ''}</span>}
                                     </span>
                                 </button>
                             </li>
@@ -157,7 +157,7 @@ const ReviewQueue = () => {
                     <ErrorNote error={questionError} />
                     {selectedId && !question && !questionError && <Empty>Loading question…</Empty>}
                     {question && (
-                        <>
+                        <article className="adm-card adm-review-card" aria-label="Question under review">
                             <div className="adm-detail-head">
                                 <span className="adm-path">{question.section.name} › {question.topic.name} › {question.subtopic.name}</span>
                                 <Link to={`/admin/questions/${question.id}`}>Open full page</Link>
@@ -193,7 +193,7 @@ const ReviewQueue = () => {
                                     </div>
                                 )}
                             />
-                        </>
+                        </article>
                     )}
                 </div>
             </div>
