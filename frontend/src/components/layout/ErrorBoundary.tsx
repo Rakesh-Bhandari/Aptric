@@ -1,36 +1,56 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router-dom';
-import { AlertTriangle, Home, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Home, RotateCcw } from 'lucide-react';
+import { AptricMark } from '@/components/brand/AptricMark';
 import { Button } from '@/components/ui/button';
 
 const isChunkError = (error: unknown) =>
   error instanceof Error && /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(error.message);
 
+/** Centred page for errors and dead ends: a large faded mark behind a short message. */
+const SystemState = ({ eyebrow, title, message, actions, alert }: {
+  eyebrow?: string; title: string; message: string; actions: ReactNode; alert?: boolean;
+}) => (
+  <div role={alert ? 'alert' : undefined} className="mx-auto flex max-w-md flex-col items-center gap-5 px-6 py-16 text-center sm:py-24">
+    <div className="relative grid place-items-center" aria-hidden>
+      <span className="absolute size-40 rounded-full bg-primary-soft/70 blur-2xl dark:bg-primary-soft/40" />
+      <AptricMark className="relative h-28 opacity-25 dark:opacity-35" />
+      {eyebrow && (
+        <span className="absolute -bottom-2 rounded-full bg-navy px-3 py-1 font-display text-sm font-extrabold tracking-widest text-navy-foreground shadow-md">
+          {eyebrow}
+        </span>
+      )}
+    </div>
+    <div className="space-y-2">
+      <h1 className="font-display text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">{title}</h1>
+      <p className="text-muted-foreground">{message}</p>
+    </div>
+    <div className="flex flex-wrap justify-center gap-3">{actions}</div>
+  </div>
+);
+
 export const CrashScreen = ({ error, onRetry }: { error: unknown; onRetry?: () => void }) => {
   // A new deploy replaces the lazy chunks the open tab knows about; reloading fixes it.
   const stale = isChunkError(error);
   return (
-    <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 px-6 py-16 text-center">
-      <div className="grid size-14 place-items-center rounded-full bg-danger-soft text-danger-soft-foreground">
-        <AlertTriangle className="size-7" aria-hidden />
-      </div>
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">{stale ? 'A new version is available' : 'Something went wrong'}</h1>
-        <p className="text-muted-foreground">
-          {stale
-            ? 'Aptric was updated while this tab was open. Reload to get the latest version.'
-            : "Sorry about that. Your progress is saved. Try again, or head back home."}
-        </p>
-      </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        <Button onClick={stale || !onRetry ? () => window.location.reload() : onRetry}>
-          <RotateCcw /> {stale ? 'Reload' : 'Try again'}
-        </Button>
-        <Button variant="outline" asChild>
-          <a href="/"><Home /> Go home</a>
-        </Button>
-      </div>
-    </div>
+    <SystemState
+      alert
+      eyebrow={stale ? 'UPDATE' : 'OOPS'}
+      title={stale ? 'A new version is available' : 'Something went wrong'}
+      message={stale
+        ? 'Aptric was updated while this tab was open. Reload to get the latest version.'
+        : 'Sorry about that. Your progress is saved. Try again, or head back home.'}
+      actions={(
+        <>
+          <Button asChild>
+            <a href="/"><Home /> Go home</a>
+          </Button>
+          <Button variant="outline" onClick={stale || !onRetry ? () => window.location.reload() : onRetry}>
+            <RotateCcw /> {stale ? 'Reload' : 'Try again'}
+          </Button>
+        </>
+      )}
+    />
   );
 };
 
@@ -70,17 +90,22 @@ export const RouteError = () => {
   return <CrashScreen error={error} />;
 };
 
-export const NotFound = ({ title = "We can't find that page", message = 'The link may be broken, or the page may have moved.' }: {
+export const NotFound = ({ title = 'Page not found', message = 'The link may be broken, or the page may have moved.' }: {
   title?: string; message?: string;
 }) => (
-  <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-6 py-16 text-center">
-    <p className="text-6xl font-black text-accent-text" aria-hidden>404</p>
-    <div className="space-y-2">
-      <h1 className="text-2xl font-bold">{title}</h1>
-      <p className="text-muted-foreground">{message}</p>
-    </div>
-    <Button asChild>
-      <Link to="/"><Home /> Back to Today</Link>
-    </Button>
-  </div>
+  <SystemState
+    eyebrow="404"
+    title={title}
+    message={message}
+    actions={(
+      <>
+        <Button asChild>
+          <Link to="/"><Home /> Go home</Link>
+        </Button>
+        <Button variant="outline" onClick={() => window.history.back()}>
+          <ArrowLeft /> Go back
+        </Button>
+      </>
+    )}
+  />
 );

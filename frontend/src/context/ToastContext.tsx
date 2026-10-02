@@ -20,11 +20,12 @@ export interface ToastApi {
 const ToastContext = createContext<ToastApi | null>(null);
 
 const ICONS = { success: CheckCircle2, error: XCircle, warning: AlertTriangle, info: Info };
-const STYLES: Record<ToastKind, string> = {
-  success: 'border-success/40 bg-success-soft text-success-soft-foreground',
-  error: 'border-danger/40 bg-danger-soft text-danger-soft-foreground',
-  warning: 'border-warning/40 bg-warning-soft text-warning-soft-foreground',
-  info: 'border bg-card text-card-foreground',
+// A card with a coloured left accent; the icon carries the same colour.
+const STYLES: Record<ToastKind, { accent: string; icon: string }> = {
+  success: { accent: 'border-l-success', icon: 'text-success' },
+  error: { accent: 'border-l-danger', icon: 'text-danger' },
+  warning: { accent: 'border-l-warning', icon: 'text-warning' },
+  info: { accent: 'border-l-primary', icon: 'text-accent-text' },
 };
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
@@ -74,11 +75,18 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
             <div
               key={t.id}
               role={t.kind === 'error' ? 'alert' : 'status'}
-              className={cn('pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border p-3 shadow-lg motion-safe:animate-fade-in', STYLES[t.kind])}
+              className={cn(
+                'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border border-l-4 bg-card py-3 pl-3.5 pr-3 text-card-foreground shadow-lg motion-safe:animate-fade-in dark:border-y-white/10 dark:border-r-white/10',
+                STYLES[t.kind].accent,
+              )}
             >
-              <Icon className="mt-0.5 size-5 shrink-0" aria-hidden />
+              <Icon className={cn('mt-0.5 size-5 shrink-0', STYLES[t.kind].icon)} aria-hidden />
               <p className="flex-1 text-sm font-medium">{t.message}</p>
-              <button type="button" onClick={() => dismiss(t.id)} className="-m-1 rounded p-1 opacity-70 hover:opacity-100" aria-label="Dismiss">
+              <button
+                type="button" onClick={() => dismiss(t.id)}
+                className="-m-1 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Dismiss"
+              >
                 <X className="size-4" />
               </button>
             </div>

@@ -33,6 +33,12 @@
   --navy-muted-foreground: #c3cde3;
   /* Fixed brand navy for logos on fixed light surfaces (same in both themes). */
   --brand-navy: #0b1f4b;
+  /* App chrome (header, footer, auth banner): navy in both themes. */
+  --chrome: #0b1f4b;
+  --chrome-deep: #06132f;
+  --chrome-foreground: #ffffff;
+  --chrome-muted-foreground: #c3cde3;
+  --chrome-accent: #ff9a3d;
   --accent-text: #c2410c;
   --orange-light: #ff9a3d;
   --success: #15803d;
@@ -137,6 +143,11 @@
   --color-navy-muted-foreground: var(--navy-muted-foreground);
   --color-accent-text: var(--accent-text);
   --color-brand-navy: var(--brand-navy);
+  --color-chrome: var(--chrome);
+  --color-chrome-deep: var(--chrome-deep);
+  --color-chrome-foreground: var(--chrome-foreground);
+  --color-chrome-muted-foreground: var(--chrome-muted-foreground);
+  --color-chrome-accent: var(--chrome-accent);
   --color-orange-light: var(--orange-light);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -159,6 +170,8 @@
   --font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --animate-pop: pop 180ms ease-out;
   --animate-fade-in: fade-in 200ms ease-out;
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-breathe: breathe 1.8s ease-in-out infinite;
 }
 
 /* Brand gradients as utilities: bg-gradient-navy, bg-gradient-orange. */
@@ -168,10 +181,24 @@
 @utility bg-gradient-orange {
   background-image: var(--gradient-orange);
 }
+/* Room for the fixed bottom tab bar (3.5rem tabs + its safe-area padding); a utility so md:pb-0 can override it. */
+@utility pb-tabbar {
+  padding-bottom: calc(3.5rem + max(0.5rem, env(safe-area-inset-bottom)));
+}
 
 @keyframes pop {
   from { transform: scale(0.96); opacity: 0.6; }
   to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.94); opacity: 0.6; }
 }
 
 @keyframes fade-in {
