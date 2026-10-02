@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Award, BarChart3, BookOpen, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, CircleAlert, Flag, Flame, History, Lightbulb, Medal,
@@ -10,7 +10,7 @@ import { Markdown } from '@/components/markdown/Markdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Page, PageHeader } from '@/components/ui/page';
+import { Page, PageHeader, StatTile } from '@/components/ui/page';
 import { Progress as Bar } from '@/components/ui/progress';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { MasteryStars } from '@/components/ui/stars';
@@ -22,24 +22,6 @@ import { useActivity, useMistakes, usePlayer, usePracticeTree } from '@/lib/quer
 import type { Mistake } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { practiceHref } from '@/lib/routes';
-
-/** KPI tile: big navy number, muted label, a tinted icon. */
-const Kpi = ({ label, value, hint, icon, tone = 'navy' }: {
-  label: string; value: ReactNode; hint?: ReactNode; icon: ReactNode; tone?: 'navy' | 'orange';
-}) => (
-  <div className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm sm:p-5">
-    <div className="flex items-start justify-between gap-2">
-      <span className="text-xs font-semibold text-muted-foreground sm:text-sm">{label}</span>
-      <span className={cn('grid size-8 shrink-0 place-items-center rounded-full [&_svg]:size-4',
-        tone === 'orange' ? 'bg-primary-soft text-primary-soft-foreground' : 'bg-navy-soft text-navy-soft-foreground')} aria-hidden
-      >
-        {icon}
-      </span>
-    </div>
-    <span className="text-2xl font-extrabold leading-none tracking-tight text-heading tabular-nums sm:text-3xl">{value}</span>
-    {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-  </div>
-);
 
 const Overview = () => {
   const player = usePlayer(null);
@@ -64,16 +46,16 @@ const Overview = () => {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi icon={<CheckCheck />} label="Questions solved" value={p.solved.toLocaleString()} hint={`${plural(p.attempts, 'answer')} in total`} />
-        <Kpi icon={<Target />} label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
-        <Kpi icon={<Flame />} tone="orange" label="Best streak" value={plural(p.longest_streak, 'day')} hint={p.current_streak > 0 ? `Current: ${plural(p.current_streak, 'day')}` : 'Play today to start one'} />
-        <Kpi icon={<Sparkles />} tone="orange" label="Level" value={p.level}
+        <StatTile icon={<CheckCheck />} label="Questions solved" value={p.solved.toLocaleString()} hint={`${plural(p.attempts, 'answer')} in total`} />
+        <StatTile icon={<Target />} label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
+        <StatTile icon={<Flame />} tone="orange" label="Best streak" value={plural(p.longest_streak, 'day')} hint={p.current_streak > 0 ? `Current: ${plural(p.current_streak, 'day')}` : 'Play today to start one'} />
+        <StatTile icon={<Sparkles />} tone="orange" label="Level" value={p.level}
           hint={<>Rating <strong className="font-semibold text-foreground">{p.rating}</strong> · {p.rated_sets > 0 ? plural(p.rated_sets, 'rated set') : 'unrated'}</>} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Skills</CardTitle>
+          <CardTitle>Skills</CardTitle>
           <CardDescription>How often you answer correctly in each section, across daily challenges and practice.</CardDescription>
         </CardHeader>
         <CardContent className="grid items-center gap-6 md:grid-cols-[1fr_1fr]">
@@ -108,10 +90,10 @@ const Overview = () => {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Award className="size-5 text-gold" aria-hidden /> Badges</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Award className="size-5 text-gold" aria-hidden /> Badges</CardTitle></CardHeader>
         <CardContent>
           {p.badges.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No badges yet. Keep a 7-day streak or solve 100 questions to earn your first.</p>
+            <EmptyState icon={<Award />} title="No badges yet">Keep a 7-day streak or solve 100 questions to earn your first.</EmptyState>
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2">
               {p.badges.map((b) => (
@@ -143,23 +125,23 @@ const HistoryTab = () => {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi icon={<CalendarDays />} label="This week" value={week.q} hint="questions answered" />
-        <Kpi icon={<Target />} label="Correct" value={formatPercent(week.c, week.q)} hint="this week" />
-        <Kpi icon={<Sparkles />} tone="orange" label="XP" value={`+${week.xp}`} hint="this week" />
-        <Kpi icon={<Flag />} tone="orange" label="Goal met" value={`${goalDays}/7`} hint={`days with ${a.daily_target}+ questions`} />
+        <StatTile icon={<CalendarDays />} label="This week" value={week.q} hint="questions answered" />
+        <StatTile icon={<Target />} label="Correct" value={formatPercent(week.c, week.q)} hint="this week" />
+        <StatTile icon={<Sparkles />} tone="orange" label="XP" value={`+${week.xp}`} hint="this week" />
+        <StatTile icon={<Flag />} tone="orange" label="Goal met" value={`${goalDays}/7`} hint={`days with ${a.daily_target}+ questions`} />
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Last 12 weeks</CardTitle>
+          <CardTitle>Last 12 weeks</CardTitle>
           <CardDescription>Questions answered each day, from daily challenges and practice.</CardDescription>
         </CardHeader>
         <CardContent><ActivityHeatmap days={a.days} target={a.daily_target} /></CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="text-lg">Recent daily challenges</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Recent daily challenges</CardTitle></CardHeader>
         <CardContent className="px-0 sm:px-0">
           {a.recent_sets.length === 0 ? (
-            <p className="px-4 text-sm text-muted-foreground sm:px-5">You haven't played a daily challenge yet.</p>
+            <EmptyState icon={<CalendarDays />} title="No daily challenges yet" className="mx-4 sm:mx-5">You haven't played a daily challenge yet. Today's set is waiting on the Today page.</EmptyState>
           ) : (
             <ul className="divide-y border-t">
               {a.recent_sets.map((s) => (
@@ -223,7 +205,7 @@ const MistakeItem = ({ m }: { m: Mistake }) => {
                   picked && 'border-danger/40 bg-danger-soft text-danger-soft-foreground')}
                 >
                   <span className={cn('grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold',
-                    correct ? 'bg-success text-white dark:text-background' : picked ? 'bg-danger text-white dark:text-background' : 'bg-muted text-muted-foreground')}
+                    correct ? 'bg-success text-status-foreground' : picked ? 'bg-danger text-status-foreground' : 'bg-muted text-muted-foreground')}
                   >
                     {OPTION_LETTERS[i]}
                   </span>

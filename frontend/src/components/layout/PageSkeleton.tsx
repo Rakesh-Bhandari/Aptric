@@ -1,9 +1,12 @@
 import { AptricMark } from '@/components/brand/AptricMark';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 
-/** Generic page-shaped placeholder for lazy routes. */
+/**
+ * Generic page-shaped placeholder for lazy routes. It fills the screen so the
+ * footer stays below the fold until the page arrives (no layout shift).
+ */
 export const PageSkeleton = () => (
-  <LoadingRegion className="mx-auto w-full max-w-5xl space-y-4 px-4 py-5 sm:px-6 sm:py-8">
+  <LoadingRegion className="mx-auto min-h-[calc(100dvh-4rem)] w-full max-w-5xl space-y-4 px-4 py-5 sm:px-6 sm:py-8">
     <Skeleton className="h-8 w-48 rounded-full" />
     <Skeleton className="h-4 w-72 max-w-full rounded-full" />
     <div className="grid gap-4 pt-2 sm:grid-cols-2">

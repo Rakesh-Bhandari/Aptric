@@ -19,11 +19,12 @@ export const buttonVariants = cva(
         outline:
           'border-2 border-navy bg-transparent text-navy hover:bg-navy hover:text-navy-foreground dark:border-foreground/70 dark:text-foreground dark:hover:border-foreground dark:hover:bg-foreground dark:hover:text-background',
         ghost: 'text-foreground hover:bg-muted',
-        danger: 'bg-danger text-white hover:bg-danger/90 dark:text-background',
+        danger: 'bg-danger text-status-foreground hover:bg-danger/90',
         link: 'h-auto px-0 text-accent-text underline-offset-4 hover:underline motion-safe:active:scale-100',
       },
       size: {
-        sm: 'h-9 px-3 text-sm',
+        /** 36px pill with a 44px hit area (the after: box) for dense rows. */
+        sm: 'relative h-9 px-3 text-sm after:absolute after:-inset-y-1 after:inset-x-0',
         md: 'h-11 px-4 text-sm',
         lg: 'h-12 px-6 text-base',
         icon: 'size-11',

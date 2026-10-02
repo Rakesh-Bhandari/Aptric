@@ -31,7 +31,7 @@ export const PlayerLink = ({ handle, name, avatar, showHandle = true }: { handle
     <Avatar src={avatar} name={name} className="size-9" />
     <span className="min-w-0 leading-tight">
       {handle ? (
-        <Link to={`/u/${handle}`} className="block truncate font-semibold text-heading underline-offset-2 hover:underline">{name}</Link>
+        <Link to={`/u/${handle}`} className="block truncate font-semibold text-heading underline-offset-2 after:absolute after:inset-0 hover:underline">{name}</Link>
       ) : <span className="block truncate font-semibold text-heading">{name}</span>}
       {showHandle && handle && name !== `@${handle}` && <span className="block truncate text-xs text-muted-foreground">@{handle}</span>}
     </span>

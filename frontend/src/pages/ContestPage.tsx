@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Page } from '@/components/ui/page';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
-import { ErrorState } from '@/components/ui/states';
+import { EmptyState, ErrorState } from '@/components/ui/states';
 import { useToast } from '@/context/ToastContext';
 import * as api from '@/lib/api';
 import { errorCode, friendlyError } from '@/lib/errors';
@@ -43,7 +43,7 @@ const Standings = ({ contest }: { contest: ContestDetail }) => {
       </CardHeader>
       {standings.isError && <div className="px-4 pb-4"><ErrorState error={standings.error} onRetry={() => void standings.refetch()} /></div>}
       {!standings.data && !standings.isError && <LoadingRegion className="space-y-2 px-4 pb-4"><Skeleton className="h-14" /><Skeleton className="h-14" /></LoadingRegion>}
-      {standings.data && standings.data.entries.length === 0 && <p className="px-4 pb-5 text-sm text-muted-foreground sm:px-5">No entries yet.</p>}
+      {standings.data && standings.data.entries.length === 0 && <div className="px-4 pb-5 sm:px-5"><EmptyState icon={<Users />} title="No entries yet">Standings appear once players start answering.</EmptyState></div>}
       {standings.data && standings.data.entries.length > 0 && (
         <ol className="divide-y border-t" aria-label="Contest standings">
           {standings.data.entries.map((e) => (

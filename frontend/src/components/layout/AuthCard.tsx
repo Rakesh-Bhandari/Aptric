@@ -18,7 +18,7 @@ export const AuthCard = ({ title, description, icon, children }: {
 }) => (
   <AuthPage>
     <AptricMark className="mx-auto mb-6 h-12" />
-    <div className="overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-lg dark:border-white/10">
+    <div className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-lg dark:border-white/10">
       <div className="relative overflow-hidden bg-gradient-navy px-5 py-6 text-chrome-foreground sm:px-6">
         {/* Soft orange glow, as in the auth dialog. Decorative. */}
         <span aria-hidden className="pointer-events-none absolute -right-10 -top-16 size-44 rounded-full bg-primary/25 blur-3xl" />

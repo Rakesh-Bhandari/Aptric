@@ -20,7 +20,7 @@ const Landing = () => {
   }, [hash]);
 
   return (
-    <div ref={root} className="overflow-x-clip">
+    <div ref={root} className="-mt-16 overflow-x-clip">
       <Hero />
       <StatStrip />
       <Features />

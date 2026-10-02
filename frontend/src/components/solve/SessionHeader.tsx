@@ -16,7 +16,8 @@ const SEGMENT_CLASS: Record<SegmentState, string> = {
   current: 'bg-primary bg-gradient-orange',
   answered: 'bg-primary bg-gradient-orange',
   correct: 'bg-success',
-  wrong: 'bg-danger',
+  // Half height as well as red, so a wrong answer doesn't rely on colour alone.
+  wrong: 'h-1 self-center bg-danger',
 };
 
 /**
@@ -30,7 +31,9 @@ export const SessionHeader = ({ title, index, total, onExit, exitLabel = 'Exit',
   const position = Math.min(index + 1, total);
   const states: SegmentState[] = Array.from({ length: total }, (_, i) =>
     results?.[i] ?? (i < index ? 'answered' : i === index ? 'current' : 'pending'));
-  const valueText = `Question ${position} of ${total}`;
+  const right = states.filter((x) => x === 'correct').length;
+  const wrong = states.filter((x) => x === 'wrong').length;
+  const valueText = `Question ${position} of ${total}` + (right + wrong ? `, ${right} correct, ${wrong} wrong` : '');
 
   return (
     <header className="sticky top-0 z-30 border-b bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85">

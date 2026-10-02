@@ -45,7 +45,7 @@ const DifficultyPicker = ({ value, onChange }: { value: Pref; onChange: (p: Pref
       <div className="flex w-full rounded-full border bg-card p-1 shadow-sm sm:w-auto">
         {PREFS.map((p) => (
           <label key={p.value} className={cn(
-            'flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-full px-4 text-sm font-semibold text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground sm:flex-none',
+            'flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full px-4 text-sm font-semibold text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground sm:flex-none',
             'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
             value === p.value && 'bg-navy text-navy-foreground shadow-sm hover:bg-navy hover:text-navy-foreground dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground',
           )}

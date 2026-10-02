@@ -20,12 +20,14 @@
     <meta name="twitter:title" content="Aptric – Practice. Compete. Get placed." />
     <meta name="twitter:description" content="Short daily aptitude challenges, focused practice and friendly leagues for placements, CAT, banking and more." />
     <meta name="twitter:image" content="/brand/og.png" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f9fc" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#06132f" />
+    <!-- Matches the navy app header (--chrome), which is navy in both themes. -->
+    <meta name="theme-color" content="#0b1f4b" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
     <title>Aptric – daily aptitude practice</title>
+    <!-- Page colour before the stylesheet arrives, so dark mode doesn't flash white. -->
+    <style>html{background:#f7f9fc}html[data-theme='dark']{background:#06132f;color-scheme:dark}</style>
     <script>
       // Apply the saved theme before first paint to avoid a flash.
       (function () {

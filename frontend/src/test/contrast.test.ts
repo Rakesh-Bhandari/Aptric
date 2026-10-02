@@ -87,12 +87,12 @@ describe('brand surfaces', () => {
   });
 });
 
-// Filled status chips: white text in light mode, page background in dark.
+// Filled status chips: --status-foreground (white in light mode, Dark Navy in dark).
 // Orange primary fills carry navy text (--primary-foreground) in both themes.
 describe('status fills', () => {
   it.each(['success', 'danger', 'warning'])('text on %s meets AA in both themes', (fill) => {
-    expect(ratio('#ffffff', light[fill])).toBeGreaterThanOrEqual(4.5);
-    expect(ratio(dark.background, dark[fill])).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(light['status-foreground'], light[fill])).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(dark['status-foreground'], dark[fill])).toBeGreaterThanOrEqual(4.5);
   });
   it('navy text on primary meets AA in both themes', () => {
     expect(ratio(light['primary-foreground'], light.primary)).toBeGreaterThanOrEqual(4.5);
@@ -103,7 +103,8 @@ describe('status fills', () => {
 // Focus rings need 3:1 against the surfaces they sit on (WCAG 1.4.11).
 describe('focus ring', () => {
   it.each([['light', light], ['dark', dark]] as const)('is visible in %s mode', (_name, t) => {
-    for (const bg of ['card', 'background', 'navy']) expect(ratio(t.ring, t[bg])).toBeGreaterThanOrEqual(3);
+    // Includes the navy header/footer and muted fills, so the ring shows on navy surfaces too.
+    for (const bg of ['card', 'background', 'muted', 'navy', 'chrome', 'chrome-deep', 'primary-soft']) expect(ratio(t.ring, t[bg])).toBeGreaterThanOrEqual(3);
   });
 });
 

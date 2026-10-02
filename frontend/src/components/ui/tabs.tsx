@@ -14,7 +14,7 @@ export const TabsList = ({ className, ...props }: ComponentProps<typeof TabsPrim
 export const TabsTrigger = ({ className, ...props }: ComponentProps<typeof TabsPrimitive.Trigger>) => (
   <TabsPrimitive.Trigger
     className={cn(
-      'inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm font-semibold text-muted-foreground transition-colors duration-200 sm:flex-none',
+      'inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 text-sm sm:px-4 font-semibold text-muted-foreground transition-colors duration-200 sm:flex-none',
       'hover:bg-muted hover:text-foreground [&_svg]:size-4',
       // Active: navy fill in light mode; orange fill in dark, where navy would vanish.
       'data-[state=active]:bg-navy data-[state=active]:text-navy-foreground data-[state=active]:shadow-sm',
@@ -26,5 +26,5 @@ export const TabsTrigger = ({ className, ...props }: ComponentProps<typeof TabsP
 );
 
 export const TabsContent = ({ className, ...props }: ComponentProps<typeof TabsPrimitive.Content>) => (
-  <TabsPrimitive.Content className={cn('mt-4 focus-visible:outline-none', className)} {...props} />
+  <TabsPrimitive.Content className={cn('mt-4 rounded-lg focus-visible:outline-offset-4', className)} {...props} />
 );

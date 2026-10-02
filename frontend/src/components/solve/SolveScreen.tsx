@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/context/ToastContext';
 import { useElapsed } from '@/hooks/useElapsed';
+import { prefersReducedMotion } from '@/hooks/useReveal';
 import { useSolveKeys } from '@/hooks/useSolveKeys';
 import { friendlyError } from '@/lib/errors';
 import { formatClock, formatDuration } from '@/lib/format';
@@ -107,7 +108,7 @@ export const SolveScreen = ({
   // Move focus to the result so keyboard and screen-reader users land on it.
   useEffect(() => {
     if (reveal) (nextRef.current ?? resultRef.current)?.focus({ preventScroll: true });
-    if (reveal) resultRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (reveal) resultRef.current?.scrollIntoView({ block: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   }, [reveal]);
 
   const submit = async () => {
@@ -246,8 +247,8 @@ export const SolveScreen = ({
                   'grid size-9 shrink-0 place-items-center rounded-lg text-sm font-bold shadow-[inset_0_-2px_0_rgb(0_0_0/0.18)] transition-colors duration-200 ease-out',
                   state === 'idle' && 'bg-navy text-navy-foreground',
                   state === 'picked' && 'bg-primary text-primary-foreground',
-                  state === 'correct' && 'bg-success text-white dark:text-background',
-                  state === 'wrong' && 'bg-danger text-white dark:text-background',
+                  state === 'correct' && 'bg-success text-status-foreground',
+                  state === 'wrong' && 'bg-danger text-status-foreground',
                   state === 'dim' && 'bg-muted text-muted-foreground shadow-none',
                 )}
               >
@@ -285,7 +286,7 @@ export const SolveScreen = ({
               reveal.isCorrect ? 'border-success/40 bg-success-soft text-success-soft-foreground' : 'border-danger/30 bg-danger-soft text-danger-soft-foreground',
             )}
           >
-            <span className={cn('grid size-9 shrink-0 place-items-center rounded-full text-white dark:text-background', reveal.isCorrect ? 'bg-success' : 'bg-danger')} aria-hidden>
+            <span className={cn('grid size-9 shrink-0 place-items-center rounded-full text-status-foreground', reveal.isCorrect ? 'bg-success' : 'bg-danger')} aria-hidden>
               {reveal.isCorrect ? <Check className="size-5" strokeWidth={3} /> : <X className="size-5" strokeWidth={3} />}
             </span>
             <div className="min-w-0 flex-1">
@@ -341,7 +342,8 @@ export const SolveScreen = ({
               className="shrink-0 px-3"
             >
               {busy !== 'hint' && <Lightbulb className="text-warning" />}
-              Hint
+              {/* The word drops on the narrowest phones so "Check answer" never clips; the label stays. */}
+              <span className="max-[379px]:hidden">Hint</span>
               {hintCost ? <span className="rounded-full bg-primary-soft px-1.5 text-xs font-bold text-primary-soft-foreground">−{hintCost} XP</span> : null}
             </Button>
           )}
@@ -357,11 +359,11 @@ export const SolveScreen = ({
           )}
 
           {answered ? (
-            <Button ref={nextRef} size="lg" onClick={onNext} className="min-w-0 flex-1 sm:order-3 sm:ml-auto sm:min-w-48 sm:flex-none">
+            <Button ref={nextRef} size="lg" onClick={onNext} className="min-w-0 flex-1 px-4 sm:order-3 sm:ml-auto sm:min-w-48 sm:flex-none sm:px-6">
               {nextLabel} <ArrowRight />
             </Button>
           ) : (
-            <Button size="lg" className="min-w-0 flex-1 sm:order-3 sm:ml-auto sm:min-w-48 sm:flex-none" onClick={() => void submit()} disabled={!picked} loading={busy === 'submit'}>
+            <Button size="lg" className="min-w-0 flex-1 px-4 sm:order-3 sm:ml-auto sm:min-w-48 sm:flex-none sm:px-6" onClick={() => void submit()} disabled={!picked} loading={busy === 'submit'}>
               {kind === 'placement' ? 'Save answer' : 'Check answer'}
             </Button>
           )}

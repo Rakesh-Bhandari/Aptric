@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Check, Flame, LifeBuoy, LogOut, MessageSquare, Monitor, Moon, Palette, Settings, Share2, Sparkles, Sun, Target, Trophy, UserRound } from 'lucide-react';
+import { Calendar, Check, CheckCheck, Flame, LifeBuoy, LogOut, MessageSquare, Monitor, Moon, Palette, Settings, Share2, Sparkles, Sun, Target, Trophy, UserRound } from 'lucide-react';
 import { AptricLogo } from '@/components/brand';
 import { TierEmblem } from '@/components/compete/TierEmblem';
 import { BadgeGrid } from '@/components/profile/BadgeGrid';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FieldHint, Input, Label, Select, Textarea } from '@/components/ui/input';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Page, StatTile } from '@/components/ui/page';
 import { Progress } from '@/components/ui/progress';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
@@ -35,8 +36,9 @@ const timezones = (() => {
   }
 })();
 
-const Chip = ({ className, children }: { className?: string; children: ReactNode }) => (
-  <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold [&_svg]:size-3.5', className)}>{children}</span>
+/** Profile summary chip: the shared Badge, a size up. */
+const Chip = ({ variant, children }: { variant: BadgeProps['variant']; children: ReactNode }) => (
+  <Badge variant={variant} className="gap-1.5 px-3 py-1">{children}</Badge>
 );
 
 const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) => {
@@ -53,7 +55,7 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
         <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
           <div className="-mt-12 flex flex-col items-center gap-3 text-center sm:-mt-14 sm:flex-row sm:items-end sm:gap-5 sm:text-left">
             <Avatar src={p.avatar_url} name={p.display_name || p.handle} className="size-24 text-3xl shadow-md ring-4 ring-white sm:size-28 dark:ring-card" />
-            <div className="min-w-0 flex-1 sm:pb-1">
+            <div className="min-w-0 flex-1 sm:pb-1 sm:pt-4">
               <h1 className="truncate font-display text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">{displayName(p)}</h1>
               {p.handle && p.display_name && <p className="font-medium text-muted-foreground">@{p.handle}</p>}
             </div>
@@ -61,14 +63,14 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
           </div>
           {p.bio && <p className="mx-auto mt-3 max-w-prose text-center text-sm sm:mx-0 sm:text-left">{p.bio}</p>}
           <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-            <Chip className="bg-primary-soft text-primary-soft-foreground"><Sparkles aria-hidden /> Level {p.level}</Chip>
+            <Chip variant="navy"><Sparkles aria-hidden /> Level {p.level}</Chip>
             {p.league_tier && (
-              <Chip className="bg-navy-soft text-navy-soft-foreground">
+              <Chip variant="muted">
                 <TierEmblem slug={p.league_tier.slug} tier={p.league_tier.tier} className="h-4 drop-shadow-none" /> {p.league_tier.name} league
               </Chip>
             )}
-            <Chip className="bg-warning-soft text-warning-soft-foreground"><Flame aria-hidden className="text-streak" /> {p.current_streak}-day streak</Chip>
-            <Chip className="bg-muted text-muted-foreground"><Calendar aria-hidden /> Joined {formatRelative(p.joined_at)}</Chip>
+            <Chip variant="default"><Flame aria-hidden /> {p.current_streak}-day streak</Chip>
+            <Chip variant="muted"><Calendar aria-hidden /> Joined {formatRelative(p.joined_at)}</Chip>
           </div>
           <div className="mt-5 space-y-1.5">
             <div className="flex justify-between text-sm">
@@ -81,10 +83,10 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
       </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile icon={<Target className="text-accent-text" />} label="Solved" value={p.solved.toLocaleString()} hint={plural(p.attempts, 'attempt')} />
-        <StatTile icon={<Check className="text-success" />} label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
-        <StatTile icon={<Flame className="text-streak" />} label="Best streak" value={plural(p.longest_streak, 'day')} hint={`Now ${p.current_streak}`} />
-        <StatTile icon={<Trophy className="text-tier-gold" />} label="Rating" value={p.rating} hint={plural(p.rated_sets, 'rated set')} />
+        <StatTile icon={<CheckCheck />} label="Solved" value={p.solved.toLocaleString()} hint={plural(p.attempts, 'attempt')} />
+        <StatTile icon={<Target />} label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
+        <StatTile icon={<Flame />} tone="orange" label="Best streak" value={plural(p.longest_streak, 'day')} hint={`Now ${p.current_streak}`} />
+        <StatTile icon={<Trophy />} tone="orange" label="Rating" value={p.rating} hint={plural(p.rated_sets, 'rated set')} />
       </div>
 
       <Card>
@@ -181,7 +183,7 @@ const Choice = <T extends string | number>({ name, value, options, onChange, lab
     <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-full border bg-muted p-1 sm:inline-grid">
       {options.map((o) => (
         <label key={String(o.value)} className={cn(
-          'flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors duration-200 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring [&_svg]:size-4',
+          'flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors duration-200 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring [&_svg]:size-4',
           value === o.value
             ? 'bg-navy text-navy-foreground shadow-sm dark:bg-primary dark:text-primary-foreground'
             : 'text-muted-foreground hover:bg-card hover:text-foreground',

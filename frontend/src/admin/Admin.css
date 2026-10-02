@@ -240,6 +240,9 @@
 [data-theme='dark'] .adm .adm-btn-danger, [data-theme='dark'] .adm .adm-btn-danger:hover:not(:disabled) { color: var(--background); }
 [data-theme='dark'] .adm-btn, [data-theme='dark'] .adm a.adm-btn { border-color: color-mix(in srgb, var(--foreground) 70%, transparent); color: var(--foreground); }
 [data-theme='dark'] .adm-btn:hover:not(:disabled), [data-theme='dark'] .adm a.adm-btn:hover { background: var(--foreground); border-color: var(--foreground); color: var(--background); }
+/* Orange buttons keep navy text in dark mode too (the generic dark rules above would make it light). */
+[data-theme='dark'] .adm .adm-btn-primary { border-color: var(--primary); color: var(--primary-foreground); }
+[data-theme='dark'] .adm .adm-btn-primary:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); color: var(--primary-foreground); }
 
 .adm .adm-link {
     background: none;
@@ -300,7 +303,7 @@
 
 .adm-field { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.75rem; color: var(--text-muted); }
 .adm-field > span { font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-.adm-field small { font-weight: 500; text-transform: none; letter-spacing: 0; opacity: 0.9; margin-left: 0.35rem; }
+.adm-field small { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); margin-left: 0.35rem; }
 .adm-field-wide { width: 100%; }
 .adm-field-search { flex: 1 1 260px; }
 .adm-field-search input { width: 100%; }
@@ -814,7 +817,10 @@
     .adm-filters .adm-field { flex: 1 1 140px; }
     .adm-filters .adm-field select { max-width: none; width: 100%; }
     .adm-btn { min-height: 2.75rem; }
-    .adm-btn-small { min-height: 2.5rem; }
+    /* 44px tap targets on phones for every admin control. */
+    .adm-btn-small, .adm-tabs button, .adm-segmented button { min-height: 2.75rem; }
+    .adm-option-tools button { min-width: 2.75rem; min-height: 2.75rem; }
+    .adm-option input[type='radio'], .adm-table input[type='checkbox'] { width: 1.375rem; height: 1.375rem; }
     .adm input[type='text'], .adm input[type='search'], .adm input[type='number'], .adm select { min-height: 2.75rem; font-size: 1rem; }
     .adm-field-search::after { bottom: calc(1.375rem - 0.5rem); }
     .adm-bulk { border-radius: var(--radius); }
