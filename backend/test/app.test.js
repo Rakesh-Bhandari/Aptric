@@ -1,14 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMisconfiguredApp, originMatcher } from '../src/app.js';
-import { connectionString } from '../src/db.js';
+import { supabaseProblems } from '../src/config.js';
 
-test('connectionString drops sslmode so DATABASE_SSL decides', () => {
-  assert.equal(
-    connectionString('postgresql://u:p%40ss@host.pooler.supabase.com:6543/postgres?sslmode=require'),
-    'postgresql://u:p%40ss@host.pooler.supabase.com:6543/postgres',
-  );
-  assert.equal(connectionString('postgresql://u:p@localhost:5432/db'), 'postgresql://u:p@localhost:5432/db');
+const jwtKey = (role) => `x.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.y`;
+
+test('supabaseProblems wants the project URL and a secret key', () => {
+  assert.deepEqual(supabaseProblems('https://abcd.supabase.co', 'sb_secret_123'), []);
+  assert.deepEqual(supabaseProblems('http://127.0.0.1:54321', jwtKey('service_role')), []);
+  assert.deepEqual(supabaseProblems(undefined, undefined), ['SUPABASE_URL is not set', 'SUPABASE_SECRET_KEY is not set']);
+  assert.match(supabaseProblems('https://supabase.com', 'sb_secret_1')[0], /project URL/);
+  assert.match(supabaseProblems('https://abcd.supabase.co/rest/v1', 'sb_secret_1')[0], /project URL/);
+  assert.match(supabaseProblems('postgresql://u:p@h/db', 'sb_secret_1')[0], /project URL/);
+  assert.match(supabaseProblems('https://abcd.supabase.co', 'sb_publishable_1')[0], /publishable/);
+  assert.match(supabaseProblems('https://abcd.supabase.co', jwtKey('anon'))[0], /secret key/);
 });
 
 test('originMatcher allows listed origins and wildcards only', () => {

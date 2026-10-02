@@ -14,6 +14,26 @@ export class HttpError extends Error {
   }
 }
 
+/**
+ * A failed backend_sql call (supabase-js PostgrestError). `code` is the
+ * SQLSTATE for database errors, PGRST... for Data API errors, or empty when
+ * Supabase couldn't be reached or rejected the key.
+ */
+export class DbError extends Error {
+  constructor({ message, code, details, hint } = {}) {
+    super(message || 'Database request failed.');
+    this.name = 'DbError';
+    this.code = code ?? '';
+    this.details = details ?? null;
+    this.hint = hint ?? null;
+  }
+
+  /** A SQLSTATE (5 characters), not a Data API / network failure. */
+  get isSqlState() {
+    return /^[0-9A-Z]{5}$/.test(this.code);
+  }
+}
+
 export const badRequest = (message, extra) => new HttpError(400, 'bad_request', message, extra);
 export const unauthorized = (code = 'unauthorized', message = 'Sign in to continue.') => new HttpError(401, code, message);
 export const forbidden = (message = 'Not allowed.') => new HttpError(403, '42501', message);
@@ -35,7 +55,6 @@ const PG_STATUS = {
   P0001: 400,   // raise exception without a code
 };
 
-const isPgError = (err) => typeof err?.code === 'string' && typeof err?.severity === 'string';
 
 // Express error middleware (4 arguments).
 // eslint-disable-next-line no-unused-vars
@@ -50,8 +69,17 @@ export function errorHandler(err, req, res, next) {
   if (err?.type === 'entity.too.large') {
     return res.status(413).json({ error: { code: 'too_large', message: 'Request body is too large.' } });
   }
-  if (isPgError(err) && PG_STATUS[err.code]) {
+  if (err instanceof DbError && err.isSqlState && PG_STATUS[err.code]) {
     return res.status(PG_STATUS[err.code]).json({ error: { code: err.code, message: err.message } });
+  }
+  if (err instanceof DbError && !err.isSqlState) {
+    console.error('[db]', req.method, req.path, err.code, err.message);
+    return res.status(503).json({
+      error: {
+        code: 'database_unavailable',
+        message: config.isProd ? 'The database is not reachable right now.' : `${err.code} ${err.message}`.trim(),
+      },
+    });
   }
   console.error('[error]', req.method, req.path, err);
   return res.status(500).json({

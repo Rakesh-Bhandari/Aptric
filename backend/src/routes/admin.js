@@ -1,9 +1,10 @@
-// /admin: lists and searches for the admin area. Queries run as the signed-in
-// admin, so RLS still decides what is visible; writes go through the admin_*
-// SQL functions (POST /rpc/...) or row updates that triggers audit.
+// /admin: lists and searches for the admin area. requireAdmin lets only
+// admins in (admins may read every row under RLS); queries run with
+// auth.uid() = the admin so audit triggers record them. Writes go through the
+// admin_* SQL functions (POST /rpc/...) or row updates that triggers audit.
 
 import { Router } from 'express';
-import { asUser } from '../db.js';
+import { asUser, asUserBatch } from '../db.js';
 import { badRequest } from '../http.js';
 import { requireAdmin, requireUser } from '../middleware/auth.js';
 import { generateQuestions } from '../generation/service.js';
@@ -50,21 +51,18 @@ function filters() {
 
 /** count(*) and one page of rows, in the same transaction. */
 async function pageOf(userId, { from, select, orderBy, f, limit, offset }) {
-  return asUser(userId, async (db) => {
-    const count = await db.query(`select count(*)::int as n ${from} ${f.where()}`, f.params);
-    const rows = await db.query(
-      `select ${select} ${from} ${f.where()} order by ${orderBy} limit ${limit} offset ${offset}`,
-      f.params,
-    );
-    return { rows: rows.rows, count: count.rows[0].n };
-  });
+  const [count, rows] = await asUserBatch(userId, [
+    [`select count(*)::int as n ${from} ${f.where()}`, f.params],
+    [`select ${select} ${from} ${f.where()} order by ${orderBy} limit ${limit} offset ${offset}`, f.params],
+  ]);
+  return { rows: rows.rows, count: count.rows[0].n };
 }
 
 // --- Taxonomy and tags ---------------------------------------------------------
 
 // Sections > topics > subtopics, including inactive ones.
 router.get('/taxonomy', async (req, res) => {
-  const { rows } = await asUser(req.user.id, (db) => db.query(`
+  const { rows } = await asUser(req.user.id, `
     select s.id, s.name, s.is_active, s.sort_order,
       coalesce((
         select jsonb_agg(jsonb_build_object(
@@ -76,13 +74,12 @@ router.get('/taxonomy', async (req, res) => {
         ) order by t.sort_order, t.name)
         from public.topics t where t.section_id = s.id), '[]'::jsonb) as topics
     from public.sections s
-    order by s.sort_order, s.name`));
+    order by s.sort_order, s.name`);
   res.json(rows);
 });
 
 router.get('/tags', async (req, res) => {
-  const { rows } = await asUser(req.user.id, (db) =>
-    db.query('select slug, name, kind, is_active from public.tags order by kind, sort_order'));
+  const { rows } = await asUser(req.user.id, 'select slug, name, kind, is_active from public.tags order by kind, sort_order');
   res.json(rows);
 });
 
@@ -120,8 +117,11 @@ router.get('/questions', async (req, res) => {
 });
 
 router.get('/questions/count', async (req, res) => {
-  const { rows } = await asUser(req.user.id, (db) =>
-    db.query('select count(*)::int as n from public.questions where status = $1::public.question_status', [req.query.status]));
+  const { rows } = await asUser(
+    req.user.id,
+    'select count(*)::int as n from public.questions where status = $1::public.question_status',
+    [req.query.status],
+  );
   res.json({ count: rows[0].n });
 });
 
@@ -168,20 +168,19 @@ router.get('/reports', async (req, res) => {
 });
 
 router.get('/reports/open-count', async (req, res) => {
-  const { rows } = await asUser(req.user.id, (db) =>
-    db.query(`select count(*)::int as n from public.reports where status in ('open', 'triaged')`));
+  const { rows } = await asUser(req.user.id, `select count(*)::int as n from public.reports where status in ('open', 'triaged')`);
   res.json({ count: rows[0].n });
 });
 
 // Audited by the reports_audit trigger.
 router.patch('/reports/:id', async (req, res) => {
   const { status, resolution_note: note } = req.body ?? {};
-  const { rows } = await asUser(req.user.id, (db) =>
-    db.query(
-      `update public.reports set status = $2::public.report_status, resolution_note = $3
-       where id = $1::uuid returning id`,
-      [uuid(req.params.id), status, str(note)],
-    ));
+  const { rows } = await asUser(
+    req.user.id,
+    `update public.reports set status = $2::public.report_status, resolution_note = $3
+     where id = $1::uuid returning id`,
+    [uuid(req.params.id), status, str(note)],
+  );
   if (!rows[0]) throw badRequest('Report not found.');
   res.json(rows[0]);
 });
@@ -207,8 +206,10 @@ router.get('/jobs', async (req, res) => {
 });
 
 router.get('/jobs/active-count', async (req, res) => {
-  const { rows } = await asUser(req.user.id, (db) =>
-    db.query(`select count(*)::int as n from public.question_generation_jobs where status in ('queued', 'running')`));
+  const { rows } = await asUser(
+    req.user.id,
+    `select count(*)::int as n from public.question_generation_jobs where status in ('queued', 'running')`,
+  );
   res.json({ count: rows[0].n });
 });
 

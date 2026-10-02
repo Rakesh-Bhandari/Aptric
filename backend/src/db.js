@@ -1,87 +1,86 @@
-// Postgres (Supabase) access. The backend connects directly with the
-// connection string's role (postgres) and, for anything done on a user's
-// behalf, drops to the `authenticated` role with that user's id as the JWT
-// `sub` claim, inside one transaction. auth.uid(), RLS, column grants and the
-// SECURITY DEFINER game rules in supabase/migrations then apply exactly as
-// they did behind PostgREST.
+// Postgres (Supabase) access over the Data API: supabase-js with the project
+// URL and the secret key. Every statement goes through public.backend_sql
+// (supabase/migrations/20261002000002_backend_gateway.sql), which runs a list
+// of statements in one transaction and, for anything done on a user's behalf,
+// sets that user's id as the JWT `sub` claim so auth.uid(), private.is_admin()
+// and the SECURITY DEFINER game rules see them.
+//
+// Rows come back as JSON (to_jsonb): bigint and numeric as numbers, dates as
+// 'YYYY-MM-DD', timestamps as ISO strings.
 
-import pg from 'pg';
+import { createClient } from '@supabase/supabase-js';
 import { config } from './config.js';
+import { DbError } from './http.js';
 
-// bigint and numeric as JS numbers (as PostgREST returned them); dates as the
-// plain 'YYYY-MM-DD' string, never a Date at local midnight.
-pg.types.setTypeParser(pg.types.builtins.INT8, (v) => Number(v));
-pg.types.setTypeParser(pg.types.builtins.NUMERIC, (v) => Number(v));
-pg.types.setTypeParser(pg.types.builtins.DATE, (v) => v);
+let client;
 
-let pool;
-
-/**
- * The connection string without its ssl* parameters. pg lets `sslmode=require`
- * in the URL override the `ssl` option below and then verifies the
- * certificate chain, which fails against Supabase's pooler
- * ("self-signed certificate in certificate chain"); DATABASE_SSL decides
- * instead.
- */
-export function connectionString(url) {
-  try {
-    const parsed = new URL(url);
-    for (const key of [...parsed.searchParams.keys()]) {
-      if (/^ssl/i.test(key)) parsed.searchParams.delete(key);
-    }
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-}
-
-export function getPool() {
-  if (!pool) {
-    pool = new pg.Pool({
-      connectionString: connectionString(config.databaseUrl),
-      ssl: config.databaseSsl ? { rejectUnauthorized: false } : false,
-      max: config.databasePoolMax,
-      idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 10_000,
+export function getSupabase() {
+  if (!client) {
+    client = createClient(config.supabaseUrl, config.supabaseSecretKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { 'X-Client-Info': 'aptric-api' } },
     });
-    pool.on('error', (err) => console.error('[db] idle client error', err.message));
   }
-  return pool;
+  return client;
 }
 
-/** One statement as the connection role (server-side work: auth, jobs). */
-export const query = (text, params) => getPool().query(text, params);
+// Parameters ------------------------------------------------------------------
+// Values are inlined as quoted literals of unknown type, which Postgres
+// resolves exactly like the untyped text parameters node-postgres used to send
+// (`id = $1` against a uuid column, `$1::uuid`, `make_interval(days => $1)`).
+// The gateway runs with standard_conforming_strings on, so doubling single
+// quotes is the complete escape.
 
-/** Runs fn(client) in a transaction as the connection role. */
-export async function transaction(fn) {
-  const client = await getPool().connect();
-  try {
-    await client.query('begin');
-    const result = await fn(client);
-    await client.query('commit');
-    return result;
-  } catch (err) {
-    await client.query('rollback').catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
-}
+const toText = (value) => {
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return arrayLiteral(value);
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+};
 
-/**
- * Runs fn(client) in a transaction as `authenticated` with auth.uid() = userId,
- * the same session PostgREST would have set up for that user's JWT.
- */
-export function asUser(userId, fn) {
-  return transaction(async (client) => {
-    const claims = JSON.stringify({ sub: userId, role: 'authenticated' });
-    await client.query(
-      `select set_config('role', 'authenticated', true),
-              set_config('request.jwt.claims', $1, true),
-              set_config('request.jwt.claim.sub', $2, true),
-              set_config('request.jwt.claim.role', 'authenticated', true)`,
-      [claims, userId],
-    );
-    return fn(client);
+const arrayLiteral = (values) =>
+  `{${values.map((v) => {
+    if (v === null || v === undefined) return 'NULL';
+    if (Array.isArray(v)) return arrayLiteral(v);
+    return `"${toText(v).replace(/[\\"]/g, '\\$&')}"`;
+  }).join(',')}}`;
+
+export const literal = (value) =>
+  value === null || value === undefined ? 'NULL' : `'${toText(value).replaceAll("'", "''")}'`;
+
+/** Replaces $1, $2, ... with the values as literals (one pass, never re-scanned). */
+export function inline(text, params = []) {
+  return text.replace(/\$(\d+)/g, (match, n) => {
+    const index = Number(n) - 1;
+    if (index < 0 || index >= params.length) throw new Error(`No value for ${match} in: ${text}`);
+    return literal(params[index]);
   });
 }
+
+/** Whether a statement returns rows (SELECT / WITH / VALUES, or ... RETURNING). */
+export const returnsRows = (text) => /^\s*(select|with|values|table)\b/i.test(text) || /\breturning\b/i.test(text);
+
+const statement = ([text, params]) => ({ sql: inline(text, params), rows: returnsRows(text) });
+
+// Calls -----------------------------------------------------------------------
+
+async function run(list, asUserId = null) {
+  const { data, error } = await getSupabase().rpc('backend_sql', {
+    statements: list.map(statement),
+    as_user: asUserId,
+  });
+  if (error) throw new DbError(error);
+  return data.map((rows) => ({ rows, rowCount: rows.length }));
+}
+
+/** One statement as the server (auth, rate limits, jobs). Returns { rows }. */
+export const query = async (text, params) => (await run([[text, params]]))[0];
+
+/** Several [text, params] statements in one transaction; one { rows } each. */
+export const batch = (list) => run(list);
+
+/** One statement with auth.uid() = userId. */
+export const asUser = async (userId, text, params) => (await run([[text, params]], userId))[0];
+
+/** Several statements with auth.uid() = userId, in one transaction. */
+export const asUserBatch = (userId, list) => run(list, userId);

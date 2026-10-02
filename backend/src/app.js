@@ -1,6 +1,6 @@
 // Aptric API (Express). Runs as one Vercel serverless function (api/index.js)
 // or a plain Node server (src/server.js). Supabase is only the Postgres
-// database; see backend/README.md.
+// database, reached with the project URL + secret key; see backend/README.md.
 
 import cors from 'cors';
 import express from 'express';
@@ -72,8 +72,9 @@ export function createApp() {
   app.use(express.json({ limit: '256kb' }));
 
   app.get('/', (req, res) => res.json({ name: 'aptric-api', status: 'ok' }));
-  // Database reachable and migrated (the auth tables come from
-  // supabase/migrations/20261002000001_backend_auth.sql).
+  // Database reachable and migrated (backend_sql comes from
+  // 20261002000002_backend_gateway.sql, the auth tables from
+  // 20261002000001_backend_auth.sql).
   app.get('/health', async (req, res) => {
     let rows;
     try {
@@ -83,11 +84,22 @@ export function createApp() {
                 to_regclass('public.levels') is not null as levels`,
       ));
     } catch (err) {
-      console.error('[health] database', err.message);
+      console.error('[health] database', err.code, err.message);
+      if (err.code === 'PGRST202') {
+        return res.status(503).json({
+          status: 'error',
+          database: 'ok',
+          migrations: 'missing',
+          message: 'public.backend_sql is missing; apply supabase/migrations (npx supabase db push).',
+          missing: ['backend_sql'],
+        });
+      }
       return res.status(503).json({
         status: 'error',
         database: 'unreachable',
-        message: config.isProd ? 'Cannot connect to the database. Check DATABASE_URL.' : err.message,
+        message: config.isProd
+          ? 'Cannot reach Supabase. Check SUPABASE_URL and SUPABASE_SECRET_KEY, and that the Data API is enabled.'
+          : `${err.code ?? ''} ${err.message}`.trim(),
       });
     }
     const missing = Object.entries(rows[0]).filter(([, ok]) => !ok).map(([name]) => name);

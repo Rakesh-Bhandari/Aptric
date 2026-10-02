@@ -7,7 +7,7 @@
 
 import { Router } from 'express';
 import { config, googleEnabled } from '../config.js';
-import { query, transaction } from '../db.js';
+import { query } from '../db.js';
 import { badRequest, HttpError } from '../http.js';
 import { requireUser } from '../middleware/auth.js';
 import { hit, limitByIp } from '../middleware/rateLimit.js';
@@ -168,6 +168,46 @@ router.get('/google', (req, res) => {
 const readCookie = (req, name) =>
   (req.get('cookie') ?? '').split(';').map((c) => c.trim().split('=')).find(([k]) => k === name)?.[1];
 
+/**
+ * The account for a Google profile: linked by Google id, else by verified
+ * email, else new. Null when the email matches an account but Google hasn't
+ * verified it.
+ */
+async function googleAccount(profile) {
+  const email = normaliseEmail(profile.email);
+  // Two callbacks for a new address can race to create it; the loser finds
+  // the winner's account on the second pass.
+  for (let attempt = 0; ; attempt += 1) {
+    const { rows: bySub } = await query('select * from private.accounts where google_sub = $1', [profile.sub]);
+    if (bySub[0]) return bySub[0];
+    const existing = await findAccountByEmail(email);
+    if (existing) {
+      if (!profile.email_verified) return null;
+      // Google proved the address. If it was never confirmed, whoever set the
+      // password didn't own it, so the password goes.
+      const { rows } = await query(
+        `update private.accounts
+         set google_sub = $2,
+             password_hash = case when email_verified_at is null then null else password_hash end,
+             email_verified_at = coalesce(email_verified_at, now())
+         where id = $1 returning *`,
+        [existing.id, profile.sub],
+      );
+      return rows[0];
+    }
+    try {
+      return await createAccount({
+        email,
+        verified: Boolean(profile.email_verified),
+        googleSub: profile.sub,
+        metadata: { full_name: profile.name, avatar_url: profile.picture },
+      });
+    } catch (err) {
+      if (err.code !== '23505' || attempt > 0) throw err;
+    }
+  }
+}
+
 router.get('/google/callback', async (req, res) => {
   const fail = (message) => res.redirect(callbackUrl({ error_description: message }));
   res.clearCookie(STATE_COOKIE, { path: '/auth/google' });
@@ -186,33 +226,7 @@ router.get('/google/callback', async (req, res) => {
     return fail("We couldn't complete Google sign-in. Please try again.");
   }
 
-  const email = normaliseEmail(profile.email);
-  const account = await transaction(async (client) => {
-    const bySub = await client.query('select * from private.accounts where google_sub = $1', [profile.sub]);
-    if (bySub.rows[0]) return bySub.rows[0];
-    const byEmail = await client.query('select * from private.accounts where email = $1 for update', [email]);
-    const existing = byEmail.rows[0];
-    if (existing) {
-      if (!profile.email_verified) return null;
-      // Google proved the address. If it was never confirmed, whoever set the
-      // password didn't own it, so the password goes.
-      const { rows } = await client.query(
-        `update private.accounts
-         set google_sub = $2,
-             password_hash = case when email_verified_at is null then null else password_hash end,
-             email_verified_at = coalesce(email_verified_at, now())
-         where id = $1 returning *`,
-        [existing.id, profile.sub],
-      );
-      return rows[0];
-    }
-    return createAccount({
-      email,
-      verified: Boolean(profile.email_verified),
-      googleSub: profile.sub,
-      metadata: { full_name: profile.name, avatar_url: profile.picture },
-    }, client);
-  });
+  const account = await googleAccount(profile);
 
   if (!account) return fail('Please verify your Google email address first.');
   if (isBanned(account)) return fail('This account has been suspended.');

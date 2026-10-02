@@ -14,11 +14,10 @@ export const config = {
   isProd: env('NODE_ENV') === 'production',
   port: intEnv('PORT', 5000, 1, 65535),
 
-  // Supabase Postgres connection string. On Vercel use the pooler
-  // (Supavisor, transaction mode, port 6543).
-  databaseUrl: env('DATABASE_URL'),
-  databaseSsl: env('DATABASE_SSL', 'true') !== 'false',
-  databasePoolMax: intEnv('DATABASE_POOL_MAX', 5, 1, 50),
+  // Supabase project URL (https://<project-ref>.supabase.co) and secret key
+  // (sb_secret_..., or the legacy service_role key). Server-side only.
+  supabaseUrl: trimSlash(env('SUPABASE_URL')),
+  supabaseSecretKey: env('SUPABASE_SECRET_KEY', env('SUPABASE_SERVICE_ROLE_KEY')),
 
   // Where the React app lives: email links and OAuth land here, and it is the
   // CORS allow-list (plus CORS_ORIGINS, comma-separated).
@@ -68,15 +67,38 @@ export const config = {
 
 export const googleEnabled = () => Boolean(config.google.clientId && config.google.clientSecret);
 
+/** The `role` claim of a legacy (JWT) API key, or null. */
+function jwtRole(key) {
+  const parts = key.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')).role ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Problems with the Supabase URL and key (empty when they look right). */
+export function supabaseProblems(url, key) {
+  const problems = [];
+  if (!url) problems.push('SUPABASE_URL is not set');
+  else if (!/^https?:\/\/[^/\s]+$/.test(url) || /(^|\.)supabase\.com$/i.test(url.replace(/^https?:\/\//, ''))) {
+    problems.push('SUPABASE_URL must be the project URL, e.g. https://<project-ref>.supabase.co');
+  }
+  if (!key) problems.push('SUPABASE_SECRET_KEY is not set');
+  else if (key.startsWith('sb_publishable_')) {
+    problems.push('SUPABASE_SECRET_KEY is a publishable key; use the secret key (sb_secret_...)');
+  } else if (!key.startsWith('sb_secret_') && jwtRole(key) !== 'service_role') {
+    problems.push('SUPABASE_SECRET_KEY must be a secret key (sb_secret_...) or the legacy service_role key');
+  }
+  return problems;
+}
+
 /** Problems with the environment (empty when the API can start). */
 export function configProblems() {
-  const problems = ['DATABASE_URL', 'JWT_SECRET']
-    .filter((name) => !process.env[name])
-    .map((name) => `${name} is not set`);
-  if (config.jwtSecret && config.jwtSecret.length < 32) problems.push('JWT_SECRET must be at least 32 characters');
-  if (config.databaseUrl && !/^postgres(ql)?:\/\//.test(config.databaseUrl)) {
-    problems.push('DATABASE_URL must be a postgresql:// connection string');
-  }
+  const problems = supabaseProblems(config.supabaseUrl, config.supabaseSecretKey);
+  if (!config.jwtSecret) problems.push('JWT_SECRET is not set');
+  else if (config.jwtSecret.length < 32) problems.push('JWT_SECRET must be at least 32 characters');
   return problems;
 }
 

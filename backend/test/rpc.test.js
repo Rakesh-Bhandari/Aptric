@@ -45,3 +45,15 @@ test('every whitelisted type is a plain SQL type name', () => {
     }
   }
 });
+
+test('every whitelisted function is SECURITY DEFINER (backend_sql does not apply RLS)', async () => {
+  const { readdir, readFile } = await import('node:fs/promises');
+  const dir = new URL('../../supabase/migrations/', import.meta.url);
+  const files = (await readdir(dir)).filter((f) => f.endsWith('.sql')).sort();
+  const sql = (await Promise.all(files.map((f) => readFile(new URL(f, dir), 'utf8')))).join('\n');
+  for (const name of Object.keys(RPCS)) {
+    const defs = [...sql.matchAll(new RegExp(`create (?:or replace )?function public\\.${name}\\([\\s\\S]*?\\bas \\$`, 'g'))];
+    assert.ok(defs.length, `${name} is defined`);
+    assert.match(defs.at(-1)[0], /security definer/, `${name} is security definer`);
+  }
+});

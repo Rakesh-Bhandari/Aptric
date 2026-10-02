@@ -148,18 +148,18 @@ npx supabase link --project-ref <project-ref>
 npx supabase db push          # applies any migrations the project doesn't have yet
 ```
 
-`20261002000001_backend_auth.sql` moves accounts off Supabase Auth: existing users are copied into `private.accounts` with their passwords. Afterwards turn off sign-ups in Supabase Auth and disable the Data API (see [backend/README.md](backend/README.md#lock-down-the-supabase-project)).
+`20261002000001_backend_auth.sql` moves accounts off Supabase Auth: existing users are copied into `private.accounts` with their passwords. Afterwards turn off sign-ups in Supabase Auth; keep the Data API enabled, since the API reaches `public.backend_sql` through it (see [backend/README.md](backend/README.md#lock-down-the-supabase-project)).
 
 ### 3. API (backend)
 
 ```bash
 cd backend
-cp .env.example .env          # DATABASE_URL, JWT_SECRET, FRONTEND_URL, API_URL, SMTP_*, GOOGLE_* ...
+cp .env.example .env          # SUPABASE_URL, SUPABASE_SECRET_KEY, JWT_SECRET, FRONTEND_URL, API_URL, SMTP_*, GOOGLE_* ...
 npm install
 npm run dev                   # http://localhost:5000
 ```
 
-For the local stack use `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres` and `DATABASE_SSL=false`. Without SMTP settings the sign-up / sign-in links are printed in this terminal. AI generation needs `OPEN_ROUTER_API_KEY` (see [backend/.env.example](backend/.env.example)).
+For the local stack use `SUPABASE_URL=http://127.0.0.1:54321` and the "Secret key" from `npx supabase status`. Without SMTP settings the sign-up / sign-in links are printed in this terminal. AI generation needs `OPEN_ROUTER_API_KEY` (see [backend/.env.example](backend/.env.example)).
 
 ### 4. Frontend
 
@@ -206,7 +206,7 @@ npx supabase gen types typescript --local --schema public > supabase/types/datab
 ## 🌐 Deployment
 
 - **Database**: `npx supabase db push` to the linked project. The pg_cron schedules are created by the migrations.
-- **API**: a Vercel project with Root Directory `backend/` (`backend/vercel.json`) and the variables from `backend/.env.example` (`DATABASE_URL` = the Supabase transaction pooler string). Details in [backend/README.md](backend/README.md#deploy-to-vercel).
+- **API**: a Vercel project with Root Directory `backend/` (`backend/vercel.json`) and the variables from `backend/.env.example` (`SUPABASE_URL` = the project URL, `SUPABASE_SECRET_KEY` = the project's secret key). Details in [backend/README.md](backend/README.md#deploy-to-vercel).
 - **Frontend**: a Vercel project with Root Directory `frontend/` (`frontend/vercel.json`) and `VITE_API_URL` set to the API's URL.
 
 ---

@@ -1,6 +1,6 @@
 # Aptric – Supabase (database)
 
-Postgres schema, RLS and generated types for Aptric, managed with the Supabase CLI. Supabase is used **only as the database**: the Node API in [`backend/`](../backend/README.md) owns accounts, sessions, email links, Google sign-in and AI generation, and is the only thing that connects to Postgres. Supabase Auth, the Data API, Realtime and Edge Functions are not used by the app.
+Postgres schema, RLS and generated types for Aptric, managed with the Supabase CLI. Supabase is used **only as the database**: the Node API in [`backend/`](../backend/README.md) owns accounts, sessions, email links, Google sign-in and AI generation, and is the only thing that connects to Postgres (project URL + secret key, through the Data API's `public.backend_sql`). Supabase Auth, Realtime and Edge Functions are not used by the app.
 
 ```bash
 npx supabase start          # local stack (Docker)
@@ -12,17 +12,18 @@ npx supabase db push        # apply migrations to the linked remote project
 
 Regenerate `types/database.types.ts` after every migration.
 
-### How the API talks to Postgres
+### How the API talks to Postgres (`20261002000002_backend_gateway.sql`)
 
-The API connects with the database connection string (role `postgres`). For anything done on a player's behalf it opens a transaction and runs
+The API uses the project URL and the secret key (`service_role`) with supabase-js, and sends all of its SQL to one function through the Data API:
 
 ```sql
-select set_config('role', 'authenticated', true),
-       set_config('request.jwt.claims', '{"sub":"<user id>","role":"authenticated"}', true),
-       set_config('request.jwt.claim.sub', '<user id>', true);
+select public.backend_sql('[{"sql": "select ...", "rows": true}, ...]'::jsonb, as_user => '<user id>');
 ```
 
-so `auth.uid()`, every RLS policy, column grant and `SECURITY DEFINER` rule below apply exactly as they did behind PostgREST. Server-side work (auth tables, AI generation, rate limits) runs as the connection role.
+- The statements run in order in one transaction and come back as one JSON array of row objects per statement.
+- With `as_user`, `request.jwt.claims` / `request.jwt.claim.sub` carry that user's id, so `auth.uid()`, `private.is_admin()`, `private.is_banned()`, `default auth.uid()` columns and the audit triggers see the player.
+- It is `SECURITY DEFINER` and runs as its owner, so **RLS and column grants are not applied** to these statements: every function the API exposes under `/rpc` is `SECURITY DEFINER` and checks the caller itself, and the API's few direct queries spell out their policy's conditions.
+- `EXECUTE` is granted to `service_role` only; anon and authenticated can't call it. The Data API must stay enabled with `public` exposed.
 
 ### Accounts (`20261002000001_backend_auth.sql`)
 

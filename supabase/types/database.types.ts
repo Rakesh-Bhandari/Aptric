@@ -1730,6 +1730,7 @@ export type Database = {
         Args: { correct_option_id: string; explanation: string; hint?: string; target_question_id: string };
         Returns: undefined;
       };
+      backend_sql: { Args: { as_user?: string; statements: Json }; Returns: Json };
       finish_placement: { Args: { answers: Json; test_id: string }; Returns: Json };
       gen_claim_job: {
         Args: { p_job_id: string; p_lease_seconds: number };
