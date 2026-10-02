@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Clock, Play, Users, X } from 'lucide-react';
+import { ArrowLeft, CalendarClock, Check, ListChecks, Play, Timer, Trophy, Users, X } from 'lucide-react';
 import { NotFound } from '@/components/layout/ErrorBoundary';
 import { Markdown } from '@/components/markdown/Markdown';
 import { SessionHeader } from '@/components/solve/SessionHeader';
 import { SolveScreen } from '@/components/solve/SolveScreen';
-import { Avatar } from '@/components/ui/avatar';
+import { ContestStateBadge } from '@/components/compete/ContestStateBadge';
+import { LiveIndicator, PlayerLink, StandingRow } from '@/components/compete/standings';
+import { countdownParts, formatSpan, useNow } from '@/components/compete/time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +22,6 @@ import { contestPoints, DIFFICULTY_LABEL, OPTION_LETTERS } from '@/lib/game';
 import { keys, queryClient, useContest, useContestStandings } from '@/lib/queries';
 import type { ContestDetail, ContestQuestion } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ContestStateBadge } from './Compete';
 import { fromCard } from './solve/news';
 
 const refresh = (id: string) => Promise.all([
@@ -32,46 +33,40 @@ const refresh = (id: string) => Promise.all([
 const Standings = ({ contest }: { contest: ContestDetail }) => {
   const standings = useContestStandings(contest.id, contest.state === 'live');
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2"><Users className="size-5" aria-hidden /> Standings</CardTitle>
-        <CardDescription>Most points wins; ties go to whoever was faster.{contest.state === 'live' && ' Updates every few seconds.'}</CardDescription>
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2"><Users className="size-5 text-muted-foreground" aria-hidden /> {contest.state === 'ended' ? 'Results' : 'Standings'}</CardTitle>
+          {contest.state === 'live' && <LiveIndicator every="few seconds" />}
+        </div>
+        <CardDescription>Most points wins; ties go to whoever was faster.</CardDescription>
       </CardHeader>
-      <CardContent className="px-0 sm:px-0">
-        {standings.isError && <div className="px-4"><ErrorState error={standings.error} onRetry={() => void standings.refetch()} /></div>}
-        {!standings.data && !standings.isError && <LoadingRegion className="space-y-2 px-4"><Skeleton className="h-12" /><Skeleton className="h-12" /></LoadingRegion>}
-        {standings.data && standings.data.entries.length === 0 && <p className="px-4 text-sm text-muted-foreground">No entries yet.</p>}
-        {standings.data && standings.data.entries.length > 0 && (
-          <ol className="divide-y" aria-label="Contest standings">
-            {standings.data.entries.map((e) => (
-              <li key={e.user_id} className={cn('flex items-center gap-3 px-4 py-2.5', e.is_me && 'bg-primary-soft/60')} aria-current={e.is_me ? 'true' : undefined}>
-                <span className="w-7 text-center font-bold tabular-nums text-muted-foreground">{e.rank}</span>
-                <Avatar src={e.avatar_url} name={displayName(e)} className="size-8" />
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {e.handle ? <Link to={`/u/${e.handle}`} className="hover:underline">{displayName(e)}</Link> : displayName(e)}
-                </span>
-                <span className="text-right text-sm">
-                  <span className="block font-semibold tabular-nums">{e.score} pts</span>
-                  <span className="text-xs text-muted-foreground">{e.correct}/{contest.question_count} · {formatClock(e.time_ms)}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </CardContent>
+      {standings.isError && <div className="px-4 pb-4"><ErrorState error={standings.error} onRetry={() => void standings.refetch()} /></div>}
+      {!standings.data && !standings.isError && <LoadingRegion className="space-y-2 px-4 pb-4"><Skeleton className="h-14" /><Skeleton className="h-14" /></LoadingRegion>}
+      {standings.data && standings.data.entries.length === 0 && <p className="px-4 pb-5 text-sm text-muted-foreground sm:px-5">No entries yet.</p>}
+      {standings.data && standings.data.entries.length > 0 && (
+        <ol className="divide-y border-t" aria-label="Contest standings">
+          {standings.data.entries.map((e) => (
+            <StandingRow key={e.user_id} rank={e.rank} me={e.is_me} player={<PlayerLink handle={e.handle} name={displayName(e)} avatar={e.avatar_url} />}>
+              <span className="block font-bold tabular-nums text-heading">{e.score} pts</span>
+              <span className="text-xs tabular-nums text-muted-foreground">{e.correct}/{contest.question_count} · {formatClock(e.time_ms)}</span>
+            </StandingRow>
+          ))}
+        </ol>
+      )}
     </Card>
   );
 };
 
 const Review = ({ questions }: { questions: ContestQuestion[] }) => (
   <Card>
-    <CardHeader className="pb-2"><CardTitle>Answers and explanations</CardTitle></CardHeader>
+    <CardHeader className="pb-3"><CardTitle>Answers and explanations</CardTitle><CardDescription>Tap a question to see the answer and how to solve it.</CardDescription></CardHeader>
     <CardContent className="space-y-3">
       {questions.map((q, i) => {
         const correctIndex = q.options.findIndex((o) => o.id === q.correct_option_id);
         return (
-          <details key={q.id} className="group rounded-md border p-3">
-            <summary className="flex cursor-pointer list-none items-center gap-2 font-medium">
+          <details key={q.id} className="group rounded-md border bg-card p-3 open:shadow-sm">
+            <summary className="flex min-h-8 cursor-pointer list-none items-center gap-2 font-semibold text-heading">
               {q.answer ? (
                 q.answer.is_correct ? <Check className="size-4 text-success" aria-label="Correct" /> : <X className="size-4 text-danger" aria-label="Wrong" />
               ) : <span className="size-4 rounded-full border" aria-label="Not answered" />}
@@ -173,56 +168,90 @@ const ContestPage = () => {
   return (
     <Page className="max-w-3xl space-y-5">
       <Button variant="ghost" size="sm" asChild className="-ml-2"><Link to="/compete?tab=contests"><ArrowLeft /> All contests</Link></Button>
-      <div className="space-y-2">
-        <ContestStateBadge c={c} />
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{c.title}</h1>
-        {c.description && <p className="text-muted-foreground">{c.description}</p>}
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1"><Clock className="size-4" aria-hidden /> {formatDateTime(c.starts_at)} – {formatDateTime(c.ends_at)}</span>
-          <span>{plural(c.question_count, 'question')}</span>
-          <span>{plural(c.participants, 'player')}</span>
-        </p>
-      </div>
 
-      <Card>
-        <CardContent className="space-y-3 pt-4 sm:pt-5">
-          {c.state === 'upcoming' && (
-            c.joined
-              ? <p>You're registered. The contest opens {formatRelative(c.starts_at)}.</p>
-              : (
-                <>
-                  <p>Register now and we'll keep your spot. Questions open {formatRelative(c.starts_at)}.</p>
-                  <Button onClick={() => void join(false)} loading={joining}>Register</Button>
-                </>
-              )
+      <Card variant="navy" className="relative overflow-hidden shadow-md">
+        <span aria-hidden className="pointer-events-none absolute inset-0 bg-dots" />
+        <span aria-hidden className="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-primary/25 blur-3xl" />
+        <div className="relative space-y-5 p-5 sm:p-7">
+          <div className="space-y-2">
+            <ContestStateBadge c={c} onDark />
+            <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">{c.title}</h1>
+            {c.description && <p className="text-navy-muted-foreground">{c.description}</p>}
+          </div>
+
+          {c.state !== 'ended' && <Countdown label={c.state === 'live' ? 'Ends in' : 'Starts in'} at={c.state === 'live' ? c.ends_at : c.starts_at} />}
+
+          <ul className="flex flex-wrap gap-2 text-xs font-semibold" aria-label="Contest details">
+            <li className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5"><CalendarClock className="size-3.5" aria-hidden /> {formatDateTime(c.starts_at)} – {formatDateTime(c.ends_at)}</li>
+            <li className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5"><ListChecks className="size-3.5" aria-hidden /> {plural(c.question_count, 'question')}</li>
+            <li className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5"><Timer className="size-3.5" aria-hidden /> {formatSpan(c.starts_at, c.ends_at)}</li>
+            <li className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5"><Users className="size-3.5" aria-hidden /> {plural(c.participants, 'player')}</li>
+          </ul>
+
+          {c.state !== 'ended' && (
+            <div className="space-y-2">
+              <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-chrome-accent">Rules</h2>
+              <ul className="grid gap-1.5 text-sm text-navy-muted-foreground sm:grid-cols-2">
+                {[
+                  `Everyone answers the same ${plural(c.question_count, 'question')}.`,
+                  'Each answer is final, and there are no hints.',
+                  `Points by difficulty: easy ${contestPoints('easy')}, medium ${contestPoints('medium')}, hard ${contestPoints('hard')}.`,
+                  'Most points wins; ties go to whoever was faster.',
+                ].map((rule) => (
+                  <li key={rule} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-chrome-accent" aria-hidden /> {rule}</li>
+                ))}
+              </ul>
+            </div>
           )}
-          {c.state === 'live' && !c.joined && (
-            <>
-              <p>Everyone answers the same {plural(c.question_count, 'question')}. Each answer is final, so take your time. No hints in contests.</p>
-              <Button size="lg" onClick={() => void join(true)} loading={joining}><Play /> Enter and start</Button>
-            </>
-          )}
-          {c.state === 'live' && c.joined && (
-            remaining > 0 ? (
-              <>
-                <p>{answered > 0 ? `You've answered ${answered} of ${c.question_count}.` : 'Ready when you are.'} The contest closes {formatRelative(c.ends_at)}.</p>
-                <Button size="lg" onClick={() => setPlaying(true)}><Play /> {answered > 0 ? 'Continue' : 'Start'}</Button>
-              </>
-            ) : (
-              <p>You've answered every question. Final results and explanations appear {formatRelative(c.ends_at)}.</p>
-            )
-          )}
-          {c.state === 'ended' && (
-            c.my_entry
-              ? <p>You finished <strong>#{c.my_entry.rank}</strong> with <strong>{c.my_entry.score} points</strong> ({c.my_entry.correct} of {c.question_count} right).</p>
-              : <p>This contest has ended. You can still look at the questions and answers below.</p>
-          )}
-        </CardContent>
+
+          <div className="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-navy-muted-foreground [&_strong]:text-navy-foreground">
+              {c.state === 'upcoming' && (c.joined
+                ? <p>You're registered. The contest opens {formatRelative(c.starts_at)}.</p>
+                : <p>Register now and we'll keep your spot. Questions open {formatRelative(c.starts_at)}.</p>)}
+              {c.state === 'live' && !c.joined && <p>Ready? Take your time: each answer is final.</p>}
+              {c.state === 'live' && c.joined && (remaining > 0
+                ? <p>{answered > 0 ? <>You've answered <strong>{answered} of {c.question_count}</strong>.</> : 'Ready when you are.'} The contest closes {formatRelative(c.ends_at)}.</p>
+                : <p>You've answered every question. Final results and explanations appear {formatRelative(c.ends_at)}.</p>)}
+              {c.state === 'ended' && (c.my_entry
+                ? (
+                  <p className="flex items-center gap-2 text-base">
+                    <Trophy className="size-5 shrink-0 text-medal-gold" aria-hidden />
+                    <span>You finished <strong>#{c.my_entry.rank}</strong> with <strong>{c.my_entry.score} points</strong> ({c.my_entry.correct} of {c.question_count} right).</span>
+                  </p>
+                )
+                : <p>This contest has ended. You can still look at the questions and answers below.</p>)}
+            </div>
+            {c.state === 'upcoming' && !c.joined && <Button size="lg" className="shrink-0" onClick={() => void join(false)} loading={joining}>Register</Button>}
+            {c.state === 'live' && !c.joined && <Button size="lg" className="shrink-0" onClick={() => void join(true)} loading={joining}><Play /> Enter and start</Button>}
+            {c.state === 'live' && c.joined && remaining > 0 && <Button size="lg" className="shrink-0" onClick={() => setPlaying(true)}><Play /> {answered > 0 ? 'Continue' : 'Start'}</Button>}
+          </div>
+        </div>
       </Card>
 
       {c.state !== 'upcoming' && <Standings contest={c} />}
       {c.state === 'ended' && c.questions && <Review questions={c.questions} />}
     </Page>
+  );
+};
+
+/** Big tabular countdown: days, hours, minutes, seconds. */
+const Countdown = ({ label, at }: { label: string; at: string }) => {
+  const now = useNow(1000);
+  const { d, h, m, s } = countdownParts(at, now);
+  const parts: [number, string][] = [[d, 'days'], [h, 'hours'], [m, 'min'], [s, 'sec']];
+  return (
+    <div>
+      <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-navy-muted-foreground" id="contest-countdown">{label}</p>
+      <time dateTime={at} aria-labelledby="contest-countdown" className="flex gap-2 sm:gap-3">
+        {parts.map(([value, unit], i) => (
+          <span key={unit} className={cn('flex min-w-16 flex-col items-center rounded-xl bg-white/10 px-3 py-2 ring-1 ring-white/10 sm:min-w-20', i === 0 && d === 0 && 'hidden sm:flex')}>
+            <span className="font-display text-3xl font-extrabold tabular-nums leading-none sm:text-4xl">{String(value).padStart(2, '0')}</span>
+            <span className="mt-1 text-[0.7rem] font-semibold uppercase tracking-wider text-navy-muted-foreground">{unit}</span>
+          </span>
+        ))}
+      </time>
+    </div>
   );
 };
 
