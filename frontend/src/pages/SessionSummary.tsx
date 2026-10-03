@@ -2,7 +2,9 @@ import { useId, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Award, BookOpen, Check, ChevronDown, Clock, Eye, Flame, Home, Lightbulb, Minus, RotateCcw, Share2, Sparkles, Target, Trophy, TrendingUp, X } from 'lucide-react';
 import { Markdown } from '@/components/markdown/Markdown';
+import { AskTutorButton } from '@/components/solve/AskTutor';
 import { loadSummary, type SessionItem, type SessionSummaryData } from '@/components/solve/session';
+import type { TutorContext } from '@/lib/tutor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,6 +123,8 @@ const SessionSummary = () => {
   const perfect = !incomplete && total > 0 && correct === total;
   const reviewable = items.filter((i) => i.review);
   const weakFirst = !incomplete && local?.kind !== 'practice';
+  // Aptric Tutor reviews daily and practice answers (never contests).
+  const tutorContext: TutorContext | null = local?.kind === 'practice' ? 'practice' : local?.kind === 'contest' ? null : 'daily';
 
   return (
     <Page className="max-w-2xl space-y-4 sm:space-y-5">
@@ -253,7 +257,7 @@ const SessionSummary = () => {
         <section aria-labelledby="review-heading" className="space-y-3 pt-2">
           <h2 id="review-heading" className="text-lg font-bold tracking-tight text-heading">Review your answers</h2>
           <ol className="space-y-2">
-            {reviewable.map((item, i) => <ReviewItem key={item.questionId} item={item} number={i + 1} />)}
+            {reviewable.map((item, i) => <ReviewItem key={item.questionId} item={item} number={i + 1} tutorContext={tutorContext} />)}
           </ol>
         </section>
       )}
@@ -345,7 +349,7 @@ const UpdateCard = ({ icon, label, value, hint, tint }: {
   </li>
 );
 
-const ReviewItem = ({ item, number }: { item: SessionItem; number: number }) => {
+const ReviewItem = ({ item, number, tutorContext }: { item: SessionItem; number: number; tutorContext: TutorContext | null }) => {
   const review = item.review!;
   const { icon: Icon, label, className } = OUTCOME[item.outcome];
   return (
@@ -394,6 +398,9 @@ const ReviewItem = ({ item, number }: { item: SessionItem; number: number }) => 
               <h3 className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Explanation</h3>
               <Markdown text={review.explanation} className="text-sm" />
             </div>
+          )}
+          {tutorContext && (
+            <AskTutorButton questionId={item.questionId} context={tutorContext} topic={item.subtopic} explanation={review.explanation} />
           )}
         </div>
       </details>
