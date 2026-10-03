@@ -132,7 +132,7 @@ export const AppShell = () => {
             !transparent && scrolled && 'shadow-sm',
           )}
         >
-          <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4 sm:gap-4 sm:px-6">
+          <div className="mx-auto flex h-16 max-w-5xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
             <Link to="/" className="flex min-h-11 shrink-0 items-center rounded-md" aria-label="Aptric home">
               <AptricLogo size="sm" className="sm:hidden" />
               <AptricLogo className="hidden sm:inline-flex" />
@@ -175,7 +175,7 @@ export const AppShell = () => {
                   >
                     Sign in
                   </Button>
-                  <Button size="sm" className="h-11 px-4 sm:px-5" onClick={() => openAuth({ mode: 'signup', next: '/' })}>
+                  <Button size="sm" className="h-11 px-3.5 sm:px-5" onClick={() => openAuth({ mode: 'signup', next: '/' })}>
                     Get Started <ArrowRight aria-hidden />
                   </Button>
                 </>

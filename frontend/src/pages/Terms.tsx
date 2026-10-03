@@ -58,10 +58,10 @@ const SECTIONS: { id: string; title: string; body?: string; items?: string[] }[]
 
 const LAST_UPDATED = 'March 2025';
 
-/** Long-form legal page: a readable column, numbered sections with orange anchors, and a contents list on wide screens. */
+/** Long-form legal page: a readable column, numbered sections with blue anchors, and a contents list on wide screens. */
 const Terms = () => (
   <div className="bg-background">
-    <header className="border-b bg-card">
+    <header className="border-b bg-background bg-gradient-hero">
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
         <Badge variant="default" className="gap-1.5">
           <CalendarClock aria-hidden /> Last updated {LAST_UPDATED}
@@ -98,7 +98,7 @@ const Terms = () => (
         {SECTIONS.map((sec, i) => (
           <section key={sec.id} id={sec.id} aria-labelledby={`terms-${sec.id}`} className="group scroll-mt-24">
             <h2 id={`terms-${sec.id}`} className="flex items-baseline gap-3 font-display text-xl font-extrabold tracking-tight text-heading sm:text-2xl">
-              <span className="grid size-8 shrink-0 self-center place-items-center rounded-full bg-primary-soft text-sm font-bold tabular-nums text-accent-text">
+              <span className="grid size-8 shrink-0 self-center place-items-center rounded-full bg-primary-soft text-sm font-bold tabular-nums text-primary-soft-foreground">
                 {i + 1}<span className="sr-only">.</span>
               </span>
               <span>

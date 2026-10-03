@@ -22,14 +22,14 @@ const QuestionMock = () => (
       <span className="text-muted-foreground">Question 4 of 10</span>
       <div className="flex items-center gap-3">
         <span className="inline-flex items-center gap-1 tabular-nums text-heading"><Clock className="size-4 text-muted-foreground" />01:24</span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-primary-soft-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full bg-violet-soft px-2 py-0.5 text-violet-soft-foreground">
           <Flame className="size-4 fill-streak text-streak" />12
         </span>
       </div>
     </div>
     <Progress value={4} max={10} label="Daily set progress" className="mt-3 h-1.5" />
     <div className="mt-5 flex flex-wrap gap-1.5">
-      <Badge variant="navy">Quantitative Aptitude</Badge>
+      <Badge variant="blue">Quantitative Aptitude</Badge>
       <Badge variant="muted">Medium</Badge>
     </div>
     <p className="mt-3 font-semibold leading-relaxed text-heading">
@@ -48,8 +48,9 @@ const QuestionMock = () => (
           >
             <span
               className={cn(
-                'grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold',
-                selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                // Key-caps: the option's shortcut key; blue when selected.
+                'grid size-7 shrink-0 place-items-center rounded-md border-b-2 text-xs font-bold',
+                selected ? 'border-primary-strong bg-primary text-primary-foreground' : 'border-input bg-muted text-muted-foreground',
               )}
             >
               {i + 1}
@@ -59,7 +60,7 @@ const QuestionMock = () => (
         );
       })}
     </div>
-    <div className="mt-5 flex h-12 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground shadow-sm">Check answer</div>
+    <div className="mt-5 flex h-12 items-center justify-center rounded-full bg-primary bg-gradient-primary font-semibold text-primary-foreground shadow-glow">Check answer</div>
   </Card>
 );
 
@@ -69,9 +70,9 @@ export const ProductPreview = () => (
       <div>
         <SectionHeading id="preview-title" eyebrow="Built for focus" title="Practice that feels like the real test" className="mx-0 text-left" />
         <ul className="mt-6 space-y-3.5">
-          {POINTS.map(({ icon: Icon, text }) => (
+          {POINTS.map(({ icon: Icon, text }, i) => (
             <li key={text} data-reveal className="flex items-start gap-3 text-foreground">
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-soft text-accent-text"><Icon className="size-4" aria-hidden /></span>
+              <span className={cn('grid size-8 shrink-0 place-items-center rounded-full', i % 2 === 0 ? 'bg-primary-soft text-accent-text' : 'bg-violet-soft text-violet-text')}><Icon className="size-4" aria-hidden /></span>
               <span className="pt-1">{text}</span>
             </li>
           ))}
@@ -79,7 +80,7 @@ export const ProductPreview = () => (
       </div>
       <figure data-reveal className="relative mx-auto w-full max-w-md">
         {/* Soft glow behind the card. Decorative. */}
-        <div aria-hidden className="absolute -inset-6 -z-0 rounded-[2rem] bg-gradient-primary opacity-15 blur-2xl" />
+        <div aria-hidden className="absolute -inset-6 -z-0 rounded-[2rem] bg-gradient-secondary opacity-20 blur-2xl" />
         <div aria-hidden className="relative [&_svg]:shrink-0" inert>
           <QuestionMock />
         </div>

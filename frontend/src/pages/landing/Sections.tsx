@@ -7,6 +7,12 @@ import { useAuthDialog } from '@/context/AuthDialogContext';
 import { cn } from '@/lib/utils';
 import { delay, outlineOnNavy } from './shared';
 
+/** Alternating soft tints for icon tiles and chips: blue, then violet. */
+const tint = (i: number) =>
+  i % 2 === 0
+    ? { tile: 'bg-primary-soft text-accent-text', chip: 'bg-primary-soft text-primary-soft-foreground' }
+    : { tile: 'bg-violet-soft text-violet-text', chip: 'bg-violet-soft text-violet-soft-foreground' };
+
 export const SectionHeading = ({ id, eyebrow, title, children, className }: {
   id: string; eyebrow: string; title: ReactNode; children?: ReactNode; className?: string;
 }) => (
@@ -31,7 +37,9 @@ export const StatStrip = () => (
     <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border shadow-md lg:grid-cols-4">
       {STATS.map(({ icon: Icon, value, label }, i) => (
         <li key={value} data-reveal style={delay(i)} className="flex items-start gap-3 bg-card p-4 sm:p-5">
-          <Icon className="mt-0.5 size-5 shrink-0 text-accent-text" aria-hidden />
+          <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary-soft text-accent-text">
+            <Icon className="size-[18px]" aria-hidden />
+          </span>
           <div className="min-w-0">
             <p className="font-display text-sm font-extrabold leading-snug tracking-tight text-heading sm:text-base">{value}</p>
             <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{label}</p>
@@ -50,7 +58,7 @@ const FEATURES = [
 ];
 
 export const Features = () => (
-  <section id="features" tabIndex={-1} aria-labelledby="features-title" className="scroll-mt-20 px-4 py-16 focus:outline-none sm:px-6 sm:py-24">
+  <section id="features" tabIndex={-1} aria-labelledby="features-title" className="scroll-mt-20 bg-background px-4 py-16 focus:outline-none sm:px-6 sm:py-24">
     <SectionHeading id="features-title" eyebrow="What you get" title="Everything you need to get exam-ready">
       Ten focused minutes a day beat a weekend of cramming. Aptric keeps you coming back.
     </SectionHeading>
@@ -58,9 +66,10 @@ export const Features = () => (
       {FEATURES.map(({ icon: Icon, title, text }, i) => (
         <li
           key={title} data-reveal style={delay(i)}
-          className="group rounded-lg border bg-card p-6 shadow-sm transition-[box-shadow,transform,translate] duration-200 ease-out hover:-translate-y-1 hover:shadow-md"
+          className="group rounded-lg border bg-card p-6 shadow-sm transition-[box-shadow,transform,translate,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
         >
-          <div className="grid size-12 place-items-center rounded-md bg-primary-soft text-accent-text">
+          {/* Icon tiles alternate soft blue and Soft Purple. */}
+          <div className={cn('grid size-12 place-items-center rounded-md', tint(i).tile)}>
             <Icon className="size-6" aria-hidden />
           </div>
           <h3 className="mt-4 text-lg font-bold tracking-tight text-heading">{title}</h3>
@@ -82,12 +91,12 @@ export const HowItWorks = () => (
     <SectionHeading id="how-title" eyebrow="How it works" title="Three steps to a daily habit" />
     <ol className="relative mx-auto mt-12 grid max-w-5xl gap-10 md:grid-cols-3 md:gap-8">
       {/* Connecting line between the numerals (desktop). */}
-      <span aria-hidden className="absolute left-[16.67%] right-[16.67%] top-7 hidden h-0.5 bg-gradient-primary opacity-60 md:block" />
+      <span aria-hidden className="absolute left-[16.67%] right-[16.67%] top-7 hidden h-0.5 rounded-full bg-gradient-secondary md:block" />
       {STEPS.map(({ title, text }, i) => (
         <li key={title} data-reveal style={delay(i)} className="relative flex gap-4 md:flex-col md:items-center md:text-center">
           <span
             aria-hidden
-            className="grid size-14 shrink-0 place-items-center rounded-full bg-chrome font-display text-2xl font-extrabold text-chrome-accent shadow-md ring-8 ring-card"
+            className="grid size-14 shrink-0 place-items-center rounded-full bg-primary bg-gradient-primary font-display text-2xl font-extrabold text-primary-foreground shadow-glow ring-8 ring-card"
           >
             {i + 1}
           </span>
@@ -120,17 +129,17 @@ export const SectionsShowcase = () => (
         <li
           key={name} data-reveal style={delay(i)}
           // Three cards on the first row and two centred-width cards on the second (lg).
-          className={cn('rounded-lg border bg-card p-5 shadow-sm lg:col-span-2', i >= 3 && 'lg:col-span-3')}
+          className={cn('rounded-lg border bg-card p-5 shadow-sm transition-[box-shadow,border-color] duration-200 ease-out hover:border-primary/30 hover:shadow-md lg:col-span-2', i >= 3 && 'lg:col-span-3')}
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-chrome text-chrome-accent">
+            <div className={cn('grid size-10 shrink-0 place-items-center rounded-md', tint(i).tile)}>
               <Icon className="size-5" aria-hidden />
             </div>
             <h3 className="font-bold leading-tight tracking-tight text-heading">{name}</h3>
           </div>
           <ul aria-label={`${name} topics`} className="mt-4 flex flex-wrap gap-1.5">
             {topics.map((t) => (
-              <li key={t} className="rounded-full bg-navy-soft px-2.5 py-1 text-xs font-semibold text-navy-soft-foreground">{t}</li>
+              <li key={t} className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', tint(i).chip)}>{t}</li>
             ))}
           </ul>
         </li>
@@ -142,21 +151,28 @@ export const SectionsShowcase = () => (
 export const FinalCta = () => {
   const { openAuth } = useAuthDialog();
   return (
-    <section aria-labelledby="cta-title" data-theme="dark" className="relative isolate overflow-hidden bg-gradient-hero px-4 py-16 text-center text-chrome-foreground sm:px-6 sm:py-20">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-dots [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-      <div aria-hidden className="absolute left-1/2 top-full -z-10 size-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-3xl" />
-      <div data-reveal className="mx-auto max-w-2xl">
-        <h2 id="cta-title" className="font-display text-[clamp(2rem,6vw,3.25rem)] font-extrabold leading-[1.05] tracking-tight">
-          Start your streak <span className="text-gradient-brand">today.</span>
-        </h2>
-        <p className="mt-4 text-base text-chrome-muted-foreground sm:text-lg">Free, and it works great on your phone.</p>
-        <div className="mt-8 flex flex-col justify-center gap-3 min-[420px]:flex-row">
-          <Button size="lg" className="px-7" onClick={() => openAuth({ mode: 'signup', next: '/' })}>
-            Get Started <ArrowRight aria-hidden />
-          </Button>
-          <button type="button" className={outlineOnNavy} onClick={() => openAuth({ mode: 'signin', next: '/' })}>
-            Sign in
-          </button>
+    <section aria-labelledby="cta-title" className="bg-background px-4 py-16 sm:px-6 sm:py-20">
+      {/* A navy-gradient panel, dark in both themes, with a violet glow in one corner and a blue one opposite. */}
+      <div
+        data-theme="dark" data-reveal
+        className="relative isolate mx-auto max-w-5xl overflow-hidden rounded-[1.5rem] bg-gradient-navy px-6 py-14 text-center text-chrome-foreground shadow-lg [--ring:var(--ring-on-navy)] sm:px-10 sm:py-16"
+      >
+        <div aria-hidden className="absolute inset-0 -z-10 bg-dots [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
+        <div aria-hidden className="absolute -right-24 -top-32 -z-10 size-[26rem] rounded-full bg-violet/35 blur-3xl" />
+        <div aria-hidden className="absolute -bottom-40 -left-24 -z-10 size-[24rem] rounded-full bg-primary/25 blur-3xl" />
+        <div className="mx-auto max-w-2xl">
+          <h2 id="cta-title" className="font-display text-[clamp(2rem,6vw,3.25rem)] font-extrabold leading-[1.05] tracking-tight">
+            Start your streak <span className="text-gradient-brand">today.</span>
+          </h2>
+          <p className="mt-4 text-base text-chrome-muted-foreground sm:text-lg">Free, and it works great on your phone.</p>
+          <div className="mt-8 flex flex-col justify-center gap-3 min-[420px]:flex-row">
+            <Button size="lg" className="px-7" onClick={() => openAuth({ mode: 'signup', next: '/' })}>
+              Get Started <ArrowRight aria-hidden />
+            </Button>
+            <button type="button" className={outlineOnNavy} onClick={() => openAuth({ mode: 'signin', next: '/' })}>
+              Sign in
+            </button>
+          </div>
         </div>
       </div>
     </section>
