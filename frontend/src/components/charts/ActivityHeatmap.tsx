@@ -2,8 +2,8 @@ import { useLayoutEffect, useRef } from 'react';
 import { formatDay, plural } from '@/lib/format';
 import type { ActivityDay } from '@/lib/types';
 
-// One hue, five steps (sequential): --muted for no activity, then the orange
-// heat ramp, which darkens in light mode and brightens in dark (see index.css).
+// Five sequential steps: --muted for no activity, then the blue → violet heat
+// ramp, which darkens in light mode and brightens in dark (see index.css).
 const STEPS = ['var(--muted)', 'var(--heat-1)', 'var(--heat-2)', 'var(--heat-3)', 'var(--heat-4)'];
 const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 const MONTH = new Intl.DateTimeFormat(undefined, { month: 'short' });
@@ -61,7 +61,7 @@ export const ActivityHeatmap = ({ days, target }: { days: ActivityDay[]; target:
                     <span
                       key={di}
                       title={`${formatDay(day.date)}: ${day.attempted === 0 ? 'no questions' : `${plural(day.attempted, 'question')}, ${day.correct} correct`}`}
-                      className="size-4 rounded-[4px] shadow-[inset_0_0_0_1px_rgb(11_31_75/0.05)] sm:size-[18px] dark:shadow-none"
+                      className="size-[18px] rounded-[4px] shadow-[inset_0_0_0_1px_rgb(15_23_42/0.06)] sm:size-5 dark:shadow-none"
                       style={{ background: STEPS[level(day.attempted, target)] }}
                     />
                   );
@@ -75,7 +75,7 @@ export const ActivityHeatmap = ({ days, target }: { days: ActivityDay[]; target:
         <span>Strongest colour: daily goal of {plural(target, 'question')} reached</span>
         <span className="flex items-center gap-1" aria-hidden>
           Less
-          {STEPS.map((s, i) => <span key={i} className="size-3 rounded-[3px] shadow-[inset_0_0_0_1px_rgb(11_31_75/0.05)] dark:shadow-none" style={{ background: s }} />)}
+          {STEPS.map((s, i) => <span key={i} className="size-3 rounded-[3px] shadow-[inset_0_0_0_1px_rgb(15_23_42/0.06)] dark:shadow-none" style={{ background: s }} />)}
           More
         </span>
       </figcaption>

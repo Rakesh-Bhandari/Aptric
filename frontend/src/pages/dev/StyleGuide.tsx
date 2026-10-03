@@ -27,7 +27,7 @@ const TOKENS: [group: string, names: string[]][] = [
   ['Violet and Light Blue', ['violet', 'violet-strong', 'violet-foreground', 'violet-soft', 'violet-soft-foreground', 'violet-text', 'sky', 'sky-soft', 'sky-soft-foreground']],
   ['Navy', ['navy', 'navy-strong', 'navy-foreground', 'navy-soft', 'navy-soft-foreground', 'navy-muted-foreground', 'brand-navy']],
   ['Header and chrome', ['header', 'header-foreground', 'header-muted-foreground', 'chrome', 'chrome-deep', 'chrome-raised', 'chrome-foreground', 'chrome-muted-foreground', 'chrome-accent']],
-  ['Charts', ['chart-accent', 'muted', 'heat-1', 'heat-2', 'heat-3', 'heat-4']],
+  ['Charts', ['chart-accent', 'chart-fill', 'muted', 'heat-1', 'heat-2', 'heat-3', 'heat-4']],
   ['Semantic warm', ['streak', 'gold']],
   ['Status', ['success', 'success-soft', 'success-soft-foreground', 'danger', 'danger-soft', 'danger-soft-foreground', 'warning', 'warning-soft', 'warning-soft-foreground', 'gold']],
   ['League', ['tier-bronze', 'tier-silver', 'tier-gold', 'tier-platinum', 'tier-diamond', 'medal-gold', 'medal-silver', 'medal-bronze', 'metal-bronze-lo', 'metal-silver-lo', 'metal-gold-lo', 'metal-platinum-lo', 'metal-diamond-lo']],

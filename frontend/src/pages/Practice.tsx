@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Page, PageHeader } from '@/components/ui/page';
 import { Progress as Bar } from '@/components/ui/progress';
@@ -42,12 +43,14 @@ const DifficultyPicker = ({ value, onChange }: { value: Pref; onChange: (p: Pref
     <fieldset className="flex items-center gap-2">
       <legend id={id} className="sr-only">Preferred difficulty</legend>
       <span className="hidden text-sm font-medium text-muted-foreground lg:inline" aria-hidden>Difficulty</span>
-      <div className="flex w-full rounded-full border bg-card p-1 shadow-sm sm:w-auto">
+      <div className="flex w-full gap-1 rounded-full border bg-muted p-1 sm:w-auto">
         {PREFS.map((p) => (
           <label key={p.value} className={cn(
-            'flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full px-4 text-sm font-semibold text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground sm:flex-none',
+            'flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors duration-200 sm:flex-none',
             'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
-            value === p.value && 'bg-navy text-navy-foreground shadow-sm hover:bg-navy hover:text-navy-foreground dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground',
+            value === p.value
+            ? 'bg-primary bg-gradient-primary text-primary-foreground shadow-sm'
+            : 'text-muted-foreground hover:bg-card hover:text-foreground',
           )}
           >
             <input type="radio" name={id} value={p.value} checked={value === p.value} onChange={() => onChange(p.value)} className="sr-only" />
@@ -59,13 +62,13 @@ const DifficultyPicker = ({ value, onChange }: { value: Pref; onChange: (p: Pref
   );
 };
 
-// Icon per section, matched on its slug; navy and orange tints alternate (no rainbow).
+// Icon per section, matched on its slug; soft blue and violet tints alternate (no rainbow).
 const SECTION_ICONS: [RegExp, LucideIcon][] = [
   [/quant|arith|math|number/, Calculator], [/logic|reason/, Puzzle], [/verbal|english|language|reading/, BookOpenText],
   [/data|interpret|chart/, ChartColumn], [/general|aware|gk|current/, Globe],
 ];
 const sectionIcon = (slug: string) => SECTION_ICONS.find(([re]) => re.test(slug))?.[1] ?? Shapes;
-const TINTS = ['bg-navy-soft text-navy-soft-foreground', 'bg-primary-soft text-primary-soft-foreground'];
+const TINTS = ['bg-primary-soft text-primary-soft-foreground', 'bg-violet-soft text-violet-soft-foreground'];
 
 const MasteryBar = ({ node, label }: { node: { attempted: number; correct: number }; label: string }) => (
   <Bar value={node.correct} max={Math.max(node.attempted, 1)} label={label} className="h-1.5"
@@ -92,7 +95,7 @@ const SubtopicRow = ({ s, difficulty }: { s: SubtopicNode; difficulty: Difficult
         </p>
       </div>
       <MasteryStars stars={s.stars} className="hidden min-[400px]:inline-flex" />
-      <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary-soft px-3 text-xs font-semibold text-primary-soft-foreground transition-colors duration-150 group-hover/sub:bg-primary group-hover/sub:text-primary-foreground" aria-hidden>
+      <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary-soft px-3 text-xs font-semibold text-primary-soft-foreground transition-colors duration-150 group-hover/sub:bg-primary-soft-hover group-hover/sub:text-primary-soft-hover-foreground" aria-hidden>
         Practice <ChevronRight className="size-3.5" />
       </span>
     </Link>
@@ -196,14 +199,14 @@ const Practice = () => {
         <DifficultyPicker value={pref} onChange={choosePref} />
       </div>
 
-      <section aria-labelledby="weak-areas" className="mb-6 overflow-hidden rounded-lg border border-primary/25 bg-primary-soft p-4 shadow-sm sm:p-5">
+      <Card variant="soft" role="region" aria-labelledby="weak-areas" className="mb-6 overflow-hidden p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm" aria-hidden>
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-violet text-violet-foreground shadow-sm" aria-hidden>
             <Target className="size-6" />
           </span>
           <div className="min-w-0 flex-1 space-y-1">
             <h2 id="weak-areas" className="text-lg font-bold tracking-tight text-heading">Weak areas</h2>
-            <p className="text-sm text-primary-soft-foreground">
+            <p className="text-sm text-violet-soft-foreground">
               {weak.length > 0
                 ? 'Topics where you get fewer than 6 in 10 right. A focused session mixes questions from up to five of them.'
                 : 'Answer a few questions in each topic and we’ll find the ones that need work. Until then, this mixes questions from everywhere.'}
@@ -220,7 +223,7 @@ const Practice = () => {
             <Link to={practiceHref({ mode: 'weak', difficulty, title: 'Weak areas' })}>Practice weak areas <ArrowRight /></Link>
           </Button>
         </div>
-      </section>
+      </Card>
 
       <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">{filter ? 'Matching topics' : 'All sections'}</h2>
       {tree.isError && <ErrorState error={tree.error} onRetry={() => void tree.refetch()} />}

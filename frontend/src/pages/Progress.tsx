@@ -47,8 +47,8 @@ const Overview = () => {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatTile icon={<CheckCheck />} label="Questions solved" value={p.solved.toLocaleString()} hint={`${plural(p.attempts, 'answer')} in total`} />
-        <StatTile icon={<Target />} label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
+        <StatTile icon={<CheckCheck />} tone="blue" label="Questions solved" value={p.solved.toLocaleString()} hint={`${plural(p.attempts, 'answer')} in total`} />
+        <StatTile icon={<Target />} tone="blue" label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
         <StatTile icon={<Flame />} tone="violet" label="Best streak" value={plural(p.longest_streak, 'day')} hint={p.current_streak > 0 ? `Current: ${plural(p.current_streak, 'day')}` : 'Play today to start one'} />
         <StatTile icon={<Sparkles />} tone="violet" label="Level" value={p.level}
           hint={<>Rating <strong className="font-semibold text-foreground">{p.rating}</strong> · {p.rated_sets > 0 ? plural(p.rated_sets, 'rated set') : 'unrated'}</>} />
@@ -99,7 +99,7 @@ const Overview = () => {
             <ul className="grid gap-3 sm:grid-cols-2">
               {p.badges.map((b) => (
                 <li key={`${b.slug}-${b.topic ?? ''}`} className="flex items-start gap-3 rounded-md border bg-background/60 p-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary-soft text-2xl" aria-hidden>{b.icon}</span>
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-violet-soft text-2xl" aria-hidden>{b.icon}</span>
                   <div>
                     <p className="font-semibold text-heading">{b.name}{b.topic ? ` · ${b.topic}` : ''}</p>
                     <p className="text-sm text-muted-foreground">{b.description}</p>
@@ -126,8 +126,8 @@ const HistoryTab = () => {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatTile icon={<CalendarDays />} label="This week" value={week.q} hint="questions answered" />
-        <StatTile icon={<Target />} label="Correct" value={formatPercent(week.c, week.q)} hint="this week" />
+        <StatTile icon={<CalendarDays />} tone="blue" label="This week" value={week.q} hint="questions answered" />
+        <StatTile icon={<Target />} tone="blue" label="Correct" value={formatPercent(week.c, week.q)} hint="this week" />
         <StatTile icon={<Sparkles />} tone="violet" label="XP" value={`+${week.xp}`} hint="this week" />
         <StatTile icon={<Flag />} tone="violet" label="Goal met" value={`${goalDays}/7`} hint={`days with ${a.daily_target}+ questions`} />
       </div>
@@ -151,7 +151,7 @@ const HistoryTab = () => {
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-heading">{formatDay(s.set_date)}</p>
-                        <Badge variant="navy">Daily</Badge>
+                        <Badge>Daily</Badge>
                       </div>
                       <div className="flex items-center gap-3">
                         <Bar value={s.correct} max={Math.max(s.total, 1)} label={`${formatDay(s.set_date)} accuracy`} className="h-1.5 max-w-48"
@@ -187,7 +187,7 @@ const MistakeItem = ({ m }: { m: Mistake }) => {
           <span className="min-w-0 flex-1 space-y-1.5">
             <span className="line-clamp-2 font-semibold text-heading"><Markdown text={m.stem.split('\n')[0]} inline /></span>
             <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-              <Badge variant="navy">{m.subtopic.name}</Badge>
+              <Badge>{m.subtopic.name}</Badge>
               <Badge variant="muted">{DIFFICULTY_LABEL[m.difficulty]}</Badge>
               <span>{m.topic.name} · {m.gave_up ? 'Gave up' : 'Wrong answer'} {formatRelative(m.answered_at)}</span>
             </span>
@@ -220,7 +220,7 @@ const MistakeItem = ({ m }: { m: Mistake }) => {
           {m.hint && (
             <p className="flex gap-2 text-sm text-muted-foreground"><Lightbulb className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden /> <Markdown text={m.hint} inline /></p>
           )}
-          <div className="rounded-md border-l-4 border-primary bg-muted/70 p-4">
+          <div className="accent-left rounded-md bg-muted/70 p-4 pl-5">
             <h4 className="mb-1.5 text-sm font-bold text-heading">Explanation</h4>
             <Markdown text={m.explanation} />
           </div>
