@@ -176,12 +176,12 @@ const GoalStep = ({ onDone }: { onDone: () => void }) => {
                   key={g.slug || 'general'}
                   className={cn(
                     'relative flex min-h-[4.25rem] cursor-pointer items-center gap-3 rounded-lg border-2 px-3 py-2.5 transition-[border-color,background-color] duration-150 ease-out has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
-                    active ? 'border-primary bg-primary-soft' : 'border-border bg-card hover:border-primary/50',
+                    active ? 'border-primary bg-primary-soft dark:border-accent-text' : 'border-border bg-card hover:border-primary/50 hover:bg-primary-wash',
                   )}
                 >
                   <input type="radio" name="goal" className="sr-only" checked={active} onChange={() => setGoal(g.slug)} />
                   <span className={cn('grid size-10 shrink-0 place-items-center rounded-full',
-                    active ? 'bg-primary text-primary-foreground' : 'bg-navy-soft text-navy-soft-foreground')} aria-hidden
+                    active ? 'bg-primary bg-gradient-primary text-primary-foreground' : 'bg-navy-soft text-navy-soft-foreground')} aria-hidden
                   >
                     <Icon className="size-5" />
                   </span>
@@ -190,7 +190,7 @@ const GoalStep = ({ onDone }: { onDone: () => void }) => {
                     <span className="block text-xs text-muted-foreground">{meta.hint}</span>
                   </span>
                   {active && (
-                    <span className="absolute right-2.5 top-2.5 grid size-5 place-items-center rounded-full bg-primary text-primary-foreground" aria-hidden>
+                    <span className="absolute right-2.5 top-2.5 grid size-5 place-items-center rounded-full bg-primary bg-gradient-primary text-primary-foreground shadow-glow motion-safe:animate-pop-in" aria-hidden>
                       <Check className="size-3.5" strokeWidth={3} />
                     </span>
                   )}
@@ -209,7 +209,7 @@ const GoalStep = ({ onDone }: { onDone: () => void }) => {
               key={n}
               className={cn(
                 'flex min-h-12 cursor-pointer flex-col items-center justify-center rounded-full px-1 text-center leading-tight transition-[background-color,color,box-shadow] duration-150 ease-out has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
-                target === n ? 'bg-primary text-primary-foreground shadow-sm' : 'text-foreground hover:bg-card',
+                target === n ? 'bg-primary bg-gradient-primary text-primary-foreground shadow-glow' : 'text-foreground hover:bg-card',
               )}
             >
               <input type="radio" name="target" className="sr-only" checked={target === n} onChange={() => setTarget(n)} />
@@ -229,8 +229,9 @@ const GoalStep = ({ onDone }: { onDone: () => void }) => {
 
 // Step 3: placement -----------------------------------------------------------
 const PlacementIntro = ({ onStart, onSkip, retake }: { onStart: () => void; onSkip?: () => void; retake?: boolean }) => (
-  <Card variant="navy" className="relative overflow-hidden shadow-md">
-    <AptricMark variant="onDark" className="pointer-events-none absolute -bottom-12 -right-10 h-60 opacity-[0.09]" />
+  <Card variant="navy" className="relative overflow-hidden shadow-lg">
+    <span className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-violet/35 blur-3xl" aria-hidden />
+    <AptricMark variant="onDark" className="pointer-events-none absolute -bottom-12 -right-10 h-60 opacity-[0.12]" />
     <div className="relative space-y-6 p-5 sm:p-7">
       <ul className="grid grid-cols-3 gap-2 text-center" aria-label="About the test">
         {[
@@ -359,8 +360,8 @@ const PlacementRunner = ({ onExit, onFinished }: { onExit: () => void; onFinishe
   );
 };
 
-// Brand-colour confetti: fixed positions so the burst looks the same on every render.
-const CONFETTI_COLORS = ['bg-primary', 'bg-sky', 'bg-navy', 'bg-gold', 'bg-primary-strong'];
+// Blue, violet and light-blue confetti: fixed positions so the burst looks the same on every render.
+const CONFETTI_COLORS = ['bg-primary', 'bg-violet', 'bg-sky', 'bg-gradient-primary', 'bg-violet-text'];
 const CONFETTI = Array.from({ length: 28 }, (_, i) => ({
   left: (i * 37 + 7) % 100,
   delay: ((i * 7) % 10) / 20,
@@ -396,15 +397,15 @@ const PlacementResultView = ({ result, onDone, doneLabel }: { result: PlacementR
     <div className="relative space-y-5">
       <Confetti />
       <div className="relative flex flex-col items-center gap-3 pt-2 text-center">
-        <div className="grid size-28 place-items-center rounded-[1.75rem] bg-gradient-navy text-navy-foreground shadow-lg ring-4 ring-primary/30 motion-safe:animate-pop">
+        <div className="grid size-28 place-items-center rounded-full bg-violet text-violet-foreground shadow-lg ring-8 ring-violet-soft motion-safe:animate-pop-in">
           <span className="leading-none">
-            <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-navy-muted-foreground">Level</span>
+            <span className="block text-[11px] font-bold uppercase tracking-[0.16em]">Level</span>
             <span className="block text-5xl font-extrabold tabular-nums">{result.level.level}</span>
           </span>
         </div>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Your starting level</p>
-          <p className="font-display text-3xl font-extrabold tracking-tight text-heading">{result.level.name}</p>
+          <p className="font-display text-3xl font-extrabold tracking-tight text-violet-text">{result.level.name}</p>
           <p className="text-sm text-muted-foreground">You got <span className="font-bold text-foreground">{result.correct} of {result.total}</span> right.</p>
         </div>
       </div>

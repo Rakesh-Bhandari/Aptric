@@ -55,6 +55,7 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
       case 'get_contest': return d.contest(String(body.contest_id));
       case 'get_contest_standings': return d.standings();
       case 'start_placement': return { test_id: 'pt1', started_at: d.FIXED_NOW.toISOString(), questions: Array.from({ length: 10 }, (_, i) => d.questionCard(i)) };
+      case 'finish_placement': return d.placementResult();
       case 'submit_answer': case 'give_up': return d.answerResult(String(body.question_id), String(body.option_id ?? ''));
       case 'use_hint': return { context: body.context, hint: 'Convert m/s to km/h by multiplying by 18/5.', charged: true };
       case 'admin_get_question': return d.adminQuestion(String(body.target_question_id));
