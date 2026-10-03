@@ -171,7 +171,8 @@ const ContestPage = () => {
 
       <Card variant="navy" className="relative overflow-hidden shadow-md">
         <span aria-hidden className="pointer-events-none absolute inset-0 bg-dots" />
-        <span aria-hidden className="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-primary/25 blur-3xl" />
+        <span aria-hidden className="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-violet/35 blur-3xl" />
+        <span aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 size-56 rounded-full bg-primary/20 blur-3xl" />
         <div className="relative space-y-5 p-5 sm:p-7">
           <div className="space-y-2">
             <ContestStateBadge c={c} onDark />
@@ -246,7 +247,7 @@ const Countdown = ({ label, at }: { label: string; at: string }) => {
       <time dateTime={at} aria-labelledby="contest-countdown" className="flex gap-2 sm:gap-3">
         {parts.map(([value, unit], i) => (
           <span key={unit} className={cn('flex min-w-16 flex-col items-center rounded-xl bg-white/10 px-3 py-2 ring-1 ring-white/10 sm:min-w-20', i === 0 && d === 0 && 'hidden sm:flex')}>
-            <span className="font-display text-3xl font-extrabold tabular-nums leading-none sm:text-4xl">{String(value).padStart(2, '0')}</span>
+            <span className="font-display text-3xl font-extrabold tabular-nums leading-none text-sky sm:text-4xl">{String(value).padStart(2, '0')}</span>
             <span className="mt-1 text-[0.7rem] font-semibold uppercase tracking-wider text-navy-muted-foreground">{unit}</span>
           </span>
         ))}

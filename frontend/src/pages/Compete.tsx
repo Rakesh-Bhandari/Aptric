@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarClock, ChevronRight, Crown, ListChecks, Medal, Swords, Timer, Trophy, Users } from 'lucide-react';
 import { ContestStateBadge } from '@/components/compete/ContestStateBadge';
-import { LiveIndicator, PlayerLink, StandingRow, ZoneDivider } from '@/components/compete/standings';
+import { LiveIndicator, PlayerLink, StandingRow, YouChip, ZoneDivider } from '@/components/compete/standings';
 import { TierEmblem } from '@/components/compete/TierEmblem';
 import { formatCountdown, formatSpan, useNow } from '@/components/compete/time';
 import { Avatar } from '@/components/ui/avatar';
@@ -43,7 +43,8 @@ const LeagueBanner = ({ l }: { l: MyLeague }) => {
   return (
     <Card variant="navy" className="relative overflow-hidden shadow-md">
       <span aria-hidden className="pointer-events-none absolute inset-0 bg-dots" />
-      <span aria-hidden className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-primary/25 blur-3xl" />
+      <span aria-hidden className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-violet/35 blur-3xl" />
+      <span aria-hidden className="pointer-events-none absolute -bottom-24 -left-10 size-48 rounded-full bg-primary/20 blur-3xl" />
       <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <TierEmblem slug={l.tier.slug} tier={l.tier.tier} className="h-16 sm:h-20" />
@@ -61,7 +62,7 @@ const LeagueBanner = ({ l }: { l: MyLeague }) => {
         <dl className="grid shrink-0 grid-cols-2 overflow-hidden rounded-xl bg-white/8 ring-1 ring-white/10 sm:w-80">
           <div className="p-3 sm:p-4">
             <dt className="text-xs font-medium text-navy-muted-foreground">Resets in</dt>
-            <dd className="mt-0.5 whitespace-nowrap text-lg font-extrabold tracking-tight sm:text-xl"><ResetCountdown at={l.week_ends_at} /></dd>
+            <dd className="mt-0.5 whitespace-nowrap text-lg font-extrabold tracking-tight text-sky sm:text-xl"><ResetCountdown at={l.week_ends_at} /></dd>
           </div>
           <div className="border-l border-white/10 p-3 sm:p-4">
             <dt className="text-xs font-medium text-navy-muted-foreground">Your rank</dt>
@@ -162,7 +163,7 @@ const LeaderboardRow = ({ e, metric }: { e: LeaderboardEntry; metric: string }) 
 
 const PODIUM = [
   // DOM order is 1st, 2nd, 3rd for screen readers; `order` puts 1st in the middle.
-  { order: 'order-2', avatar: 'size-16 sm:size-20 ring-medal-gold', pedestal: 'h-24 sm:h-28 bg-gradient-primary text-primary-foreground', metric: 'text-chrome-accent' },
+  { order: 'order-2', avatar: 'size-16 sm:size-20 ring-medal-gold', pedestal: 'h-24 sm:h-28 bg-primary bg-gradient-primary text-primary-foreground shadow-glow', metric: 'text-chrome-accent' },
   { order: 'order-1', avatar: 'size-12 sm:size-16 ring-medal-silver', pedestal: 'h-16 sm:h-20 bg-white/10 text-navy-foreground border-t-4 border-medal-silver', metric: 'text-navy-muted-foreground' },
   { order: 'order-3', avatar: 'size-12 sm:size-16 ring-medal-bronze', pedestal: 'h-12 sm:h-14 bg-white/10 text-navy-foreground border-t-4 border-medal-bronze', metric: 'text-navy-muted-foreground' },
 ];
@@ -170,21 +171,23 @@ const PODIUM = [
 const Podium = ({ top, metric, label }: { top: LeaderboardEntry[]; metric: (e: LeaderboardEntry) => string; label: string }) => (
   <Card variant="navy" className="relative overflow-hidden px-3 pt-6 shadow-md sm:px-10 sm:pt-8">
     <span aria-hidden className="pointer-events-none absolute inset-0 bg-dots" />
-    <span aria-hidden className="pointer-events-none absolute left-1/2 top-0 size-56 -translate-x-1/2 -translate-y-1/3 rounded-full bg-primary/25 blur-3xl" />
+    <span aria-hidden className="pointer-events-none absolute -right-20 -top-24 size-56 rounded-full bg-violet/25 blur-3xl" />
     <ol aria-label={`${label}: top ${top.length}`} className="relative mx-auto grid max-w-lg grid-cols-3 items-end gap-2 sm:gap-4">
       {top.map((e, i) => {
         const s = PODIUM[i];
         const name = displayName(e);
         return (
           <li key={e.user_id} className={cn('relative flex min-w-0 flex-col items-center text-center', s.order)} aria-current={e.is_me ? 'true' : undefined}>
-            {i === 0 && <Crown className="mb-1 size-6 text-medal-gold" aria-hidden />}
-            <Avatar src={e.avatar_url} name={name} className={cn('ring-4 text-lg', s.avatar)} />
-            <span className="mt-2 w-full truncate px-1 text-sm font-bold">
+            {/* The winner's column: a soft Light Blue → violet glow behind it. */}
+            {i === 0 && <span aria-hidden className="pointer-events-none absolute inset-x-1 -top-4 bottom-0 rounded-t-3xl bg-gradient-secondary opacity-30 blur-2xl" />}
+            {i === 0 && <Crown className="relative mb-1 size-6 text-medal-gold" aria-hidden />}
+            <Avatar src={e.avatar_url} name={name} className={cn('relative ring-4 text-lg', s.avatar)} />
+            <span className="relative mt-2 w-full truncate px-1 text-sm font-bold">
               {e.handle ? <Link to={`/u/${e.handle}`} className="underline-offset-2 after:absolute after:inset-0 hover:underline">{name}</Link> : name}
             </span>
-            <span className={cn('text-xs font-bold tabular-nums sm:text-sm', s.metric)}>{metric(e)}</span>
-            {e.is_me && <span className="mt-1 rounded-full bg-primary px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-primary-foreground">You</span>}
-            <div className={cn('mt-2 grid w-full place-items-start justify-center rounded-t-xl pt-2 font-display text-2xl font-black sm:text-3xl', s.pedestal)}>
+            <span className={cn('relative text-xs font-bold tabular-nums sm:text-sm', s.metric)}>{metric(e)}</span>
+            {e.is_me && <YouChip className="mt-1 text-[0.65rem]" />}
+            <div className={cn('relative mt-2 grid w-full place-items-start justify-center rounded-t-xl pt-2 font-display text-2xl font-black sm:text-3xl', s.pedestal)}>
               <span><span className="sr-only">Rank </span>{e.rank}</span>
             </div>
           </li>
@@ -201,10 +204,10 @@ const BoardSwitcher = ({ value, onChange }: { value: Board; onChange: (b: Board)
         key={b.value} type="button" role="radio" aria-checked={value === b.value}
         onClick={() => onChange(b.value)}
         className={cn(
-          'min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors duration-200',
+          'min-h-11 rounded-full border px-4 text-sm font-semibold transition-[color,background-color,border-color,box-shadow] duration-200',
           value === b.value
-            ? 'border-primary bg-primary-soft text-primary-soft-foreground'
-            : 'bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground',
+            ? 'border-transparent bg-primary bg-gradient-primary text-primary-foreground shadow-glow'
+            : 'bg-card text-muted-foreground hover:border-primary/40 hover:bg-primary-wash hover:text-accent-text',
         )}
       >
         {b.label}
@@ -268,7 +271,7 @@ const LeaderboardsTab = () => {
       )}
       {showPinned && meEntry && (
         <div className="sticky bottom-[calc(4rem+max(0.5rem,env(safe-area-inset-bottom)))] z-10 md:bottom-4">
-          <Card className="overflow-hidden border-primary/50 shadow-lg">
+          <Card className="overflow-hidden border-primary/40 shadow-lg ring-1 ring-primary/15">
             <ol aria-label="Your position"><LeaderboardRow e={meEntry} metric={def.metric(meEntry)} /></ol>
           </Card>
         </div>
@@ -290,8 +293,8 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
     : c.state === 'upcoming' ? (c.my_entry ? 'View details' : 'Join')
       : 'View results';
   return (
-    <Card className={cn('flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-md', live && 'border-primary/60 ring-1 ring-primary/25')}>
-      <div aria-hidden className={cn('h-1', live ? 'bg-gradient-primary' : c.state === 'upcoming' ? 'bg-gradient-navy' : 'bg-muted')} />
+    <Card className={cn('flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-md', live && 'border-violet/50 ring-1 ring-violet/20')}>
+      <div aria-hidden className={cn('h-1', live ? 'bg-gradient-primary' : c.state === 'upcoming' ? 'bg-primary' : 'bg-border')} />
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <ContestStateBadge c={c} />
@@ -317,7 +320,8 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
         )}
       </CardContent>
       <CardFooter>
-        <Button asChild variant={live ? 'default' : c.state === 'upcoming' ? 'navy' : 'outline'} className="w-full sm:w-auto">
+        {/* Gradient pill for the next step (enter, continue, join); outline once you're registered or it's over. */}
+        <Button asChild variant={live || (c.state === 'upcoming' && !c.my_entry) ? 'default' : 'outline'} className="w-full sm:w-auto">
           <Link to={`/compete/contests/${c.id}`}>{cta} <ChevronRight /></Link>
         </Button>
       </CardFooter>

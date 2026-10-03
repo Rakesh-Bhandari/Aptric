@@ -24,14 +24,14 @@ const TOKENS: [group: string, names: string[]][] = [
   ['Surfaces', ['background', 'card', 'muted', 'border', 'input']],
   ['Text', ['foreground', 'heading', 'card-foreground', 'muted-foreground', 'accent-text']],
   ['Blue', ['primary', 'primary-strong', 'primary-foreground', 'primary-soft', 'primary-soft-foreground', 'primary-soft-hover', 'primary-soft-hover-foreground', 'primary-wash', 'ring', 'ring-on-navy']],
-  ['Violet and Light Blue', ['violet', 'violet-strong', 'violet-foreground', 'violet-soft', 'violet-soft-foreground', 'violet-text', 'sky']],
+  ['Violet and Light Blue', ['violet', 'violet-strong', 'violet-foreground', 'violet-soft', 'violet-soft-foreground', 'violet-text', 'sky', 'sky-soft', 'sky-soft-foreground']],
   ['Navy', ['navy', 'navy-strong', 'navy-foreground', 'navy-soft', 'navy-soft-foreground', 'navy-muted-foreground', 'brand-navy']],
   ['Header and chrome', ['header', 'header-foreground', 'header-muted-foreground', 'chrome', 'chrome-deep', 'chrome-raised', 'chrome-foreground', 'chrome-muted-foreground', 'chrome-accent']],
   ['Charts', ['chart-accent', 'muted', 'heat-1', 'heat-2', 'heat-3', 'heat-4']],
   ['Semantic warm', ['streak', 'gold']],
   ['Status', ['success', 'success-soft', 'success-soft-foreground', 'danger', 'danger-soft', 'danger-soft-foreground', 'warning', 'warning-soft', 'warning-soft-foreground', 'gold']],
   ['League', ['tier-bronze', 'tier-silver', 'tier-gold', 'tier-platinum', 'tier-diamond', 'medal-gold', 'medal-silver', 'medal-bronze', 'metal-bronze-lo', 'metal-silver-lo', 'metal-gold-lo', 'metal-platinum-lo', 'metal-diamond-lo']],
-  ['Theme previews', ['preview-light-bg', 'preview-light-card', 'preview-light-line', 'preview-dark-bg', 'preview-dark-card', 'preview-dark-line']],
+  ['Theme previews', ['preview-light-bg', 'preview-light-card', 'preview-light-line', 'preview-dark-header', 'preview-dark-bg', 'preview-dark-card', 'preview-dark-line']],
 ];
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (

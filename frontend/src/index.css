@@ -50,6 +50,9 @@
   --violet-text: #7c3aed;
   /* Light Blue: icons, glows and links on navy and dark surfaces only. */
   --sky: #38bdf8;
+  /* Light-blue tint for badge tiles; the deep sky ink passes on it, unlike --sky. */
+  --sky-soft: #e0f2fe;
+  --sky-soft-foreground: #075985;
   --navy: #0a2540;
   --navy-strong: #071a2f;
   --navy-foreground: #ffffff;
@@ -96,7 +99,8 @@
   --tier-silver: #526075;
   --tier-gold: #a16207;
   --tier-platinum: #0f766e;
-  --tier-diamond: #4338ca;
+  /* Diamond is fuchsia so it never reads as the brand blue or violet. */
+  --tier-diamond: #a21caf;
   /*
    * Tier emblem metals (shield/gem fills on the navy league banner) and podium
    * medals (rank 1–3 fills with navy text). Same in both themes: they sit on
@@ -110,8 +114,8 @@
   --metal-gold-lo: #d08a00;
   --metal-platinum-hi: #b4f5e8;
   --metal-platinum-lo: #2a9d90;
-  --metal-diamond-hi: #ddd6fe;
-  --metal-diamond-lo: #6d5ce8;
+  --metal-diamond-hi: #f0f9ff;
+  --metal-diamond-lo: #c026d3;
   --medal-gold: #f7c23c;
   --medal-silver: #cbd5e1;
   --medal-bronze: #e3a06e;
@@ -120,6 +124,7 @@
   --preview-light-bg: #f8fafc;
   --preview-light-card: #ffffff;
   --preview-light-line: #e2e8f0;
+  --preview-dark-header: #0b1226;
   --preview-dark-bg: #0a1020;
   --preview-dark-card: #111a33;
   --preview-dark-line: #24304f;
@@ -187,6 +192,8 @@
   --violet-soft: #2a1f57;
   --violet-soft-foreground: #c4b5fd;
   --violet-text: #a78bfa;
+  --sky-soft: #0c2d48;
+  --sky-soft-foreground: #7dd3fc;
   --navy: #1e3a8a;
   --navy-strong: #172e6e;
   --navy-foreground: #ffffff;
@@ -221,7 +228,7 @@
   --tier-silver: #cbd5e1;
   --tier-gold: #fbbf24;
   --tier-platinum: #5eead4;
-  --tier-diamond: #a5b4fc;
+  --tier-diamond: #f0abfc;
   --gradient-navy: linear-gradient(135deg, #0a2540 0%, #1e3a8a 100%);
   --gradient-text: linear-gradient(90deg, #38bdf8 0%, #a78bfa 100%);
   /* Landing hero: midnight with soft blue and violet glows. */
@@ -267,6 +274,8 @@
   --color-violet-soft-foreground: var(--violet-soft-foreground);
   --color-violet-text: var(--violet-text);
   --color-sky: var(--sky);
+  --color-sky-soft: var(--sky-soft);
+  --color-sky-soft-foreground: var(--sky-soft-foreground);
   --color-navy: var(--navy);
   --color-navy-strong: var(--navy-strong);
   --color-navy-foreground: var(--navy-foreground);
@@ -323,6 +332,7 @@
   --color-preview-light-bg: var(--preview-light-bg);
   --color-preview-light-card: var(--preview-light-card);
   --color-preview-light-line: var(--preview-light-line);
+  --color-preview-dark-header: var(--preview-dark-header);
   --color-preview-dark-bg: var(--preview-dark-bg);
   --color-preview-dark-card: var(--preview-dark-card);
   --color-preview-dark-line: var(--preview-dark-line);
@@ -344,6 +354,7 @@
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   --animate-breathe: breathe 1.8s ease-in-out infinite;
   --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
+  --animate-pulse-ring-sky: pulse-ring-sky 1.8s ease-out infinite;
 }
 
 /* Brand gradients as utilities: bg-gradient-primary, bg-gradient-navy and so on. */
@@ -483,6 +494,12 @@
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 rgb(37 99 235 / 0.5); }
   70%, 100% { box-shadow: 0 0 0 7px rgb(37 99 235 / 0); }
+}
+
+/* Light-blue variant for the "Live" dot next to auto-refreshing standings. */
+@keyframes pulse-ring-sky {
+  0% { box-shadow: 0 0 0 0 rgb(56 189 248 / 0.6); }
+  70%, 100% { box-shadow: 0 0 0 7px rgb(56 189 248 / 0); }
 }
 
 /* Placement result confetti: brand-colour shapes that fall once. Hidden under reduced motion. */

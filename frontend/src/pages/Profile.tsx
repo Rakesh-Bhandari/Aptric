@@ -47,10 +47,12 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
   return (
     <div className="space-y-4">
       <Card className="overflow-hidden">
-        <div className="relative h-28 overflow-hidden bg-gradient-navy sm:h-36 dark:border-b dark:border-white/10 dark:bg-gradient-hero">
-          <span aria-hidden className="absolute inset-0 bg-dots" />
-          <span aria-hidden className="absolute -right-16 -top-20 size-64 rounded-full bg-primary/30 blur-3xl" />
-          <span aria-hidden className="absolute -bottom-24 left-1/4 size-48 rounded-full bg-sky/10 blur-3xl" />
+        {/* Cover band: the navy gradient with a blue glow on the left and a violet glow on the right. */}
+        <div aria-hidden className="relative h-28 overflow-hidden bg-gradient-navy sm:h-36 dark:border-b dark:border-white/10">
+          <span className="absolute inset-0 bg-dots" />
+          <span className="absolute -left-16 -top-24 size-64 rounded-full bg-primary/45 blur-3xl" />
+          <span className="absolute -right-16 -top-16 size-72 rounded-full bg-violet/45 blur-3xl" />
+          <span className="absolute -bottom-24 left-1/2 size-48 rounded-full bg-sky/15 blur-3xl" />
         </div>
         <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
           <div className="-mt-12 flex flex-col items-center gap-3 text-center sm:-mt-14 sm:flex-row sm:items-end sm:gap-5 sm:text-left">
@@ -63,13 +65,13 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
           </div>
           {p.bio && <p className="mx-auto mt-3 max-w-prose text-center text-sm sm:mx-0 sm:text-left">{p.bio}</p>}
           <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-            <Chip variant="navy"><Sparkles aria-hidden /> Level {p.level}</Chip>
+            <Chip variant="default"><Sparkles aria-hidden /> Level {p.level}</Chip>
             {p.league_tier && (
-              <Chip variant="muted">
+              <Chip variant="navy">
                 <TierEmblem slug={p.league_tier.slug} tier={p.league_tier.tier} className="h-4 drop-shadow-none" /> {p.league_tier.name} league
               </Chip>
             )}
-            <Chip variant="default"><Flame aria-hidden /> {p.current_streak}-day streak</Chip>
+            <Chip variant="blue"><Flame aria-hidden className="text-streak" /> {p.current_streak}-day streak</Chip>
             <Chip variant="muted"><Calendar aria-hidden /> Joined {formatRelative(p.joined_at)}</Chip>
           </div>
           <div className="mt-5 space-y-1.5">
@@ -83,8 +85,8 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
       </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile icon={<CheckCheck />} label="Solved" value={p.solved.toLocaleString()} hint={plural(p.attempts, 'attempt')} />
-        <StatTile icon={<Target />} label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
+        <StatTile icon={<CheckCheck />} tone="blue" label="Solved" value={p.solved.toLocaleString()} hint={plural(p.attempts, 'attempt')} />
+        <StatTile icon={<Target />} tone="blue" label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
         <StatTile icon={<Flame />} tone="violet" label="Best streak" value={plural(p.longest_streak, 'day')} hint={`Now ${p.current_streak}`} />
         <StatTile icon={<Trophy />} tone="violet" label="Rating" value={p.rating} hint={plural(p.rated_sets, 'rated set')} />
       </div>
@@ -119,7 +121,8 @@ const ShareCard = ({ p }: { p: PlayerProfile }) => {
   return (
     <Card variant="navy" className="relative overflow-hidden shadow-md">
       <span aria-hidden className="absolute inset-0 bg-dots" />
-      <span aria-hidden className="absolute -bottom-20 -right-10 size-56 rounded-full bg-primary/30 blur-3xl" />
+      <span aria-hidden className="absolute -bottom-20 -right-10 size-56 rounded-full bg-violet/35 blur-3xl" />
+      <span aria-hidden className="absolute -left-16 -top-24 size-48 rounded-full bg-primary/25 blur-3xl" />
       <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="space-y-3">
           <AptricLogo variant="onDark" size="sm" />
@@ -139,7 +142,7 @@ const ShareCard = ({ p }: { p: PlayerProfile }) => {
         </div>
         <Button
           variant="outline" onClick={() => void share()}
-          className="shrink-0 self-start border-white/70 text-navy-foreground hover:bg-white hover:text-brand-navy sm:self-center"
+          className="shrink-0 self-start border-white/70 text-navy-foreground hover:bg-white hover:text-brand-navy sm:self-center dark:border-white/70 dark:text-navy-foreground dark:hover:text-brand-navy"
         >
           <Share2 /> Share
         </Button>
@@ -164,7 +167,7 @@ const HeaderSkeleton = () => (
 const Section = ({ id, title, description, icon, children }: { id?: string; title: string; description?: string; icon?: ReactNode; children: ReactNode }) => (
   <Card id={id} className="scroll-mt-20">
     <CardHeader className="flex-row items-start gap-3">
-      {icon && <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-navy-soft text-navy-soft-foreground [&_svg]:size-5">{icon}</span>}
+      {icon && <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary-soft-foreground [&_svg]:size-5">{icon}</span>}
       <div className="space-y-1">
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
@@ -185,7 +188,7 @@ const Choice = <T extends string | number>({ name, value, options, onChange, lab
         <label key={String(o.value)} className={cn(
           'flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors duration-200 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring [&_svg]:size-4',
           value === o.value
-            ? 'bg-navy text-navy-foreground shadow-sm dark:bg-primary dark:text-primary-foreground'
+            ? 'bg-primary bg-gradient-primary text-primary-foreground shadow-sm'
             : 'text-muted-foreground hover:bg-card hover:text-foreground',
         )}
         >
@@ -314,17 +317,28 @@ const GoalsForm = () => {
   );
 };
 
-/** Mini app mock in a fixed palette for the theme picker. */
-const ThemePreview = ({ tone }: { tone: 'light' | 'dark' }) => (
-  <span aria-hidden className={cn('flex h-full flex-1 flex-col gap-1 p-1.5', tone === 'light' ? 'bg-preview-light-bg' : 'bg-preview-dark-bg')}>
-    <span className="h-2 rounded-sm bg-brand-navy" />
-    <span className={cn('flex flex-1 flex-col gap-1 rounded-sm border p-1', tone === 'light' ? 'border-preview-light-line bg-preview-light-card' : 'border-preview-dark-line bg-preview-dark-card')}>
-      <span className={cn('h-1 w-3/4 rounded-full', tone === 'light' ? 'bg-preview-light-line' : 'bg-preview-dark-line')} />
-      <span className={cn('h-1 w-1/2 rounded-full', tone === 'light' ? 'bg-preview-light-line' : 'bg-preview-dark-line')} />
-      <span className="mt-auto h-1.5 w-6 rounded-full bg-primary" />
+/**
+ * Mini app mock in a fixed palette for the theme picker: the white header and
+ * pale page of light mode, or the midnight header, page and cards of dark mode
+ * with a violet glow, each with a gradient button.
+ */
+const ThemePreview = ({ tone }: { tone: 'light' | 'dark' }) => {
+  const light = tone === 'light';
+  return (
+    <span aria-hidden className={cn('relative flex h-full flex-1 flex-col gap-1 overflow-hidden p-1.5', light ? 'bg-preview-light-bg' : 'bg-preview-dark-bg')}>
+      {!light && <span className="absolute -right-3 -top-3 size-10 rounded-full bg-violet/40 blur-md" />}
+      <span className={cn('relative flex h-2.5 items-center justify-between rounded-sm border px-1', light ? 'border-preview-light-line bg-preview-light-card' : 'border-preview-dark-line bg-preview-dark-header')}>
+        <span className="h-1 w-3 rounded-full bg-primary bg-gradient-primary" />
+        <span className="h-1 w-2 rounded-full bg-primary bg-gradient-primary" />
+      </span>
+      <span className={cn('relative flex flex-1 flex-col gap-1 rounded-sm border p-1', light ? 'border-preview-light-line bg-preview-light-card' : 'border-preview-dark-line bg-preview-dark-card')}>
+        <span className={cn('h-1 w-3/4 rounded-full', light ? 'bg-preview-light-line' : 'bg-preview-dark-line')} />
+        <span className={cn('h-1 w-1/2 rounded-full', light ? 'bg-preview-light-line' : 'bg-preview-dark-line')} />
+        <span className="mt-auto h-1.5 w-6 rounded-full bg-primary bg-gradient-primary" />
+      </span>
     </span>
-  </span>
-);
+  );
+};
 
 const THEMES: { value: ThemeSetting; label: string; icon: ReactNode; previews: ('light' | 'dark')[] }[] = [
   { value: 'light', label: 'Light', icon: <Sun aria-hidden />, previews: ['light'] },
@@ -371,7 +385,7 @@ const AppearanceForm = () => {
           onClick={() => setMotion(reduce ? 'system' : 'reduce')}
           className={cn(
             'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 before:absolute before:-inset-2 before:content-[""]',
-            reduce ? 'bg-primary' : 'bg-input',
+            reduce ? 'bg-primary bg-gradient-primary' : 'bg-input',
           )}
         >
           <span className={cn('inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200', reduce ? 'translate-x-6' : 'translate-x-1')} />
