@@ -1,18 +1,22 @@
 # Frontend redesign: session prompts
 
-These prompts restyle the Aptric web app (`frontend/`) to the new brand (navy and orange, ribbon "A" logo). The work is split into sessions that each fit in one Claude Code run. Run them **in order**, because sessions 02–09 build on the tokens and components from session 01.
+These prompts re-theme the Aptric web app (`frontend/`) to the new brand: **navy, blue and violet** with blue → violet gradients, and the new ribbon "A" logo (navy, cyan-blue and violet bands). See `BRAND.md` and `brand-spec.jpg`.
+
+The app was redesigned earlier in a navy and orange brand. That redesign's structure (tokens in `src/index.css`, the `components/brand/*` logo components, the `components/ui/*` primitives, the `/dev/styleguide` route, the landing page sections and the page layouts) stays. These sessions **swap the palette, redraw the logo, and change the surfaces the new spec asks for** (a light header and a light hero in light mode, gradient primary buttons with white text). They don't rebuild pages from scratch.
+
+The work is split into sessions that each fit in one Claude Code run. Run them **in order**, because sessions 02–09 build on the tokens and components from session 01.
 
 | # | File | Scope | Depends on |
 | --- | --- | --- | --- |
-| 01 | `01-foundation.md` | Brand tokens, fonts, logo SVG components, favicon, UI primitives, contrast test | — |
+| 01 | `01-foundation.md` | Brand tokens (orange → blue and violet), token renames, logo SVG redraw, favicon, UI primitives, contrast test | — |
 | 02 | `02-app-shell.md` | Header, nav, mobile tab bar, footer, user menu, auth dialog, error, 404 and skeleton states | 01 |
-| 03 | `03-landing-and-public.md` | Marketing landing page, Terms, auth callback, reset password | 01, 02 |
+| 03 | `03-landing-and-public.md` | Landing page (new light and dark hero), Terms, auth callback, reset password, OG image | 01, 02 |
 | 04 | `04-today-and-onboarding.md` | Today dashboard, onboarding and the placement test | 01, 02 |
-| 05 | `05-solve-flow.md` | Solve screen, daily and practice sessions, session summary, report dialog, Markdown and KaTeX | 01 |
+| 05 | `05-solve-flow.md` | Solve screen, daily and practice sessions, Tutor, session summary, report dialog, Markdown and KaTeX | 01 |
 | 06 | `06-practice-and-progress.md` | Practice browser, Progress page, skill radar, activity heatmap | 01, 02 |
 | 07 | `07-compete-and-profile.md` | Leagues, leaderboards, contests, profile, public profile, settings | 01, 02 |
 | 08 | `08-admin.md` | Admin area (`src/admin/*`, `Admin.css`) | 01 |
-| 09 | `09-polish-and-qa.md` | Cross-page consistency, responsive layout, dark mode, a11y, screenshots, final cleanup | all |
+| 09 | `09-polish-and-qa.md` | Orange leftovers, cross-page consistency, responsive layout, dark mode, a11y, screenshots, docs | all |
 
 After session 01, sessions 03–08 only touch their own files, so they can run in parallel on separate branches. Merge 01 and 02 first.
 
@@ -25,9 +29,10 @@ After session 01, sessions 03–08 only touch their own files, so they can run i
 
 ## Shared rules (every session follows these)
 
-- Read `prompts/frontend-redesign/BRAND.md` and look at the three brand images before you edit anything.
-- This is a **visual redesign**. Don't change data fetching, RPCs, routes, auth, game rules or copy meaning. Wording can be tightened to match the new tone.
-- Use the tokens and components from session 01 (`AptricMark`, `AptricLogo`, `Button` variants and so on). Don't hard-code hex values in components. If a colour is missing, add a token.
+- Read `prompts/frontend-redesign/BRAND.md` (including the "Colour roles, old → new" table) and look at the three brand images before you edit anything.
+- This is a **visual re-theme**. Don't change data fetching, RPCs, routes, auth, game rules or copy meaning. Wording can be tightened to match the new tone.
+- Use the tokens and components from session 01 (`AptricMark`, `AptricLogo`, `Button` variants, `bg-gradient-primary` and so on). Don't hard-code hex values in components. If a colour is missing, add a token.
+- No orange in brand roles. When you finish a session, `grep -rniE "orange|ff7800|ff9a3d|e86600|c2410c|fff1e6" <your files>` should return nothing except semantic warm colours (streak flame, gold, warning) that BRAND.md allows.
 - Mobile first: the layout must work at 360px wide with no horizontal scroll, and tap targets must be at least 44px.
 - Both themes must work. Check every screen you touch in light and dark mode.
 - Keep `src/test/contrast.test.ts` passing, and add any new text and background token pairs to it.
