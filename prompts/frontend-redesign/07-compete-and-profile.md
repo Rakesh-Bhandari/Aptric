@@ -1,12 +1,12 @@
 # Session 07: Compete, contests and profile
 
-You are continuing the **Aptric** frontend redesign (`frontend/`). Sessions 01 (tokens, logo, primitives) and 02 (shell) are merged. This session restyles **Compete** (`/compete`: leagues, leaderboards, contests), **contest pages** (`/compete/contests/:id`) and **Profile** (`/profile` and the public `/u/:handle`).
+You are continuing the **Aptric** frontend re-theme (`frontend/`) from navy and orange to **navy, blue and violet**. Sessions 01 (tokens, logo, primitives) and 02 (shell) are merged. This session re-themes **Compete** (`/compete`: leagues, leaderboards, contests), **contest pages** (`/compete/contests/:id`) and **Profile** (`/profile` and the public `/u/:handle`).
 
 ## Before you start
 
-1. Read `prompts/frontend-redesign/BRAND.md` and `README.md`.
+1. Read `prompts/frontend-redesign/BRAND.md` (including "Colour roles, old → new") and `README.md`.
 2. Read `src/components/ui/*`, `src/components/brand/*` and `/dev/styleguide`.
-3. Read `src/pages/Compete.tsx` (`LeagueTab`, `LeaderboardsTab`, `ContestsTab`, `RankBadge`, `PlayerLink`, `ContestCard`, `ContestStateBadge`), `src/pages/ContestPage.tsx` and `src/pages/Profile.tsx` (`ProfileHeader`, `ProfileForm`, `GoalsForm`, `AppearanceForm`, `FeedbackButton`, `PublicProfile`).
+3. Read `src/pages/Compete.tsx`, `src/components/compete/*` (`ContestStateBadge`, `standings` and the rest), `src/pages/ContestPage.tsx`, `src/pages/Profile.tsx` (`ProfileHeader`, `ProfileForm`, `GoalsForm`, `AppearanceForm`, `FeedbackButton`, `PublicProfile`) and `src/components/profile/*` (`BadgeGrid` and the rest).
 
 Restyle only. The league standings auto-refresh every 20s, and that and all other queries stay as they are.
 
@@ -14,26 +14,27 @@ Restyle only. The league standings auto-refresh every 20s, and that and all othe
 
 - **Tabs**: League, Leaderboards and Contests as pill tabs (keep the `?tab=` URL syncing).
 - **League tab**:
-  - A **league banner**: a navy gradient card with the tier emblem (an SVG shield or gem per tier, Bronze → Silver → Gold → Platinum → Diamond, tinted with metal colours that sit well beside navy and orange and are added as tokens), the tier name, the week's countdown to reset, and your rank.
-  - **Standings**: rows with rank, avatar, name or handle, and weekly XP. Your own row is highlighted (soft-orange background, orange left bar). Add zone separators: a **promotion zone** (success-tinted rows with a small "↑ Promotion" divider label) and a **demotion zone** (danger-tinted with "↓ Demotion"). Ranks 1, 2 and 3 get gold, silver and bronze `RankBadge`s.
-  - A subtle "Live · updates every 20s" indicator with a pulsing dot (reduced-motion aware).
-- **Leaderboards tab**: board switcher pills (weekly, all-time, rating), a **podium** for the top 3 (the centre is tallest, with avatars, the metric and the orange or gold accents) above a ranked list, and your own position pinned at the bottom if you're off-screen.
-- **Contests tab**: `ContestCard`s with the title, the schedule, the number of questions and duration, and a state badge (Upcoming = navy soft, **Live = orange with a pulsing dot**, Ended = muted), with CTAs ("Join", "Enter" or "View results").
+  - The **league banner**: a navy gradient card with a violet glow, the tier emblem (re-check the metal tokens against the new navy, and keep Diamond clearly distinct from the brand blue), the tier name, the countdown to reset, and your rank.
+  - **Standings**: your own row is highlighted with a soft-blue background and a 3px primary-gradient left bar. Keep the promotion zone (success tint, "↑ Promotion") and demotion zone (danger tint, "↓ Demotion"), and the gold, silver and bronze `RankBadge`s.
+  - The "Live · updates every 20s" indicator with a pulsing light-blue dot (reduced-motion aware).
+- **Leaderboards tab**: board switcher pills, the **podium** for the top 3 (medal tokens; the winner's column gets a subtle secondary-gradient glow instead of orange), a ranked list, and your own position pinned at the bottom if you're off-screen.
+- **Contests tab**: `ContestCard`s with a state badge: Upcoming = blue soft, **Live = violet with a pulsing dot**, Ended = muted. CTAs ("Join", "Enter" or "View results") as primary-gradient or outline pills.
 
 ## Contest page (`pages/ContestPage.tsx`)
 
-A header card (navy gradient) with the contest title, state badge, countdown (tabular numerals, large), rules list and an orange CTA. The results and standings table reuses the league row styling. Mirror the solve flow's look where the contest embeds `SolveScreen` (session 05 restyles it).
+A navy gradient header card with the title, state badge, a large countdown in tabular numerals (light-blue digits on navy), the rules list and a primary-gradient CTA. The results and standings table reuses the league row styling. Mirror the solve flow's look where the contest embeds `SolveScreen`.
 
 ## Profile (`pages/Profile.tsx`)
 
-- **ProfileHeader**: a navy gradient cover band, a large avatar overlapping it with a white ring, the display name (bold) and @handle (muted), and the level, league tier and streak as chips. Add stats (questions solved, accuracy, best streak) and a **badges** grid of earned badges as icon tiles in brand colours, with locked ones greyed out.
-- **Share card**: the existing share card restyled as a navy gradient card with the `AptricLogo` (white), the user's level and streak, and a "Share" outline pill.
-- **Settings** (`#settings` anchor must keep working): `Section`s as white cards with navy titles and muted descriptions. `Choice` radios become pill segmented controls or selectable cards (theme: Light, Dark, Device, with small preview swatches in both palettes; reduced motion as a toggle switch styled orange when on). Use the new inputs for the profile, goal and time zone forms, and an orange "Save" pill with loading state.
+- **ProfileHeader**: a cover band in the navy gradient with blue and violet glows (or the secondary gradient; pick one), a large avatar overlapping it with a white ring, the display name (bold) and @handle (muted), and the level (violet chip), league tier and streak as chips. Stats and the **badges** grid: earned badges as icon tiles in blue, violet and light-blue tints, locked ones greyed out.
+- **Share card**: a navy gradient card with `AptricLogo` (`onDark`), the user's level and streak, and a "Share" outline pill (white on navy).
+- **Settings** (`#settings` anchor must keep working): `Section`s as white cards with heading-ink titles and muted descriptions. The theme picker shows preview swatches of the **new** light and dark palettes; the reduced-motion toggle switch is blue (or the primary gradient) when on. A primary-gradient "Save" pill with loading state.
 - **FeedbackButton**: an outline pill that opens the restyled dialog.
 - **PublicProfile** (`/u/:handle`): the same header and badges, read-only, with no settings.
 
 ## Done when
 
 - Lint, typecheck, tests and build pass.
+- No orange remains in `Compete.tsx`, `ContestPage.tsx`, `Profile.tsx`, `components/compete/*` or `components/profile/*`.
 - You have screenshots (390px and 1280px, light and dark) of: the League tab (you in the promotion zone, you in the demotion zone), Leaderboards with the podium, Contests (upcoming, live and ended), a contest page, Profile with settings, and a public profile. Mock the data.
-- Commit ("Redesign Compete, contests and Profile") and push.
+- Commit ("Re-theme Compete, contests and Profile") and push.
