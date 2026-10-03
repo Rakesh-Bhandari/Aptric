@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Bot, RotateCcw, SendHorizontal, Square, X } from 'lucide-react';
+import { RotateCcw, SendHorizontal, Square, X } from 'lucide-react';
+import { AptricMark } from '@/components/brand/AptricMark';
 import { Markdown } from '@/components/markdown/Markdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -86,13 +87,16 @@ const withCode = (err: unknown, message: string) => {
 let keySeq = 0;
 const nextKey = () => `m${++keySeq}`;
 
+// Blue, violet, blue; they hold still under reduced motion.
+const DOT_CLASS = ['bg-accent-text', 'bg-violet-text', 'bg-accent-text'];
+
 const TypingDots = () => (
   <span className="inline-flex items-center gap-1 py-1" aria-label="Tutor is typing" role="status">
-    {[0, 1, 2].map((i) => (
+    {DOT_CLASS.map((dot, i) => (
       <span
         key={i}
         aria-hidden
-        className="size-1.5 rounded-full bg-muted-foreground/70 motion-safe:animate-breathe"
+        className={cn('size-2 rounded-full motion-safe:animate-breathe', dot)}
         style={{ animationDelay: `${i * 150}ms` }}
       />
     ))}
@@ -307,8 +311,8 @@ export const TutorPanel = ({
         >
           {/* Header */}
           <div className="flex items-start gap-3 border-b px-4 pb-3 pt-4 sm:px-5">
-            <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-navy text-chrome-foreground">
-              <Bot className="size-5" />
+            <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl border bg-background">
+              <AptricMark className="h-5" />
             </span>
             <div className="min-w-0 flex-1 space-y-1.5">
               <DialogPrimitive.Title className="text-base font-extrabold leading-tight tracking-tight text-heading">Aptric Tutor</DialogPrimitive.Title>
@@ -316,7 +320,7 @@ export const TutorPanel = ({
                 Ask about this question: hints, steps, concepts and explanations.
               </DialogPrimitive.Description>
               <div className="flex flex-wrap items-center gap-1.5">
-                <Badge variant="navy" className="max-w-full truncate">{topic}</Badge>
+                <Badge variant="blue" className="max-w-full truncate">{topic}</Badge>
                 {answered
                   ? <Badge variant="success">Answered: full explanations</Badge>
                   : <Badge variant="warning">Solving: no spoilers</Badge>}
@@ -331,9 +335,9 @@ export const TutorPanel = ({
           </div>
 
           {/* Messages */}
-          <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5" aria-live="polite" aria-busy={busy}>
+          <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-background px-4 py-4 sm:px-5" aria-live="polite" aria-busy={busy}>
             {messages.length === 0 && (
-              <div className="rounded-lg bg-muted/60 p-4 text-sm text-muted-foreground">
+              <div className="rounded-lg border border-dashed bg-card p-4 text-sm text-muted-foreground">
                 {answered
                   ? 'Ask why an option is wrong, get the full explanation, or a practice plan made for you.'
                   : "Stuck? Start with a hint or ask me to restate the question. I won't spoil the answer."}
@@ -344,7 +348,7 @@ export const TutorPanel = ({
                 <p key={m.key} className="text-center text-xs font-medium text-muted-foreground">{m.content}</p>
               ) : m.role === 'user' ? (
                 <div key={m.key} className="flex justify-end">
-                  <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-primary-soft px-3.5 py-2 text-sm text-primary-soft-foreground">
+                  <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-primary bg-gradient-primary px-3.5 py-2 text-sm text-primary-foreground shadow-sm">
                     {m.content}
                   </p>
                 </div>
@@ -353,7 +357,7 @@ export const TutorPanel = ({
                   <div
                     data-testid="tutor-reply"
                     className={cn(
-                      'min-w-0 max-w-[92%] rounded-2xl rounded-bl-md border bg-background px-3.5 py-2.5 text-sm text-foreground',
+                      'min-w-0 max-w-[92%] rounded-2xl rounded-bl-md border bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm',
                       m.status === 'error' && 'border-danger/40',
                     )}
                   >
@@ -391,7 +395,7 @@ export const TutorPanel = ({
                   type="button"
                   disabled={busy}
                   onClick={() => void send(c.intent)}
-                  className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3 text-xs font-semibold text-heading transition-colors hover:border-primary hover:bg-primary-soft disabled:opacity-55"
+                  className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3 text-xs font-semibold text-heading transition-colors hover:border-hover-border hover:bg-primary-wash disabled:opacity-55"
                 >
                   <span aria-hidden>{c.emoji}</span> {c.label}
                 </button>

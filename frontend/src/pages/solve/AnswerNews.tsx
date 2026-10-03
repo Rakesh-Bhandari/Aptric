@@ -14,7 +14,7 @@ const Chip = ({ className, children }: { className?: string; children: ReactNode
   </li>
 );
 
-/** Celebration chips under the answer banner: level up, badges, bonus XP, streak, rating. */
+/** Celebration chips under the answer banner: XP in blue, level up in violet, the streak with its flame, badges, rating. */
 export const AnswerNews = ({ result }: { result: AnswerResult | null }) => {
   const p = result?.progress;
   if (!result || !p) return null;
@@ -23,13 +23,13 @@ export const AnswerNews = ({ result }: { result: AnswerResult | null }) => {
   return (
     <ul className="flex flex-wrap gap-2" aria-label="Progress news">
       {p.leveled_up && (
-        <Chip className="bg-gradient-navy text-navy-foreground"><TrendingUp className="text-sky" aria-hidden /> Level {p.level} reached!</Chip>
+        <Chip className="bg-violet text-violet-foreground"><TrendingUp aria-hidden /> Level {p.level} reached!</Chip>
       )}
       {p.bonus_xp > 0 && (
-        <Chip className="bg-primary text-primary-foreground"><Sparkles aria-hidden /> +{p.bonus_xp} bonus XP</Chip>
+        <Chip className="bg-primary bg-gradient-primary text-primary-foreground"><Sparkles aria-hidden /> +{p.bonus_xp} bonus XP</Chip>
       )}
       {streakDone && (
-        <Chip className="bg-primary-soft text-primary-soft-foreground"><Flame className="text-streak" aria-hidden /> {result.current_streak}-day streak</Chip>
+        <Chip className="border bg-card text-heading"><Flame className="text-streak" aria-hidden /> {result.current_streak}-day streak</Chip>
       )}
       {p.new_badges.map((b) => (
         <Chip key={`${b.slug}-${b.topic ?? ''}`} className="bg-navy-soft text-navy-soft-foreground">

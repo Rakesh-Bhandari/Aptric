@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { ArrowRight, Bot, Check, ChevronDown, Clock, EyeOff, Eye, Flag, Lightbulb, MoreHorizontal, Repeat, ShieldAlert, SkipForward, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Clock, EyeOff, Eye, Flag, Lightbulb, MoreHorizontal, Repeat, ShieldAlert, SkipForward, Sparkles, X } from 'lucide-react';
 import { Markdown } from '@/components/markdown/Markdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ export interface Reveal {
 export type SolveKind = 'daily' | 'practice' | 'contest' | 'placement';
 
 const KIND_LABEL: Record<SolveKind, string> = { daily: 'Daily', practice: 'Practice', contest: 'Contest', placement: 'Placement' };
-const DIFFICULTY_BADGE = { easy: 'success', medium: 'default', hard: 'danger' } as const;
+const DIFFICULTY_BADGE = { easy: 'success', medium: 'blue', hard: 'danger' } as const;
 
 interface Props {
   question: SolveQuestion;
@@ -244,7 +244,7 @@ export const SolveScreen = ({
           )}
         </p>
         <Badge variant={DIFFICULTY_BADGE[question.difficulty]}>{DIFFICULTY_LABEL[question.difficulty]}</Badge>
-        <Badge variant="navy">{KIND_LABEL[kind]}</Badge>
+        <Badge variant="default">{KIND_LABEL[kind]}</Badge>
         {worth && <span className="text-xs font-medium text-muted-foreground">Worth {worth}</span>}
         {guard.count > 0 && (
           <Badge variant="danger" title="Times you left this page during a question">
@@ -257,7 +257,7 @@ export const SolveScreen = ({
       {/* Question */}
       <section aria-labelledby={stemId} className="min-w-0 rounded-lg border bg-card p-5 shadow-sm sm:p-7">
         <h2 id={stemId} className="sr-only">Question</h2>
-        <Markdown text={question.stem} className="text-[17px] leading-[1.7] text-heading sm:text-lg" />
+        <Markdown text={question.stem} className="text-[17px] leading-[1.75] text-foreground sm:text-lg" />
       </section>
 
       {/* Options */}
@@ -276,7 +276,7 @@ export const SolveScreen = ({
               className={cn(
                 'group flex min-h-14 w-full items-center gap-3 rounded-lg border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-sm sm:gap-4 sm:px-4',
                 'transition-[border-color,background-color,box-shadow,color] duration-200 ease-out disabled:cursor-default',
-                state === 'idle' && 'border-border hover:border-navy/35 hover:shadow-md dark:hover:border-navy-soft-foreground/40',
+                state === 'idle' && 'border-border hover:border-hover-border hover:shadow-md',
                 state === 'picked' && 'border-primary bg-primary-soft text-heading shadow-md',
                 state === 'correct' && 'border-success bg-success-soft text-success-soft-foreground',
                 state === 'wrong' && 'border-danger bg-danger-soft text-danger-soft-foreground',
@@ -288,7 +288,7 @@ export const SolveScreen = ({
                 className={cn(
                   'grid size-9 shrink-0 place-items-center rounded-lg text-sm font-bold shadow-[inset_0_-2px_0_rgb(0_0_0/0.18)] transition-colors duration-200 ease-out',
                   state === 'idle' && 'bg-navy text-navy-foreground',
-                  state === 'picked' && 'bg-primary text-primary-foreground',
+                  state === 'picked' && 'bg-primary bg-gradient-primary text-primary-foreground',
                   state === 'correct' && 'bg-success text-status-foreground',
                   state === 'wrong' && 'bg-danger text-status-foreground',
                   state === 'dim' && 'bg-muted text-muted-foreground shadow-none',
@@ -312,7 +312,11 @@ export const SolveScreen = ({
 
       {/* Result: feedback banner, then the explanation */}
       {reveal && (
-        <div ref={resultRef} tabIndex={-1} role="region" aria-label="Result" className="scroll-mb-28 space-y-3 focus:outline-none">
+        <div
+          ref={resultRef} tabIndex={-1} role="region" aria-label="Result"
+          // On phones, room under the explanation so the floating Tutor button never covers its last line.
+          className={cn('scroll-mb-28 space-y-3 focus:outline-none', tutorEnabled && 'max-sm:pb-16')}
+        >
           <div
             aria-live="assertive"
             className={cn(
@@ -329,7 +333,7 @@ export const SolveScreen = ({
                   {reveal.isCorrect ? (reveal.usedHint ? 'Correct, with a hint' : 'Correct!') : reveal.gaveUp ? "Here's the answer" : 'Not quite'}
                 </h2>
                 {reveal.reward && (
-                  <Badge variant="solid" className="text-sm motion-safe:animate-pop-in"><Sparkles /> {reveal.reward}</Badge>
+                  <Badge variant="solid" className="bg-gradient-primary text-sm motion-safe:animate-pop-in"><Sparkles /> {reveal.reward}</Badge>
                 )}
               </div>
               {!reveal.isCorrect && correctLetter && (
@@ -344,7 +348,7 @@ export const SolveScreen = ({
           {resultExtras}
 
           {reveal.explanation ? (
-            <section className="min-w-0 rounded-lg border border-l-4 border-l-navy bg-card shadow-sm dark:border-l-navy-strong">
+            <section className="accent-left min-w-0 rounded-lg border bg-card shadow-sm">
               <h3>
                 <button
                   type="button"
@@ -404,7 +408,7 @@ export const SolveScreen = ({
           )}
           {answered && tutorEnabled && (
             <Button variant="outline" onClick={() => openTutor(null)} className="shrink-0 px-3 sm:px-4" aria-label="Ask Tutor" aria-keyshortcuts="H">
-              <Bot /> <span className="hidden sm:inline">Ask Tutor</span>
+              <Sparkles className="text-violet-text" /> <span className="hidden sm:inline">Ask Tutor</span>
             </Button>
           )}
           {answered && onPracticeSimilar && (

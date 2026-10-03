@@ -63,6 +63,8 @@ const TEXT_PAIRS: [string, string][] = [
   ['chrome-muted-foreground', 'chrome'], ['chrome-muted-foreground', 'chrome-deep'],
   ['chrome-accent', 'chrome'], ['chrome-accent', 'chrome-deep'],
   ['sky', 'navy'], ['sky', 'navy-strong'], ['sky', 'chrome'], ['sky', 'brand-navy'],
+  // Session summary hero: the light-blue XP chip (navy text on Light Blue).
+  ['brand-navy', 'sky'],
   // Admin sidebar: active item on the raised navy step.
   ['chrome-foreground', 'chrome-raised'], ['chrome-muted-foreground', 'chrome-raised'],
 ];
