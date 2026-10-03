@@ -1015,6 +1015,68 @@ export type Database = {
           },
         ];
       };
+      question_sources: {
+        Row: {
+          book_answer: string | null;
+          chapter: string | null;
+          correct_pct: number | null;
+          created_at: string;
+          exams: Json;
+          key_status: string;
+          level: number | null;
+          notes: string | null;
+          page: number | null;
+          question_id: string;
+          ref: string;
+          skipped_pct: number | null;
+          source: string;
+          tta_seconds: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          book_answer?: string | null;
+          chapter?: string | null;
+          correct_pct?: number | null;
+          created_at?: string;
+          exams?: Json;
+          key_status: string;
+          level?: number | null;
+          notes?: string | null;
+          page?: number | null;
+          question_id: string;
+          ref: string;
+          skipped_pct?: number | null;
+          source: string;
+          tta_seconds?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          book_answer?: string | null;
+          chapter?: string | null;
+          correct_pct?: number | null;
+          created_at?: string;
+          exams?: Json;
+          key_status?: string;
+          level?: number | null;
+          notes?: string | null;
+          page?: number | null;
+          question_id?: string;
+          ref?: string;
+          skipped_pct?: number | null;
+          source?: string;
+          tta_seconds?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_sources_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       question_tags: {
         Row: {
           created_at: string;
