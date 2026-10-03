@@ -193,7 +193,7 @@ const SessionSummary = () => {
 
       {/* Streak, league and progress updates */}
       {(streak != null || local?.leveledUpTo || local?.newBadges?.length || ratingChange || result?.league) && (
-        <ul className="grid grid-cols-2 gap-3" aria-label="Your progress">
+        <ul className="grid grid-cols-2 gap-3 [&>li:last-child:nth-child(odd)]:col-span-2" aria-label="Your progress">
           {streak != null && (
             <UpdateCard icon={<Flame className="text-streak" />} label="Streak" value={plural(streak, 'day')} tint="blue" />
           )}
@@ -203,7 +203,7 @@ const SessionSummary = () => {
           {ratingChange && (
             <UpdateCard
               icon={<TrendingUp />} label="Rating" value={ratingChange.after}
-              hint={<Badge variant={ratingChange.delta >= 0 ? 'success' : 'danger'}>{ratingChange.delta >= 0 ? '+' : ''}{ratingChange.delta} from {ratingChange.before}</Badge>}
+              hint={<><Badge variant={ratingChange.delta >= 0 ? 'success' : 'danger'}>{ratingChange.delta >= 0 ? '+' : ''}{ratingChange.delta}</Badge> from {ratingChange.before}</>}
             />
           )}
           {local?.leveledUpTo && (

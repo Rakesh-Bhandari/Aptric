@@ -114,10 +114,10 @@ export const HeroMountain = ({ className }: { className?: string }) => {
       <path d="M400 90L414 146L404 210L428 286" fill="none" style={{ stroke: 'var(--mtn-ridge)' }} strokeOpacity="0.35" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 
       {/* The glowing path: a blurred Light Blue halo under a bright core. */}
-      <path d={TRAIL} fill="none" stroke="#38bdf8" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" filter={u('blur')} style={{ opacity: 'var(--mtn-trail-glow)' }} />
-      <path d={TRAIL} fill="none" stroke="#38bdf8" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d={TRAIL} fill="none" stroke="#e0f2fe" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="400" cy="92" r="14" fill="#38bdf8" opacity="0.45" filter={u('blur')} />
+      <path d={TRAIL} fill="none" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" filter={u('blur')} style={{ stroke: 'var(--sky)', opacity: 'var(--mtn-trail-glow)' }} />
+      <path d={TRAIL} fill="none" style={{ stroke: 'var(--sky)' }} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={TRAIL} fill="none" style={{ stroke: 'var(--mtn-trail-core)' }} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="400" cy="92" r="14" style={{ fill: 'var(--sky)' }} opacity="0.45" filter={u('blur')} />
 
       {/* Violet flag on the summit. */}
       <path d="M400 92V46" style={{ stroke: 'var(--mtn-pole)' }} strokeWidth="2.5" strokeLinecap="round" />

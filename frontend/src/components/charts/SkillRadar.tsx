@@ -69,7 +69,7 @@ export const SkillRadar = ({ axes, size = 300 }: { axes: RadarAxis[]; size?: num
                 >
                   <title>{`${a.label}: ${a.detail}`}</title>
                   {/* Hit target larger than the mark. */}
-                  <circle cx={x} cy={y} r={14} fill="transparent" />
+                  <circle cx={x} cy={y} r={33} fill="transparent" />
                   <circle cx={x} cy={y} r={active === i ? 6.5 : 5} fill="var(--chart-accent)" stroke="var(--card)" strokeWidth={2} pointerEvents="none" />
                 </g>
               )}

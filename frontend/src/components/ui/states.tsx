@@ -27,8 +27,9 @@ export const ErrorState = ({ error, onRetry, title = "We couldn't load this", cl
       <h3 className="font-semibold">{title}</h3>
       <p className="text-sm">{friendlyError(error)}</p>
     </div>
+    {/* Card fill: blue outline text on the danger tint is only 4.2:1. */}
     {onRetry && (
-      <Button variant="outline" size="sm" onClick={onRetry}>
+      <Button variant="outline" size="sm" className="bg-card" onClick={onRetry}>
         <RotateCcw /> Try again
       </Button>
     )}

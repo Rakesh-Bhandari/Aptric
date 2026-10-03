@@ -1,18 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="220" viewBox="0 0 1280 220" role="img" aria-labelledby="t">
 <title id="t">Start your streak today. Free, and it works great on your phone.</title>
-<style>text{font-family:'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif}.h{font-size:44px;font-weight:800;letter-spacing:-1.2px;fill:#fff}.s{font-size:18px;fill:#c3cde3}</style>
+<style>text{font-family:'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif}.h{font-size:44px;font-weight:800;letter-spacing:-1.2px;fill:#fff}.s{font-size:18px;fill:#c7d2e6}</style>
 <defs>
-<linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#06132f"/><stop offset=".55" stop-color="#0b1f4b"/><stop offset="1" stop-color="#123a78"/></linearGradient>
-<linearGradient id="og" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff7800"/><stop offset="1" stop-color="#ff9a3d"/></linearGradient>
+<linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a1020"/><stop offset=".5" stop-color="#0a2540"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient>
+<linearGradient id="tg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+<radialGradient id="gv" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#7c3aed" stop-opacity=".35"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></radialGradient><radialGradient id="gb" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#2563eb" stop-opacity=".3"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></radialGradient>
 <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#ffffff" fill-opacity=".08"/></pattern>
-<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7800" stop-opacity=".22"/><stop offset="1" stop-color="#ff7800" stop-opacity="0"/></radialGradient>
 <clipPath id="c"><rect width="1280" height="220" rx="24"/></clipPath>
 </defs>
 <g clip-path="url(#c)">
 <rect width="1280" height="220" fill="url(#hero)"/>
 <rect width="1280" height="220" fill="url(#dots)"/>
-<circle cx="640" cy="110" r="260" fill="url(#glow)"/>
+<circle cx="1100" cy="20" r="260" fill="url(#gv)"/>
+<circle cx="640" cy="110" r="260" fill="url(#gb)"/>
 </g>
-<text x="640" y="112" text-anchor="middle" class="h">Start your streak <tspan style="fill:url(#og)">today.</tspan></text>
+<text x="640" y="112" text-anchor="middle" class="h">Start your streak <tspan style="fill:url(#tg)">today.</tspan></text>
 <text x="640" y="152" text-anchor="middle" class="s">Free, and it works great on your phone.</text>
 </svg>

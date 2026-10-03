@@ -15,8 +15,20 @@ for (const route of ROUTES) {
       const small = await page.evaluate(() => {
         const out: string[] = [];
         document.querySelectorAll('a[href],button,input,select,textarea,[role=tab],[role=switch],summary,[tabindex="0"]').forEach((el) => {
-          const r = el.getBoundingClientRect();
-          if (!r.width || !r.height) return;
+          let r = el.getBoundingClientRect();
+          // Skip visually hidden controls (sr-only inputs behind a label, the off-screen skip link).
+          if (r.width <= 1 || r.height <= 1 || r.bottom < 0 || r.right < 0) return;
+          // A positioned ::before/::after can widen the hit area (sm buttons, stretched row links).
+          for (const pseudo of ['::before', '::after']) {
+            const ps = getComputedStyle(el, pseudo);
+            if (ps.content === 'none' || ps.position !== 'absolute') continue;
+            let box: Element | null = el;
+            while (box && box !== document.body && getComputedStyle(box).position === 'static') box = box.parentElement;
+            const b = (box ?? document.body).getBoundingClientRect();
+            const px = (v: string) => (v === 'auto' ? 0 : parseFloat(v));
+            const hit = new DOMRect(b.left + px(ps.left), b.top + px(ps.top), b.width - px(ps.left) - px(ps.right), b.height - px(ps.top) - px(ps.bottom));
+            if (hit.width * hit.height > r.width * r.height) r = hit;
+          }
           const s = getComputedStyle(el);
           if (s.visibility === 'hidden') return;
           if (el.closest('p, li p, .prose-question') && el.tagName === 'A') return;

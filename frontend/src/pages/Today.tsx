@@ -382,7 +382,7 @@ const Today = () => (
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button asChild variant="navy"><Link to={practiceHref({ mode: 'weak', title: 'Weak areas' })}>Practice my weak areas</Link></Button>
+          <Button asChild variant="secondary"><Link to={practiceHref({ mode: 'weak', title: 'Weak areas' })}>Practice my weak areas</Link></Button>
           <Button asChild variant="outline"><Link to="/practice">Choose a topic</Link></Button>
         </div>
       </CardContent>

@@ -288,7 +288,8 @@
 .adm input:focus-visible, .adm select:focus-visible, .adm textarea:focus-visible {
     outline: none;
     border-color: var(--ring);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 30%, transparent);
+    /* Solid 2px ring: a translucent halo falls under 3:1 on white. */
+    box-shadow: 0 0 0 2px var(--ring);
 }
 .adm input[type='checkbox'], .adm input[type='radio'] { accent-color: var(--primary); width: 1.05rem; height: 1.05rem; cursor: pointer; }
 

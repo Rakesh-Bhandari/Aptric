@@ -105,7 +105,7 @@ const Terms = () => (
                 {sec.title}
                 <a
                   href={`#${sec.id}`}
-                  className="ml-1 inline-block min-w-6 rounded-sm px-1 text-center text-accent-text no-underline opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 max-lg:opacity-60"
+                  className="relative ml-1 inline-block min-w-6 rounded-sm px-1 text-center after:absolute after:-inset-x-2.5 after:-inset-y-2 after:content-[''] text-accent-text no-underline opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 max-lg:opacity-60"
                 >
                   #<span className="sr-only">Link to this section</span>
                 </a>
