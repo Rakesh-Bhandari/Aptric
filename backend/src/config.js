@@ -8,6 +8,18 @@ const env = (name, fallback) => {
 const intEnv = (name, fallback, min, max) =>
   Math.min(max, Math.max(min, Number.parseInt(env(name, ''), 10) || fallback));
 
+const floatEnv = (name, fallback, min, max) => {
+  const value = Number.parseFloat(env(name, ''));
+  return Math.min(max, Math.max(min, Number.isFinite(value) ? value : fallback));
+};
+
+/** Comma-separated list; unset means `fallback`, an empty value means none. */
+const listEnv = (name, fallback) => {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return value.split(',').map((s) => s.trim()).filter(Boolean);
+};
+
 const trimSlash = (url) => url?.replace(/\/+$/, '');
 
 export const config = {
@@ -62,6 +74,27 @@ export const config = {
     requestsPerMinute: intEnv('GENERATE_REQUESTS_PER_MINUTE', 20, 1, 1000),
     jobsPerHour: intEnv('GENERATE_JOBS_PER_HOUR', 10, 1, 1000),
     questionsPerDay: intEnv('GENERATE_QUESTIONS_PER_DAY', 300, 1, 100_000),
+  },
+
+  // Aptric Tutor: any OpenAI-compatible chat API. Defaults to OpenRouter's
+  // free models; Groq (https://api.groq.com/openai/v1) or a local Ollama
+  // (http://localhost:11434/v1) work too. See backend/README.md.
+  tutor: {
+    baseUrl: trimSlash(env('TUTOR_LLM_BASE_URL', env('LLM_BASE_URL', 'https://openrouter.ai/api/v1'))),
+    apiKey: env('TUTOR_LLM_API_KEY', env('OPEN_ROUTER_API_KEY', env('OPENROUTER_API_KEY'))),
+    model: env('TUTOR_MODEL', 'meta-llama/llama-3.3-70b-instruct:free'),
+    fallbackModels: listEnv('TUTOR_FALLBACK_MODELS', [
+      'deepseek/deepseek-chat-v3-0324:free',
+      'qwen/qwen-2.5-72b-instruct:free',
+      'mistralai/mistral-small-3.1-24b-instruct:free',
+    ]),
+    // On OpenRouter only `:free` models are used unless this is "true".
+    allowPaidModels: env('TUTOR_ALLOW_PAID_MODELS') === 'true',
+    maxTokens: intEnv('TUTOR_MAX_TOKENS', 700, 64, 4000),
+    temperature: floatEnv('TUTOR_TEMPERATURE', 0.3, 0, 2),
+    messagesPerHour: intEnv('TUTOR_MESSAGES_PER_HOUR', 60, 1, 10_000),
+    messagesPerDay: intEnv('TUTOR_MESSAGES_PER_DAY', 200, 1, 100_000),
+    siteUrl: env('SITE_URL', env('FRONTEND_URL')),
   },
 };
 

@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { ArrowRight, Check, Clock, EyeOff, Eye, Flag, Lightbulb, MoreHorizontal, Repeat, ShieldAlert, SkipForward, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Bot, Check, ChevronDown, Clock, EyeOff, Eye, Flag, Lightbulb, MoreHorizontal, Repeat, ShieldAlert, SkipForward, Sparkles, X } from 'lucide-react';
 import { Markdown } from '@/components/markdown/Markdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,12 @@ import { useSolveKeys } from '@/hooks/useSolveKeys';
 import { friendlyError } from '@/lib/errors';
 import { formatClock, formatDuration, plural } from '@/lib/format';
 import { DIFFICULTY_LABEL, OPTION_KEYS, OPTION_LETTERS } from '@/lib/game';
+import type { TutorIntent } from '@/lib/tutor';
 import type { Difficulty, QuestionOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ReportDialog } from './ReportDialog';
 import { SESSION_TIMER_SLOT } from './SessionHeader';
+import { TutorPanel, type TutorRequest } from './TutorPanel';
 
 export interface SolveQuestion {
   id: string;
@@ -55,11 +57,17 @@ interface Props {
   kind: SolveKind;
   /** Points this question is worth, e.g. "20 XP". */
   worth?: string | null;
+  /** The stored hint when the player already paid for it (daily set). */
   initialHint?: string | null;
   /** Submit and return what to reveal; for placement return null (no feedback until the end). */
   onSubmit: (optionId: string, timeMs: number) => Promise<Reveal | null>;
-  /** Present when hints are allowed. Resolves to the hint text. */
+  /**
+   * The stored hint through use_hint. With the tutor it is only the fallback
+   * when the tutor is unavailable (the tutor charges the hint server-side).
+   */
   onHint?: () => Promise<string | null>;
+  /** Offer Aptric Tutor (daily and practice only; never contests or placement). */
+  tutor?: boolean;
   hintCost?: number;
   onGiveUp?: (timeMs: number) => Promise<Reveal>;
   /** Placement only: move on without answering. */
@@ -89,12 +97,18 @@ const menuItem =
 
 export const SolveScreen = ({
   question, kind, worth, initialHint = null, onSubmit, onHint, hintCost, onGiveUp, onSkip, onNext, nextLabel,
-  onPracticeSimilar, resultExtras,
+  onPracticeSimilar, resultExtras, tutor = false,
 }: Props) => {
   const [picked, setPicked] = useState<string | null>(null);
-  const [busy, setBusy] = useState<null | 'submit' | 'hint' | 'giveup'>(null);
-  const [hint, setHint] = useState<string | null>(initialHint);
+  const [busy, setBusy] = useState<null | 'submit' | 'giveup'>(null);
+  const [usedHint, setUsedHint] = useState(!!initialHint);
   const [reveal, setReveal] = useState<Reveal | null>(null);
+  // Aptric Tutor: daily and practice only (contests and placement never get it).
+  const tutorEnabled = tutor && (kind === 'daily' || kind === 'practice');
+  const [tutorOpen, setTutorOpen] = useState(false);
+  const [tutorRequest, setTutorRequest] = useState<TutorRequest | null>(null);
+  const [explanationOpen, setExplanationOpen] = useState(!tutorEnabled);
+  const nonce = useRef(0);
   const [error, setError] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
   const { elapsed, read } = useElapsed(!reveal);
@@ -130,32 +144,42 @@ export const SolveScreen = ({
     }
   };
 
-  const showHint = async () => {
-    if (!onHint || busy || answered) return;
-    setBusy('hint');
-    setError('');
-    try {
-      setHint((await onHint()) ?? 'There is no hint for this question.');
-    } catch (err) {
-      setError(friendlyError(err, "We couldn't load the hint. Please try again."));
-    } finally {
-      setBusy(null);
-    }
+  /** Opens the tutor, optionally sending a quick action right away. */
+  const openTutor = (intent: TutorIntent | null) => {
+    if (!tutorEnabled) return;
+    nonce.current += 1;
+    setTutorRequest({ intent, nonce: nonce.current });
+    setTutorOpen(true);
   };
 
-  const giveUp = async () => {
+  // The tutor's fallback when it's unavailable: the stored hint, charged as before.
+  const fallbackHint = onHint
+    ? async () => {
+      if (initialHint) return initialHint;
+      const text = await onHint();
+      if (text) setUsedHint(true);
+      return text;
+    }
+    : undefined;
+
+  const giveUp = async (fromTutor = false) => {
     if (!onGiveUp || busy || answered) return;
+    if (fromTutor) setTutorOpen(false);
     const ok = await toast.confirm({
       title: 'Give up on this question?',
       message: "You'll see the answer and explanation, but this question won't earn any XP.",
       confirmText: 'Show me the answer',
       cancelText: 'Keep trying',
     });
-    if (!ok) return;
+    if (!ok) {
+      if (fromTutor) setTutorOpen(true);
+      return;
+    }
     setBusy('giveup');
     setError('');
     try {
       setReveal(await onGiveUp(read()));
+      openTutor('explain');
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -168,6 +192,7 @@ export const SolveScreen = ({
     enabled: !busy,
     onPick: (i) => { if (!answered) setPicked(question.options[i]?.id ?? null); },
     onEnter: () => { if (answered) onNext(); else void submit(); },
+    onTutor: tutorEnabled ? () => openTutor(null) : undefined,
   });
 
   const optionState = (id: string) => {
@@ -191,7 +216,8 @@ export const SolveScreen = ({
     </span>
   );
 
-  const showHintButton = !!onHint && question.has_hint && !hint && !answered;
+  const showHintButton = tutorEnabled && !answered;
+  const hintCostChip = hintCost && question.has_hint && !usedHint ? hintCost : null;
   const lastKey = OPTION_KEYS[Math.min(question.options.length, 9) - 1];
   const correctLetter = reveal?.correctOptionId
     ? OPTION_LETTERS[question.options.findIndex((o) => o.id === reveal.correctOptionId)]
@@ -281,14 +307,6 @@ export const SolveScreen = ({
         })}
       </div>
 
-      {/* Hint */}
-      {hint && !reveal && (
-        <div className="rounded-lg border border-warning/40 bg-warning-soft p-4 text-warning-soft-foreground motion-safe:animate-fade-in" role="note" aria-label="Hint">
-          <p className="mb-1 flex items-center gap-1.5 text-sm font-bold"><Lightbulb className="size-4" aria-hidden /> Hint</p>
-          <Markdown text={hint} className="text-sm" />
-        </div>
-      )}
-
       {error && <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger-soft-foreground">{error}</p>}
 
       {/* Result: feedback banner, then the explanation */}
@@ -325,9 +343,24 @@ export const SolveScreen = ({
           {resultExtras}
 
           {reveal.explanation ? (
-            <section className="min-w-0 rounded-lg border border-l-4 border-l-navy bg-card p-4 shadow-sm dark:border-l-navy-strong sm:p-5">
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Explanation</h3>
-              <Markdown text={reveal.explanation} className="text-base text-foreground" />
+            <section className="min-w-0 rounded-lg border border-l-4 border-l-navy bg-card shadow-sm dark:border-l-navy-strong">
+              <h3>
+                <button
+                  type="button"
+                  aria-expanded={explanationOpen}
+                  aria-controls={`${stemId}-explanation`}
+                  onClick={() => setExplanationOpen((o) => !o)}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 px-4 text-left text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground sm:px-5"
+                >
+                  Official explanation
+                  <ChevronDown aria-hidden className={cn('size-4 transition-transform duration-200', explanationOpen && 'rotate-180')} />
+                </button>
+              </h3>
+              {explanationOpen && (
+                <div id={`${stemId}-explanation`} className="px-4 pb-4 sm:px-5 sm:pb-5">
+                  <Markdown text={reveal.explanation} className="text-base text-foreground" />
+                </div>
+              )}
             </section>
           ) : kind === 'contest' ? (
             <p className="text-sm text-muted-foreground">Answers and explanations open when the contest ends.</p>
@@ -342,29 +375,35 @@ export const SolveScreen = ({
         ) : (
           <><Kbd>1</Kbd>–<Kbd>{lastKey}</Kbd> to choose <span className="px-1">·</span> <Kbd>Enter</Kbd> to check</>
         )}
+        {tutorEnabled && <><span className="px-1">·</span> <Kbd>H</Kbd> tutor</>}
       </p>
 
       {/* Action bar: sticky to the bottom on phones, inline on larger screens. */}
       <div className="sticky bottom-0 z-20 -mx-4 mt-auto border-t bg-card px-4 pb-safe pt-3 shadow-top sm:bottom-4 sm:mx-0 sm:mb-8 sm:rounded-full sm:border sm:p-2 sm:shadow-md">
         <div className="flex items-center gap-2">
-          {!answered && showHintButton && (
+          {showHintButton && (
             <Button
               variant="ghost"
-              onClick={() => void showHint()}
-              loading={busy === 'hint'}
+              onClick={() => openTutor('hint')}
               disabled={!!busy}
-              aria-label={hintCost ? `Show hint (−${hintCost}), costs ${hintCost} XP` : 'Show hint'}
+              aria-label={hintCostChip ? `Show hint (−${hintCostChip}), costs ${hintCostChip} XP` : 'Show hint'}
+              aria-keyshortcuts="H"
               className="shrink-0 px-3"
             >
-              {busy !== 'hint' && <Lightbulb className="text-warning" />}
+              <Lightbulb className="text-warning" />
               {/* The word drops on the narrowest phones so "Check answer" never clips; the label stays. */}
               <span className="max-[379px]:hidden">Hint</span>
-              {hintCost ? <span className="rounded-full bg-primary-soft px-1.5 text-xs font-bold text-primary-soft-foreground">−{hintCost} XP</span> : null}
+              {hintCostChip ? <span className="rounded-full bg-primary-soft px-1.5 text-xs font-bold text-primary-soft-foreground">−{hintCostChip} XP</span> : null}
             </Button>
           )}
           {!answered && onSkip && (
             <Button variant="ghost" onClick={() => onSkip(read())} disabled={!!busy} className="shrink-0 px-3">
               <SkipForward /> <span className="sm:hidden">Skip</span><span className="hidden sm:inline">I don't know, skip</span>
+            </Button>
+          )}
+          {answered && tutorEnabled && (
+            <Button variant="outline" onClick={() => openTutor(null)} className="shrink-0 px-3 sm:px-4" aria-label="Ask Tutor" aria-keyshortcuts="H">
+              <Bot /> <span className="hidden sm:inline">Ask Tutor</span>
             </Button>
           )}
           {answered && onPracticeSimilar && (
@@ -408,6 +447,27 @@ export const SolveScreen = ({
         </div>
       </div>
       <ReportDialog questionId={question.id} open={reportOpen} onOpenChange={setReportOpen} />
+      {tutorEnabled && (
+        <TutorPanel
+          open={tutorOpen}
+          onOpenChange={setTutorOpen}
+          questionId={question.id}
+          context={kind as 'daily' | 'practice'}
+          topic={question.subtopic || question.topic}
+          answered={answered}
+          request={tutorRequest}
+          hintUsed={usedHint}
+          hintCost={hintCost}
+          onHintUsed={() => setUsedHint(true)}
+          onRequireGiveUp={() => void giveUp(true)}
+          fallbackHint={fallbackHint}
+          fallbackExplanation={reveal?.explanation ?? null}
+          onAvailability={(ok) => {
+            // Without the tutor, the official explanation is the explanation.
+            if (!ok) setExplanationOpen(true);
+          }}
+        />
+      )}
 
       {/* Hide the question while the player is away, so it can't be read from another window or a screenshot. */}
       {guard.away && createPortal(

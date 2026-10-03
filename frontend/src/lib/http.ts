@@ -106,17 +106,19 @@ if (typeof window !== 'undefined') {
 
 type Method = 'GET' | 'POST' | 'PATCH';
 
-async function send(method: Method, path: string, body: unknown, token: string | null): Promise<Response> {
+async function send(method: Method, path: string, body: unknown, token: string | null, signal?: AbortSignal): Promise<Response> {
   try {
     return await fetch(`${API_URL}${path}`, {
       method,
+      signal,
       headers: {
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-  } catch {
+  } catch (err) {
+    if (signal?.aborted) throw err;
     throw new ApiError(0, 'network', 'Failed to fetch');
   }
 }
@@ -182,16 +184,27 @@ export async function getAccessToken(): Promise<string | null> {
   return (await refreshSession(session))?.access_token ?? null;
 }
 
-/** Calls the API as the signed-in user (if any). */
-export async function api<T>(method: Method, path: string, body?: unknown): Promise<T> {
+/**
+ * Sends a request as the signed-in user (if any) and returns the raw response,
+ * e.g. for streams. On 401 the session is refreshed and the request retried once.
+ */
+export async function authorizedFetch(method: Method, path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
   const token = await getAccessToken();
-  let res = await send(method, path, body, token);
+  let res = await send(method, path, body, token, signal);
   // The token may have been revoked or expired early: refresh and retry once.
   if (res.status === 401 && token && current) {
     const next = await refreshSession(current);
-    if (next) res = await send(method, path, body, next.access_token);
+    if (next) res = await send(method, path, body, next.access_token, signal);
   }
-  return parse<T>(res);
+  return res;
+}
+
+/** The JSON body of an API response, or the ApiError it carries. */
+export const parseResponse = <T>(res: Response): Promise<T> => parse<T>(res);
+
+/** Calls the API as the signed-in user (if any). */
+export async function api<T>(method: Method, path: string, body?: unknown): Promise<T> {
+  return parse<T>(await authorizedFetch(method, path, body));
 }
 
 /** Calls the API without a session (sign-in, sign-up, email links). */

@@ -38,9 +38,9 @@ select public.backend_sql('[{"sql": "select ...", "rows": true}, ...]'::jsonb, a
 | Who | Can |
 | --- | --- |
 | `anon` | nothing |
-| authenticated user | read active taxonomy and tag catalog, published questions/options/tags (plus questions they've attempted), released daily sets, levels, league tiers, track sections; read the badge catalog; read own profile, attempts, xp_events, reports, feedback, streak freeze uses/awards, league memberships, rating events, badges; update own `handle`, `display_name`, `avatar_url`, `bio`, `timezone`, `track_id`; insert reports/feedback; play via `get_today_set`, `submit_answer`, `use_hint`, `give_up`; standings via `get_my_league`, `get_leaderboard`, `get_player_profile`, `get_daily_result` |
+| authenticated user | read active taxonomy and tag catalog, published questions/options/tags (plus questions they've attempted), released daily sets, levels, league tiers, track sections; read the badge catalog; read own profile, attempts, xp_events, tutor_messages, reports, feedback, streak freeze uses/awards, league memberships, rating events, badges; update own `handle`, `display_name`, `avatar_url`, `bio`, `timezone`, `track_id`; insert reports/feedback; play via `get_today_set`, `submit_answer`, `use_hint`, `give_up`; standings via `get_my_league`, `get_leaderboard`, `get_player_profile`, `get_daily_result` |
 | admin (`profiles.role = 'admin'`) | everything above + full CRUD on content tables, read all profiles/attempts/xp/reports/feedback/audit_log/`question_generation_jobs`, update report/feedback status; AI generation (`POST /admin/generate-questions` in the API); `admin_get_question_answer`, `admin_upsert_question_answer`, `admin_set_user_role`, `admin_set_user_ban`, `admin_list_users`, `admin_get_question`, `admin_save_question`, `admin_set_question_status` RPCs (see [Admin area](#admin-area)) |
-| connection role (the API's server-side work) / `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` or write `attempts`, `xp_events`, `hint_uses`, league tables, `streak_freeze_uses`/`_awards`, `rating_events`, `user_badges`, `question_generation_jobs` and `profiles.role/level/xp/rating/streak*/league_tier`; read the leaderboard materialized views |
+| connection role (the API's server-side work) / `service_role` / SECURITY DEFINER functions | everything; the only roles that can read `question_answers` (also through `private.tutor_context`) or write `attempts`, `xp_events`, `hint_uses`, `tutor_messages`, league tables, `streak_freeze_uses`/`_awards`, `rating_events`, `user_badges`, `question_generation_jobs` and `profiles.role/level/xp/rating/streak*/league_tier`; read the leaderboard materialized views |
 
 Notes:
 
@@ -196,6 +196,24 @@ insert into public.contest_items (contest_id, question_id, position)
 select '<id>', id, (row_number() over ()) - 1
 from (select id from public.questions where status = 'published' order by random() limit 10) q;
 ```
+
+## Aptric Tutor (`20261003000001_tutor.sql`)
+
+Grounding and chat log for the AI tutor in the API ([backend/README.md](../backend/README.md#aptric-tutor)). Only the API calls these functions (`EXECUTE` is revoked from `public`, `anon` and `authenticated`; granted to `service_role`), because the context carries the answer key.
+
+| Function | Returns |
+| --- | --- |
+| `private.tutor_context(uid, question_id, context)` | `jsonb`: `question_id`, `context` (resolved like `use_hint`), `phase`, `verified`, `question` (stem, options with id/position/body, difficulty, section/topic/subtopic, tags), `answer_key` (`correct_option_id`, `correct_position`, `explanation`, `hint`), `attempt` (selected option, `gave_up`, `is_correct`, `used_hint`, `time_ms`), `hint_used`, `learner` |
+| `private.tutor_learner(uid, subtopic_id, topic_id, question_id)` | the `learner` block: `level`, `xp`, `exam_goal`, the 3 weakest subtopics by accuracy (3+ attempts, with section/topic names and mastery stars), up to 5 unresolved recent mistakes in this topic (as in `get_mistakes`, without answers), and accuracy and average time on this subtopic |
+| `private.tutor_append_message(uid, question_id, context, role, intent, content, model)` | the new `tutor_messages` id |
+| `private.tutor_history(uid, question_id, context, max_count)` | the latest turns of one chat, oldest first |
+
+- **Scope**: `private.resolve_attempt_scope`, so `daily` = in the player's set today and `practice` = published; otherwise `42501` (`P0002` for an unknown question or no set today). Banned players get `42501`.
+- **`phase`**: `solving` until the player has a scoring attempt in that context (submit or give up), then `answered`. `locked` for the `assessment` (placement) context and for questions in a contest that hasn't ended; a locked context carries no question or answer key.
+- **`verified`**: the question is `published`, has a `question_answers` row, and its `correct_option_id` is one of the question's options. The API never calls a model for an unverified question.
+- The API must not forward `answer_key` to the browser while `phase = 'solving'`; it only goes into the model prompt.
+
+`public.tutor_messages` (`id`, `user_id`, `question_id`, `context`, `role` `user|assistant`, `intent`, `content` 1–4000 characters, `model`, `created_at`): RLS on, players read their own rows; no insert/update/delete for `anon` or `authenticated` (writes go through `private.tutor_append_message`). Rows go away with the user or the question.
 
 ## Admin area
 
