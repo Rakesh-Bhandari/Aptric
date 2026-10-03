@@ -1,4 +1,4 @@
-// Auth emails over SMTP (any provider: Resend, SES, Postmark, Gmail, ...).
+// Auth emails over Google SMTP (smtp.gmail.com with an app password).
 // Without SMTP settings, development builds log the link instead of sending.
 
 import nodemailer from 'nodemailer';

@@ -239,7 +239,7 @@ Scheduled jobs (pg_cron, UTC): daily set generation, hourly streak settlement wi
 - Node.js 22+ and npm
 - A Supabase project (or Docker for the local stack)
 - Supabase CLI (`npx supabase`)
-- An SMTP provider for sign-up / sign-in emails (e.g. Resend; optional locally)
+- A Gmail / Google Workspace account with an app password, for sign-up / sign-in emails over Google SMTP (optional locally)
 - A Google OAuth client (only for Google sign-in)
 - An OpenRouter API key (only for AI question generation and the tutor)
 
