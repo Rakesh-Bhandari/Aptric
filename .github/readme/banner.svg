@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="480" viewBox="0 0 1280 480" role="img" aria-labelledby="t d">
+<title id="t">Aptric</title>
+<desc id="d">Practice. Compete. Get placed. A daily aptitude platform for placements and competitive exams.</desc>
+<style>
+text{font-family:'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif}
+.pill{font-size:12.5px;font-weight:600;fill:#c3cde3}
+.for{font-size:12.5px;font-weight:700;letter-spacing:.12em;fill:#ff9a3d}
+.h{font-size:74px;font-weight:800;letter-spacing:-2.5px;fill:#ffffff}
+.sub{font-size:19px;fill:#c3cde3}
+.word{font-size:22px;font-weight:800;letter-spacing:4px;fill:#ffffff}
+</style>
+<defs>
+<linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#06132f"/><stop offset=".55" stop-color="#0b1f4b"/><stop offset="1" stop-color="#123a78"/></linearGradient>
+<linearGradient id="og" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff7800"/><stop offset="1" stop-color="#ff9a3d"/></linearGradient>
+<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7800" stop-opacity=".28"/><stop offset="1" stop-color="#ff7800" stop-opacity="0"/></radialGradient>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#ffffff" fill-opacity=".09"/></pattern>
+<radialGradient id="fade" cx=".3" cy=".2" r=".75"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
+<mask id="dm"><rect width="1280" height="480" fill="url(#fade)"/></mask>
+<clipPath id="c"><rect width="1280" height="480" rx="24"/></clipPath>
+</defs>
+<g clip-path="url(#c)">
+<rect width="1280" height="480" fill="url(#hero)"/>
+<rect width="1280" height="480" fill="url(#dots)" mask="url(#dm)"/>
+<circle cx="980" cy="270" r="300" fill="url(#glow)"/>
+<rect y="474" width="1280" height="6" fill="url(#og)"/>
+</g>
+<text x="80" y="111" class="for">FOR</text>
+<rect x="128" y="92" width="82" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="169" y="111" text-anchor="middle" class="pill">TCS NQT</text><rect x="218" y="92" width="82" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="259" y="111" text-anchor="middle" class="pill">Infosys</text><rect x="308" y="92" width="66" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="341" y="111" text-anchor="middle" class="pill">AMCAT</text><rect x="382" y="92" width="50" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="407" y="111" text-anchor="middle" class="pill">CAT</text><rect x="440" y="92" width="58" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="469" y="111" text-anchor="middle" class="pill">GATE</text><rect x="506" y="92" width="82" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="547" y="111" text-anchor="middle" class="pill">Bank PO</text><rect x="596" y="92" width="50" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="621" y="111" text-anchor="middle" class="pill">SSC</text>
+<text x="80" y="208" class="h">Practice.</text>
+<text x="80" y="284" class="h">Compete.</text>
+<text x="80" y="360" class="h" style="fill:url(#og)">Get placed.</text>
+<text x="80" y="412" class="sub">A daily aptitude platform for placements, CAT, banking and more.</text>
+<svg x="790" y="70" width="360" height="360" viewBox="25 -17 800 800"><defs>
+<linearGradient id="mn" gradientUnits="userSpaceOnUse" x1="120" y1="420" x2="420" y2="420"><stop offset="0" stop-color="#2c55ad"/><stop offset=".55" stop-color="#22468f"/><stop offset="1" stop-color="#1b3a78"/></linearGradient>
+<linearGradient id="ml" gradientUnits="userSpaceOnUse" x1="440" y1="330" x2="660" y2="230"><stop offset="0" stop-color="#e85400"/><stop offset=".5" stop-color="#ff7400"/><stop offset="1" stop-color="#ff9a2a"/></linearGradient>
+<linearGradient id="mr" gradientUnits="userSpaceOnUse" x1="250" y1="560" x2="800" y2="640"><stop offset="0" stop-color="#ff8000"/><stop offset=".42" stop-color="#ff9a3d"/><stop offset=".72" stop-color="#ff7200"/><stop offset="1" stop-color="#ff5a00"/></linearGradient>
+</defs>
+<path d="M150 688L165 640L484 425C525 394 600 386 650 404C684 416 703 441 719 474L790 627C806 660 794 688 760 688H652C630 688 616 678 606 660L553 553C543 538 525 536 505 551L380 630C330 661 280 688 205 688Z" fill="url(#mr)"/>
+<path d="M330 104C342 84 358 78 380 78H490C512 78 527 90 536 108L592 240L416 290L244 615C228 648 212 688 168 688H104C66 688 44 660 56 628Z" fill="url(#mn)"/>
+<path d="M416 292C430 240 462 188 522 186C555 186 578 205 590 228L716 478C700 445 680 422 650 410C600 392 525 400 484 425Z" fill="url(#ml)"/></svg>
+<text x="970" y="452" text-anchor="middle" class="word">APTRIC</text>
+</svg>
