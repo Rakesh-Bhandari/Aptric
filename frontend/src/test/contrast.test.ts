@@ -158,6 +158,9 @@ describe('chart colours', () => {
   it.each([['light', light], ['dark', dark]] as const)('stand out on the card in %s mode', (_name, t) => {
     expect(ratio(t['chart-accent'], t.card)).toBeGreaterThanOrEqual(3);
     expect(ratio(t['heat-4'], t.card)).toBeGreaterThanOrEqual(3);
+    // Every activity step (including the faintest) is visible against the card and against "none".
+    for (const k of ['heat-1', 'heat-2', 'heat-3', 'heat-4']) expect(ratio(t[k], t.card)).toBeGreaterThanOrEqual(2);
+    expect(ratio(t['heat-1'], t.muted)).toBeGreaterThanOrEqual(1.7);
   });
   it.each([['light', light, -1], ['dark', dark, 1]] as const)('activity scale is monotonic in %s mode', (_name, t, dir) => {
     const steps = ['muted', 'heat-1', 'heat-2', 'heat-3', 'heat-4'].map((k) => luminance(t[k]));

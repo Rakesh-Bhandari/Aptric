@@ -88,12 +88,18 @@
   /* Semantic warm colours: the streak flame icon and gold rewards only. */
   --streak: #ea580c;
   --gold: #c58a00;
-  /* Charts: radar stroke/points (3:1+ on cards) and the 5-step activity scale (--muted, then heat-1..4, pale blue to violet). */
+  /*
+   * Charts: radar stroke/points (3:1+ on cards), a violet wash for the radar
+   * polygon, and the 5-step activity scale (--muted for none, then heat-1..4,
+   * blue to violet). Each heat step clears 2:1 on the card and adjacent steps
+   * differ by 0.06+ OKLCH lightness (checked with the dataviz validator).
+   */
   --chart-accent: #2563eb;
-  --heat-1: #dbeafe;
-  --heat-2: #93c5fd;
-  --heat-3: #6366f1;
-  --heat-4: #7c3aed;
+  --chart-fill: #7c3aed;
+  --heat-1: #82a7f9;
+  --heat-2: #6b7ff1;
+  --heat-3: #7c3aed;
+  --heat-4: #5b21b6;
   /* League tiers (icons, chips and tier names on cards). */
   --tier-bronze: #9a5426;
   --tier-silver: #526075;
@@ -227,10 +233,11 @@
   --streak: #fb923c;
   --gold: #fbbf24;
   --chart-accent: #60a5fa;
-  --heat-1: #1e3a8a;
-  --heat-2: #4f46e5;
-  --heat-3: #818cf8;
-  --heat-4: #c4b5fd;
+  --chart-fill: #a78bfa;
+  --heat-1: #1d4ed8;
+  --heat-2: #6366f1;
+  --heat-3: #a78bfa;
+  --heat-4: #ddd6fe;
   --tier-bronze: #f0a46a;
   --tier-silver: #cbd5e1;
   --tier-gold: #fbbf24;
@@ -313,6 +320,7 @@
   --color-streak: var(--streak);
   --color-gold: var(--gold);
   --color-chart-accent: var(--chart-accent);
+  --color-chart-fill: var(--chart-fill);
   --color-heat-1: var(--heat-1);
   --color-heat-2: var(--heat-2);
   --color-heat-3: var(--heat-3);

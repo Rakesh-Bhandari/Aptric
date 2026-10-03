@@ -11,8 +11,8 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 /**
  * Single-series radar of accuracy per section. Grid and axes are recessive
- * (Border), labels muted; the polygon is the one orange mark (--chart-accent
- * stroke, soft fill). Points take hover and keyboard focus for a tooltip and
+ * (Border), labels muted; the polygon is the one coloured mark: a blue
+ * --chart-accent stroke over a low-opacity violet --chart-fill wash. Points take hover and keyboard focus for a tooltip and
  * carry <title>s. Pair it with a table (see Progress).
  */
 export const SkillRadar = ({ axes, size = 300 }: { axes: RadarAxis[]; size?: number }) => {
@@ -47,7 +47,7 @@ export const SkillRadar = ({ axes, size = 300 }: { axes: RadarAxis[]; size?: num
           const [x, y] = point(0, ring);
           return <text key={ring} x={x + 4} y={y + 3} fontSize={9} fill="var(--muted-foreground)" aria-hidden>{pct(ring)}</text>;
         })}
-        <polygon points={poly} fill="var(--chart-accent)" fillOpacity={0.16} stroke="var(--chart-accent)" strokeWidth={2} strokeLinejoin="round" />
+        <polygon points={poly} fill="var(--chart-fill)" fillOpacity={0.14} stroke="var(--chart-accent)" strokeWidth={2} strokeLinejoin="round" />
         {axes.map((a, i) => {
           const [x, y] = point(i, a.value ?? 0);
           const [lx, ly] = point(i, 1.18);
