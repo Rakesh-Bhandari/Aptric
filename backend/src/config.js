@@ -48,12 +48,16 @@ export const config = {
     clientSecret: env('GOOGLE_CLIENT_SECRET'),
   },
 
+  // Gmail SMTP: SMTP_USER is the Gmail / Google Workspace address and
+  // SMTP_PASS a 16-character app password (needs 2-Step Verification). Gmail
+  // sends as SMTP_USER unless SMTP_FROM is one of its verified aliases.
   smtp: {
-    host: env('SMTP_HOST'),
-    port: intEnv('SMTP_PORT', 587, 1, 65535),
+    host: env('SMTP_HOST', env('SMTP_USER') ? 'smtp.gmail.com' : undefined),
+    port: intEnv('SMTP_PORT', 465, 1, 65535),
     user: env('SMTP_USER'),
-    pass: env('SMTP_PASS'),
-    from: env('SMTP_FROM', 'Aptric <no-reply@aptric.app>'),
+    // Google shows app passwords in groups of four; drop the spaces.
+    pass: env('SMTP_PASS')?.replace(/\s+/g, ''),
+    from: env('SMTP_FROM', env('SMTP_USER') ? `Aptric <${env('SMTP_USER')}>` : 'Aptric <no-reply@aptric.app>'),
   },
 
   // Vercel Cron sends "Authorization: Bearer <CRON_SECRET>".
