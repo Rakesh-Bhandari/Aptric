@@ -7,11 +7,11 @@ import { ProductPreview } from './landing/ProductPreview';
 import { Features, FinalCta, HowItWorks, SectionsShowcase, StatStrip } from './landing/Sections';
 import { scrollToSection } from './landing/shared';
 
-/** "/" for signed-out visitors: the marketing page. The header sits transparently over the navy hero. */
+/** "/" for signed-out visitors: the marketing page. The header sits transparently over the hero, in the page's theme. */
 const Landing = () => {
   const root = useRef<HTMLDivElement>(null);
   const { hash } = useLocation();
-  useHeaderOverlay();
+  useHeaderOverlay(true, 'theme');
   useReveal(root);
 
   // Footer links such as /#features arrive with a hash; jump to that section once.

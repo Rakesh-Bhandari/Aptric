@@ -381,6 +381,64 @@
     transform: translateX(2px);
   }
 }
+/*
+ * Landing hero artwork (pages/landing/HeroMountain.tsx). Decorative brand art,
+ * so these are literal colours scoped to the SVG rather than page tokens:
+ * misty blue-lavender peaks and white clouds in light mode, deep navy, blue and
+ * violet peaks with a dark treeline in dark mode. The path glow is Light Blue in both.
+ */
+.hero-art {
+  --mtn-zero: 0;
+  --mtn-glow-violet: #c4b5fd;
+  --mtn-glow-blue: #93c5fd;
+  --mtn-glow-opacity: 0.55;
+  --mtn-star: #ffffff;
+  --mtn-star-opacity: 0;
+  --mtn-far-top: #c7d2fe;
+  --mtn-far-bottom: #eef2ff;
+  --mtn-mid-top: #93a5f5;
+  --mtn-mid-bottom: #dfe5fd;
+  --mtn-lit-top: #5b8cf5;
+  --mtn-lit-bottom: #c7d2fe;
+  --mtn-shade-top: #7c5cf0;
+  --mtn-shade-bottom: #c4b5fd;
+  --mtn-ridge: #ffffff;
+  --mtn-trail-glow: 0.75;
+  --mtn-pole: #334155;
+  --mtn-flag: #7c3aed;
+  --mtn-tree: #3b4fc4;
+  --mtn-tree-back: #6d7fe0;
+  --mtn-tree-back-opacity: 0.55;
+  --mtn-mist: #f8fafc;
+  --mtn-mist-opacity: 0.85;
+  --mtn-cloud: #ffffff;
+  --mtn-cloud-opacity: 0.95;
+}
+[data-theme='dark'] .hero-art {
+  --mtn-glow-violet: #7c3aed;
+  --mtn-glow-blue: #2563eb;
+  --mtn-glow-opacity: 0.35;
+  --mtn-star-opacity: 0.6;
+  --mtn-far-top: #1b2556;
+  --mtn-far-bottom: #0d1430;
+  --mtn-mid-top: #23338a;
+  --mtn-mid-bottom: #0b1129;
+  --mtn-lit-top: #2d5be3;
+  --mtn-lit-bottom: #0f1838;
+  --mtn-shade-top: #5b2bc4;
+  --mtn-shade-bottom: #120d36;
+  --mtn-ridge: #7dd3fc;
+  --mtn-trail-glow: 1;
+  --mtn-pole: #e2e8f0;
+  --mtn-flag: #8b5cf6;
+  --mtn-tree: #050a18;
+  --mtn-tree-back: #0b1330;
+  --mtn-tree-back-opacity: 0.9;
+  --mtn-mist: #0a1020;
+  --mtn-mist-opacity: 0.6;
+  --mtn-cloud: #312e81;
+  --mtn-cloud-opacity: 0.25;
+}
 /* Faint dot grid for navy surfaces. Decorative. */
 @utility bg-dots {
   background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.07) 1px, transparent 0);

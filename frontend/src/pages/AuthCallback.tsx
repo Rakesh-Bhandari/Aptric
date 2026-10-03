@@ -67,11 +67,16 @@ const AuthCallback = () => {
 
   return (
     <AuthPage>
-      <div role="status" className="flex flex-col items-center gap-5 text-center">
+      <div role="status" className="relative isolate flex flex-col items-center gap-5 text-center">
+        {/* Soft blue and violet glow behind the mark. Decorative. */}
+        <span aria-hidden className="absolute left-1/2 top-0 -z-10 size-40 -translate-x-1/2 -translate-y-8 rounded-full bg-gradient-primary opacity-20 blur-3xl" />
         <AptricMark className="h-16 motion-safe:animate-breathe" />
-        <h1 className="font-display text-xl font-extrabold tracking-tight text-heading">Signing you in…</h1>
+        <div className="space-y-1">
+          <h1 className="font-display text-xl font-extrabold tracking-tight text-heading">Signing you in…</h1>
+          <p className="text-sm text-muted-foreground">This only takes a moment.</p>
+        </div>
         <div aria-hidden className="h-1 w-40 overflow-hidden rounded-full bg-muted">
-          <div className="h-full w-full bg-[linear-gradient(90deg,transparent,var(--primary),transparent)] motion-safe:animate-shimmer" />
+          <div className="h-full w-full bg-[linear-gradient(90deg,transparent,var(--primary),var(--violet),transparent)] motion-safe:animate-shimmer" />
         </div>
       </div>
     </AuthPage>
