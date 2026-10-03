@@ -41,8 +41,8 @@ export const PlayerLink = ({ handle, name, avatar, showHandle = true }: { handle
 export type Zone = 'promote' | 'demote' | 'safe';
 
 /**
- * One ranked row. Your own row gets the soft-orange fill and an orange bar on
- * the left; promotion and demotion rows get a faint success or danger tint.
+ * One ranked row. Your own row gets the soft-blue fill and a 3px blue → violet
+ * bar on the left; promotion and demotion rows get a faint success or danger tint.
  */
 export const StandingRow = ({ rank, me, zone = 'safe', player, children, className }: {
   rank: number; me?: boolean; zone?: Zone; player: ReactNode; children?: ReactNode; className?: string;
@@ -52,14 +52,14 @@ export const StandingRow = ({ rank, me, zone = 'safe', player, children, classNa
       'relative flex min-h-14 items-center gap-3 px-3 py-2 sm:px-4',
       zone === 'promote' && 'bg-success-soft/45',
       zone === 'demote' && 'bg-danger-soft/45',
-      me && 'bg-primary-soft before:absolute before:inset-y-0 before:left-0 before:w-1 before:rounded-r-full before:bg-primary',
+      me && 'bg-primary-soft before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:rounded-r-full before:bg-primary before:bg-gradient-primary',
       className,
     )}
     aria-current={me ? 'true' : undefined}
   >
     <RankBadge rank={rank} />
     {player}
-    {me && <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-primary-foreground">You</span>}
+    {me && <YouChip />}
     {zone !== 'safe' && <span className="sr-only">{zone === 'promote' ? 'Promotion zone' : 'Demotion zone'}</span>}
     <span className="ml-auto shrink-0 text-right text-sm">{children}</span>
   </li>
@@ -79,9 +79,17 @@ export const ZoneDivider = ({ zone, count }: { zone: 'promote' | 'demote'; count
   </li>
 );
 
-/** Orange dot with a soft pulse; the pulse stops under reduced motion. */
+/** "You" pill on your own row or podium spot: the primary gradient with white text. */
+export const YouChip = ({ className }: { className?: string }) => (
+  <span className={cn('shrink-0 rounded-full bg-primary bg-gradient-primary px-2 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-primary-foreground', className)}>You</span>
+);
+
+/**
+ * Light-blue dot with a soft pulse (decorative: the "Live" label carries the
+ * meaning). The pulse stops under reduced motion, OS or in-app.
+ */
 export const LiveDot = ({ className }: { className?: string }) => (
-  <span aria-hidden className={cn('inline-block size-2 shrink-0 rounded-full bg-primary motion-safe:animate-pulse-ring', className)} />
+  <span aria-hidden className={cn('inline-block size-2 shrink-0 rounded-full bg-sky motion-safe:animate-pulse-ring-sky', className)} />
 );
 
 /** "Live · updates every 20s" next to auto-refreshing lists. */

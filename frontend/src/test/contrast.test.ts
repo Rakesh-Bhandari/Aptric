@@ -38,6 +38,8 @@ const TEXT_PAIRS: [string, string][] = [
   ['primary-soft-hover-foreground', 'primary-soft-hover'],
   ['violet-foreground', 'violet'], ['violet-foreground', 'violet-strong'], ['violet-soft-foreground', 'violet-soft'],
   ['violet-text', 'card'], ['violet-text', 'background'], ['violet-text', 'muted'],
+  // Light-blue badge tiles (profile badges).
+  ['sky-soft-foreground', 'sky-soft'],
   // Card variant="soft": text on the Soft Purple section fill.
   ['foreground', 'violet-soft'], ['heading', 'violet-soft'], ['muted-foreground', 'violet-soft'],
   // Outline button hover: blue text on the pale wash.

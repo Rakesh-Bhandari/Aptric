@@ -15,6 +15,8 @@ export interface MockOptions {
   failAll?: boolean;
   /** API calls but the profile never resolve, to check loading states. */
   hang?: boolean;
+  /** Your rank in the weekly league (1–3 promotion, 10–12 demotion; default 4). */
+  leagueRank?: number;
   /** Fields merged into the signed-in profile (e.g. onboarded_at: null for onboarding). */
   profile?: Record<string, unknown>;
 }
@@ -44,7 +46,7 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
     switch (p.slice(5)) {
       case 'get_today_set': return d.todaySet(opts.answered ?? 4);
       case 'get_daily_result': return d.dailyResult();
-      case 'get_my_league': return d.myLeague();
+      case 'get_my_league': return d.myLeague(opts.leagueRank);
       case 'get_leaderboard': return d.leaderboard(String(body.board ?? 'weekly'));
       case 'get_player_profile': return d.playerProfile((body.target_handle as string) ?? null);
       case 'get_practice_tree': return d.practiceTree();

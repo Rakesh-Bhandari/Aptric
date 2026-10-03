@@ -125,19 +125,24 @@ export const dailyResult = () => ({
 const NAMES = ['Aarav Mehta', 'Diya Patel', 'Rohan Gupta', 'Priya Sharma', 'Kabir Singh', 'Ananya Rao', 'Vihaan Iyer', 'Ishita Das', 'Arjun Nair', 'Meera Joshi', 'Sai Kumar', 'Neha Verma'];
 const handleOf = (n: string) => n.toLowerCase().replace(/\s+/g, '_').slice(0, 10);
 
-export const myLeague = () => ({
-  week_start: day(-4),
-  week_ends_at: iso(24 * 3 + 5),
-  league_id: 'lg1',
-  tier: { tier: 3, slug: 'gold', name: 'Gold', promote_count: 3, demote_count: 3 },
-  promote_zone: 3,
-  demote_zone: 10,
-  members: NAMES.map((n, i) => ({
-    rank: i + 1, user_id: n === 'Priya Sharma' ? ME : `u${i}`, handle: handleOf(n), display_name: n, avatar_url: null,
-    xp: 980 - i * 63, is_me: n === 'Priya Sharma',
-  })),
-  last_result: { week_start: day(-11), tier: 2, final_rank: 2, outcome: 'promoted' },
-});
+/** The weekly league, with you at `myRank` (default 4th, just outside promotion). */
+export const myLeague = (myRank = 4) => {
+  const others = NAMES.filter((n) => n !== 'Priya Sharma');
+  const names = [...others.slice(0, myRank - 1), 'Priya Sharma', ...others.slice(myRank - 1)];
+  return {
+    week_start: day(-4),
+    week_ends_at: iso(24 * 3 + 5),
+    league_id: 'lg1',
+    tier: { tier: 3, slug: 'gold', name: 'Gold', promote_count: 3, demote_count: 3 },
+    promote_zone: 3,
+    demote_zone: 3,
+    members: names.map((n, i) => ({
+      rank: i + 1, user_id: n === 'Priya Sharma' ? ME : `u${i}`, handle: handleOf(n), display_name: n, avatar_url: null,
+      xp: 980 - i * 63, is_me: n === 'Priya Sharma',
+    })),
+    last_result: { week_start: day(-11), tier: 2, final_rank: 2, outcome: 'promoted' },
+  };
+};
 
 export const leaderboard = (board: string) => {
   const entries = NAMES.map((n, i) => ({

@@ -2,28 +2,30 @@ import { CalendarCheck, Flame, GraduationCap, Lock, ScanSearch, Target, Zap, typ
 import type { Badge } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-type Tone = 'orange' | 'navy' | 'gold';
+type Tone = 'blue' | 'violet' | 'sky';
 
 /**
  * Display catalogue for the badges seeded in public.badges (progression
  * migration), in their sort order. Only the look lives here: names and
  * descriptions shown for earned badges come from the API. Earned badges with
- * an unknown slug still render, with their emoji icon.
+ * an unknown slug still render, with their emoji icon, cycling through the tones.
  */
 const CATALOG: { slug: string; name: string; description: string; icon: LucideIcon; tone: Tone }[] = [
-  { slug: 'solved-100', name: 'Centurion', description: 'Solve 100 different questions correctly.', icon: Target, tone: 'navy' },
-  { slug: 'streak-7', name: 'Week Warrior', description: 'Reach a 7-day daily streak.', icon: Flame, tone: 'orange' },
-  { slug: 'streak-30', name: 'Monthly Grind', description: 'Reach a 30-day daily streak.', icon: CalendarCheck, tone: 'orange' },
-  { slug: 'streak-100', name: 'Unstoppable', description: 'Reach a 100-day daily streak.', icon: Zap, tone: 'gold' },
-  { slug: 'topic-master', name: 'Topic Master', description: 'Answer 25+ questions correctly in one topic with 80%+ accuracy.', icon: GraduationCap, tone: 'gold' },
-  { slug: 'report-accepted', name: 'Sharp Eye', description: 'Report a problem with a question that an admin accepts.', icon: ScanSearch, tone: 'navy' },
+  { slug: 'solved-100', name: 'Centurion', description: 'Solve 100 different questions correctly.', icon: Target, tone: 'blue' },
+  { slug: 'streak-7', name: 'Week Warrior', description: 'Reach a 7-day daily streak.', icon: Flame, tone: 'sky' },
+  { slug: 'streak-30', name: 'Monthly Grind', description: 'Reach a 30-day daily streak.', icon: CalendarCheck, tone: 'sky' },
+  { slug: 'streak-100', name: 'Unstoppable', description: 'Reach a 100-day daily streak.', icon: Zap, tone: 'violet' },
+  { slug: 'topic-master', name: 'Topic Master', description: 'Answer 25+ questions correctly in one topic with 80%+ accuracy.', icon: GraduationCap, tone: 'violet' },
+  { slug: 'report-accepted', name: 'Sharp Eye', description: 'Report a problem with a question that an admin accepts.', icon: ScanSearch, tone: 'blue' },
 ];
 
+/** Icon tile tints: soft blue, Soft Purple and a light-blue tint, each with its AA ink. */
 const TONE: Record<Tone, string> = {
-  orange: 'bg-gradient-primary text-primary-foreground',
-  navy: 'bg-gradient-navy text-chrome-accent',
-  gold: 'bg-medal-gold text-medal-foreground',
+  blue: 'bg-primary-soft text-primary-soft-foreground ring-primary/15',
+  violet: 'bg-violet-soft text-violet-soft-foreground ring-violet/15',
+  sky: 'bg-sky-soft text-sky-soft-foreground ring-sky/25',
 };
+const FALLBACK_TONES: Tone[] = ['blue', 'violet', 'sky'];
 
 interface Tile {
   key: string;
@@ -43,11 +45,11 @@ const tiles = (badges: Badge[], showLocked: boolean): Tile[] => {
   };
   const earned: Tile[] = [...badges]
     .sort((a, b) => order(a.slug) - order(b.slug))
-    .map((b) => {
+    .map((b, i) => {
       const c = CATALOG.find((x) => x.slug === b.slug);
       return {
         key: `${b.slug}-${b.topic ?? ''}`, name: b.name, sub: b.topic, description: b.description,
-        icon: c?.icon ?? null, emoji: c ? null : b.icon, tone: c?.tone ?? 'navy', earned: true,
+        icon: c?.icon ?? null, emoji: c ? null : b.icon, tone: c?.tone ?? FALLBACK_TONES[i % FALLBACK_TONES.length], earned: true,
       };
     });
   if (!showLocked) return earned;
@@ -57,7 +59,7 @@ const tiles = (badges: Badge[], showLocked: boolean): Tile[] => {
   return [...earned, ...locked];
 };
 
-/** Earned badges as brand-coloured icon tiles; locked ones (when shown) greyed out with a lock. */
+/** Earned badges as blue, violet and light-blue icon tiles; locked ones (when shown) greyed out with a lock. */
 export const BadgeGrid = ({ badges, showLocked = true }: { badges: Badge[]; showLocked?: boolean }) => {
   const list = tiles(badges, showLocked);
   if (list.length === 0) return <p className="text-sm text-muted-foreground">No badges yet.</p>;
@@ -76,8 +78,8 @@ export const BadgeGrid = ({ badges, showLocked = true }: { badges: Badge[]; show
           >
             <span
               className={cn(
-                'relative grid size-12 place-items-center rounded-2xl text-xl shadow-sm [&_svg]:size-6',
-                t.earned ? TONE[t.tone] : 'bg-muted text-muted-foreground shadow-none',
+                'relative grid size-12 place-items-center rounded-2xl text-xl [&_svg]:size-6',
+                t.earned ? cn('ring-1 ring-inset', TONE[t.tone]) : 'bg-muted text-muted-foreground opacity-70 grayscale',
               )}
             >
               {Icon ? <Icon aria-hidden /> : <span aria-hidden>{t.emoji}</span>}
