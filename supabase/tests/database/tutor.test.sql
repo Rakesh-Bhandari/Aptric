@@ -3,7 +3,7 @@
 -- Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(45);
+select plan(47);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
@@ -155,6 +155,19 @@ select is((select (private.tutor_context('00000000-0000-0000-0000-0000000000a1',
 insert into ctx select 'nokey', private.tutor_context('00000000-0000-0000-0000-0000000000a1', '30000000-0000-0000-0000-000000000004', 'practice');
 select is((select (v ->> 'verified')::boolean from ctx where name = 'nokey'), false, 'no answer key: not verified');
 select is((select v -> 'answer_key' from ctx where name = 'nokey'), 'null'::jsonb, 'no answer key to send');
+
+-- Review: a past day's daily question stays open to the player who answered it.
+insert into public.daily_sets (id, track_id, set_date, level, published_at) values
+  ('50000000-0000-0000-0000-0000000000f0', private.default_track_id(), (now() at time zone 'UTC')::date - 1, 1, now() - interval '2 days');
+insert into public.daily_set_items (daily_set_id, question_id, position) values
+  ('50000000-0000-0000-0000-0000000000f0', '30000000-0000-0000-0000-000000000009', 0);
+insert into public.attempts (user_id, question_id, context, daily_set_id, selected_option_id, is_correct, time_ms) values
+  ('00000000-0000-0000-0000-0000000000a1', '30000000-0000-0000-0000-000000000009', 'daily',
+   '50000000-0000-0000-0000-0000000000f0', '40000000-0000-0000-0000-000000000090', false, 20000);
+select is((select private.tutor_context('00000000-0000-0000-0000-0000000000a1', '30000000-0000-0000-0000-000000000009', 'daily') ->> 'phase'),
+          'answered', 'a past daily question the player answered opens for review');
+select throws_ok($$select private.tutor_context('00000000-0000-0000-0000-0000000000b1', '30000000-0000-0000-0000-000000000009', 'daily')$$,
+                 '42501', null, 'but not for players who never answered it');
 
 -- ---------------------------------------------------------------------------
 -- Learner profile

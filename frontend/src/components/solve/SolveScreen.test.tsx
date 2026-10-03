@@ -106,6 +106,15 @@ describe('SolveScreen', () => {
       expect(screen.getByRole('button', { name: 'Show hint' })).toBeInTheDocument();
     });
 
+    it('the floating chatbot icon opens the tutor', async () => {
+      const { user } = setup({ tutor: true });
+      await user.click(screen.getByRole('button', { name: 'Open Aptric Tutor' }));
+      expect(await screen.findByRole('dialog', { name: 'Aptric Tutor' })).toBeInTheDocument();
+      expect(stream).not.toHaveBeenCalled();
+      // Hidden while the tutor is open.
+      expect(screen.queryByRole('button', { name: 'Open Aptric Tutor' })).not.toBeInTheDocument();
+    });
+
     it('H opens the tutor without sending anything', async () => {
       const { user } = setup({ tutor: true });
       await user.keyboard('h');
@@ -151,6 +160,7 @@ describe('SolveScreen', () => {
     it.each(['contest', 'placement'] as const)('no tutor in %s', async (kind) => {
       const { user } = setup({ kind, tutor: true, onHint: vi.fn(async () => 'x'), hintCost: 3 });
       expect(screen.queryByRole('button', { name: /show hint/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Open Aptric Tutor' })).not.toBeInTheDocument();
       await user.keyboard('h');
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       if (kind === 'contest') {

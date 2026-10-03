@@ -76,6 +76,13 @@ export interface TutorPanelProps {
   onAvailability?: (available: boolean) => void;
 }
 
+/** Server errors carry their code, so "try again later" can be told apart from a setup problem. */
+const withCode = (err: unknown, message: string) => {
+  const status = (err as { status?: number }).status ?? 0;
+  const code = errorCode(err);
+  return status >= 500 && code ? `${message} (${code})` : message;
+};
+
 let keySeq = 0;
 const nextKey = () => `m${++keySeq}`;
 
@@ -130,8 +137,10 @@ export const TutorPanel = ({
         ]);
         if (!ok) markUnavailable();
       })
-      .catch(() => {
-        // History is a nicety; the chat still works.
+      .catch((err) => {
+        // History is a nicety; the chat still works. A database without the
+        // tutor migration means no tutor: use the fallback.
+        if (errorCode(err) === 'tutor_not_ready') markUnavailable();
       })
       .finally(() => {
         if (!cancelled) setLoaded(true);
@@ -237,7 +246,8 @@ export const TutorPanel = ({
         return;
       }
       // 503 before anything was stored: the tutor isn't configured.
-      if (code === 'tutor_unavailable' && !(err as { details?: { user_message_id?: string } }).details?.user_message_id) {
+      if ((code === 'tutor_unavailable' || code === 'tutor_not_ready')
+        && !(err as { details?: { user_message_id?: string } }).details?.user_message_id) {
         markUnavailable();
         await fallback(intent, replyKey);
         return;
@@ -250,7 +260,7 @@ export const TutorPanel = ({
       }
       patch(replyKey, {
         status: 'error',
-        error: code === 'tutor_unavailable' ? (err as Error).message : friendlyError(err, 'The tutor ran into a problem.'),
+        error: code === 'tutor_unavailable' ? (err as Error).message : withCode(err, friendlyError(err, 'The tutor ran into a problem.')),
         retry: { ...retry, historyId: details.user_message_id ?? historyId },
       });
     } finally {

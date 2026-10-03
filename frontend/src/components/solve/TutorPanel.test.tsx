@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/lib/http';
 import { getTutorHistory, streamTutor, type TutorDone, type TutorRequest as StreamRequest } from '@/lib/tutor';
+import { AskTutorButton } from './AskTutor';
 import { TutorPanel, type TutorPanelProps } from './TutorPanel';
 
 vi.mock('@/lib/tutor', () => ({ streamTutor: vi.fn(), getTutorHistory: vi.fn() }));
@@ -195,4 +196,38 @@ describe('TutorPanel', () => {
     expect(await within(d).findByText('Stored hint text.')).toBeInTheDocument();
     expect(onAvailability).toHaveBeenCalledWith(false);
   });
+
+  it('a database without the tutor migration falls back instead of erroring', async () => {
+    history.mockRejectedValue(new ApiError(503, 'tutor_not_ready', 'Apply the migration.'));
+    const fallbackHint = vi.fn(async () => 'Stored hint text.');
+    const { user, onAvailability } = setup({ fallbackHint });
+    const d = await dialog();
+    await waitFor(() => expect(onAvailability).toHaveBeenCalledWith(false));
+    await user.click(within(d).getByRole('button', { name: /^hint$/i }));
+    expect(await within(d).findByText('Stored hint text.')).toBeInTheDocument();
+    expect(stream).not.toHaveBeenCalled();
+  });
+
+  it('other server errors show their code', async () => {
+    stream.mockRejectedValue(new ApiError(500, 'internal', 'boom'));
+    const { user } = setup();
+    const d = await dialog();
+    await user.click(within(d).getByRole('button', { name: /concept/i }));
+    expect(await within(d).findByRole('alert')).toHaveTextContent('(internal)');
+  });
 });
+
+describe('AskTutorButton', () => {
+  beforeEach(() => history.mockResolvedValue({ available: true, messages: [] }));
+  afterEach(() => vi.clearAllMocks());
+
+  it('opens the tutor for a reviewed question in its answered phase, loading nothing before', async () => {
+    render(<AskTutorButton questionId="q9" context="daily" topic="Percentages" explanation="Official." />);
+    expect(history).not.toHaveBeenCalled();
+    await userEvent.setup().click(screen.getByRole('button', { name: /ask tutor/i }));
+    const d = await dialog();
+    expect(within(d).getByText('Answered: full explanations')).toBeInTheDocument();
+    await waitFor(() => expect(history).toHaveBeenCalledWith('q9', 'daily'));
+  });
+});
+

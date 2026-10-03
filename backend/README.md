@@ -47,7 +47,7 @@ Then point the frontend at it: `VITE_API_URL=http://localhost:5000` in `frontend
    | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | any SMTP provider (Resend: `smtp.resend.com`, 465, `resend`, API key) |
 
    Optional: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, `OPEN_ROUTER_API_KEY` (+ the `QUESTION_*`, `EMBEDDING_*`, `GENERATE_*` settings, and the `TUTOR_*` settings for [Aptric Tutor](#aptric-tutor)), `CORS_ORIGINS`.
-3. Deploy, check `GET <API_URL>/health` → `{"status":"ok","database":"ok","migrations":"ok"}`. A 503 names the problem: missing or wrong environment variables (`server_misconfigured`, e.g. a publishable key in `SUPABASE_SECRET_KEY`), Supabase unreachable or the key rejected, or migrations not yet applied (`npx supabase db push`; `public.backend_sql` comes from `20261002000002_backend_gateway.sql`).
+3. Deploy, check `GET <API_URL>/health` → `{"status":"ok","database":"ok","migrations":"ok","tutor":"configured"}` (`"tutor":"no_api_key"` means Aptric Tutor has no model key and falls back to stored hints). A 503 names the problem: missing or wrong environment variables (`server_misconfigured`, e.g. a publishable key in `SUPABASE_SECRET_KEY`), Supabase unreachable or the key rejected, or migrations not yet applied (`npx supabase db push`; `public.backend_sql` comes from `20261002000002_backend_gateway.sql`).
 4. In the frontend's Vercel project set `VITE_API_URL=<API_URL>` and redeploy it.
 
 `api/index.js` allows up to 300 s per request (`vercel.json`), enough for one generation batch.
@@ -184,4 +184,4 @@ Response: `text/event-stream` with
 | `done` | `{ message_id, model, phase, hint_used, blocked }` (`blocked` = sentences the guard replaced) |
 | `error` | `{ error: { code, message, user_message_id? } }`, the same shape as other errors (`tutor_unavailable` when every model failed) |
 
-Errors before the stream are ordinary JSON: `400` bad body, `401`, `403 tutor_locked` / `42501`, `409 tutor_requires_give_up`, `429 over_request_rate_limit`, `503 tutor_unavailable`.
+Errors before the stream are ordinary JSON: `400` bad body, `401`, `403 tutor_locked` / `42501`, `409 tutor_requires_give_up`, `429 over_request_rate_limit`, `503 tutor_unavailable` (no model key), `503 tutor_not_ready` (the database lacks `20261003000001_tutor.sql`; `/health` then lists `tutor` under `missing`). The app falls back to the stored hint and explanation for both 503s.

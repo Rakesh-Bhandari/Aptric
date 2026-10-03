@@ -208,7 +208,7 @@ Grounding and chat log for the AI tutor in the API ([backend/README.md](../backe
 | `private.tutor_append_message(uid, question_id, context, role, intent, content, model)` | the new `tutor_messages` id |
 | `private.tutor_history(uid, question_id, context, max_count)` | the latest turns of one chat, oldest first |
 
-- **Scope**: `private.resolve_attempt_scope`, so `daily` = in the player's set today and `practice` = published; otherwise `42501` (`P0002` for an unknown question or no set today). Banned players get `42501`.
+- **Scope**: a question the player has already answered in that context is always open for review (`20261004000001_tutor_review.sql`: a past day's daily set, a retired question). Otherwise `private.resolve_attempt_scope`, so `daily` = in the player's set today and `practice` = published; otherwise `42501` (`P0002` for an unknown question or no set today). Banned players get `42501`.
 - **`phase`**: `solving` until the player has a scoring attempt in that context (submit or give up), then `answered`. `locked` for the `assessment` (placement) context and for questions in a contest that hasn't ended; a locked context carries no question or answer key.
 - **`verified`**: the question is `published`, has a `question_answers` row, and its `correct_option_id` is one of the question's options. The API never calls a model for an unverified question.
 - The API must not forward `answer_key` to the browser while `phase = 'solving'`; it only goes into the model prompt.

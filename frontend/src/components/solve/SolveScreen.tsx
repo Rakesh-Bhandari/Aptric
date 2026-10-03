@@ -19,6 +19,7 @@ import type { Difficulty, QuestionOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ReportDialog } from './ReportDialog';
 import { SESSION_TIMER_SLOT } from './SessionHeader';
+import { TutorFab } from './AskTutor';
 import { TutorPanel, type TutorRequest } from './TutorPanel';
 
 export interface SolveQuestion {
@@ -447,6 +448,7 @@ export const SolveScreen = ({
         </div>
       </div>
       <ReportDialog questionId={question.id} open={reportOpen} onOpenChange={setReportOpen} />
+      {tutorEnabled && !tutorOpen && !guard.away && <TutorFab onClick={() => openTutor(null)} />}
       {tutorEnabled && (
         <TutorPanel
           open={tutorOpen}

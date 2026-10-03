@@ -7,6 +7,7 @@ import {
 import { ActivityHeatmap } from '@/components/charts/ActivityHeatmap';
 import { SkillRadar } from '@/components/charts/SkillRadar';
 import { Markdown } from '@/components/markdown/Markdown';
+import { AskTutorButton } from '@/components/solve/AskTutor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -223,11 +224,16 @@ const MistakeItem = ({ m }: { m: Mistake }) => {
             <h4 className="mb-1.5 text-sm font-bold text-heading">Explanation</h4>
             <Markdown text={m.explanation} />
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link to={practiceHref({ subtopics: [m.subtopic.id], difficulty: m.difficulty, title: m.subtopic.name })}>
-              <BookOpen /> Practice this subtopic
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={practiceHref({ subtopics: [m.subtopic.id], difficulty: m.difficulty, title: m.subtopic.name })}>
+                <BookOpen /> Practice this subtopic
+              </Link>
+            </Button>
+            {m.context !== 'assessment' && (
+              <AskTutorButton questionId={m.id} context={m.context} topic={m.subtopic.name} explanation={m.explanation} />
+            )}
+          </div>
         </div>
       </details>
     </li>

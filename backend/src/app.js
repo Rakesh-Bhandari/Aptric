@@ -5,6 +5,7 @@
 import cors from 'cors';
 import express from 'express';
 import { config } from './config.js';
+import { tutorAvailable, tutorModels } from './tutor/llm.js';
 import { query } from './db.js';
 import { errorHandler, notFoundHandler } from './http.js';
 import adminRoutes from './routes/admin.js';
@@ -82,7 +83,8 @@ export function createApp() {
       ({ rows } = await query(
         `select to_regclass('private.accounts') is not null as auth,
                 to_regprocedure('public.gen_rate_limit(uuid,text,integer,integer)') is not null as rate_limit,
-                to_regclass('public.levels') is not null as levels`,
+                to_regclass('public.levels') is not null as levels,
+                to_regprocedure('private.tutor_context(uuid,uuid,public.attempt_context)') is not null as tutor`,
       ));
     } catch (err) {
       console.error('[health] database', err.code, err.message);
@@ -113,7 +115,9 @@ export function createApp() {
         missing,
       });
     }
-    res.json({ status: 'ok', database: 'ok', migrations: 'ok' });
+    // Whether Aptric Tutor has a model to call (no secrets: just configured or not).
+    const tutor = tutorAvailable(config.tutor) && tutorModels(config.tutor).length > 0 ? 'configured' : 'no_api_key';
+    res.json({ status: 'ok', database: 'ok', migrations: 'ok', tutor });
   });
 
   app.use('/auth', authRoutes);

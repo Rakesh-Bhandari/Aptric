@@ -60,6 +60,12 @@ const CLASSIFY_TIMEOUT_MS = 8_000;
 export const unavailable = () =>
   new HttpError(503, 'tutor_unavailable', 'The tutor is not available right now.');
 
+// Undefined function / table / type: the database lacks the tutor migration.
+const MISSING_OBJECT = new Set(['42883', '42P01', '42704']);
+export const notReady = () =>
+  new HttpError(503, 'tutor_not_ready',
+    'The tutor is not set up yet: apply supabase/migrations/20261003000001_tutor.sql (npx supabase db push).');
+
 /**
  * The router, with its collaborators injectable for tests:
  * db { query, asUser }, hitLimit (rateLimit.hit), llm { stream, complete }, settings (config.tutor), log.
@@ -79,8 +85,18 @@ export function createTutorRouter({
   const available = () => tutorAvailable(settings) && models().length > 0;
   const onFallback = (model, err) => log.warn?.(`[tutor] ${model} failed (${err.message}); trying the next model`);
 
+  const sql = async (text, params) => {
+    try {
+      return await db.query(text, params);
+    } catch (err) {
+      if (!MISSING_OBJECT.has(err?.code)) throw err;
+      log.error?.(`[tutor] ${err.code} ${err.message}: apply 20261003000001_tutor.sql (npx supabase db push)`);
+      throw notReady();
+    }
+  };
+
   const loadContext = async (uid, questionId, context) => {
-    const { rows } = await db.query(
+    const { rows } = await sql(
       'select private.tutor_context($1::uuid, $2::uuid, $3::public.attempt_context) as ctx',
       [uid, questionId, context ?? null],
     );
@@ -88,7 +104,7 @@ export function createTutorRouter({
   };
 
   const loadHistory = async (uid, questionId, context, max) => {
-    const { rows } = await db.query(
+    const { rows } = await sql(
       'select private.tutor_history($1::uuid, $2::uuid, $3::public.attempt_context, $4::integer) as messages',
       [uid, questionId, context, max],
     );
@@ -96,7 +112,7 @@ export function createTutorRouter({
   };
 
   const append = async (uid, ctx, role, intent, content, model = null) => {
-    const { rows } = await db.query(
+    const { rows } = await sql(
       'select private.tutor_append_message($1::uuid, $2::uuid, $3::public.attempt_context, $4, $5, $6, $7) as id',
       [uid, ctx.question_id, ctx.context, role, intent, content.slice(0, 4000), model],
     );
@@ -246,6 +262,8 @@ export function createTutorRouter({
       if (err instanceof LlmError) {
         log.error?.(`[tutor] every model failed: ${err.message}`);
         send('error', { error: { code: 'tutor_unavailable', message: 'The tutor is busy right now. Please try again in a minute.', hint_used: hintUsed, user_message_id: userTurnId } });
+      } else if (err instanceof HttpError) {
+        send('error', { error: { code: err.code, message: err.message, user_message_id: userTurnId } });
       } else {
         log.error?.('[tutor]', err);
         const code = err?.code && /^[0-9A-Z]{5}$/.test(err.code) ? err.code : 'internal';
