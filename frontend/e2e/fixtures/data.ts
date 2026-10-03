@@ -86,6 +86,20 @@ export const todaySet = (answered = 4) => ({
   }),
 });
 
+/** finish_placement: 7 of 10 right, placed at level 3. */
+export const placementResult = () => ({
+  test_id: 'pt1', correct: 7, total: 10, score: 70,
+  level: { level: 3, slug: 'solver', name: 'Solver' },
+  results: Array.from({ length: 10 }, (_, i) => {
+    const c = questionCard(i);
+    const right = ![2, 5, 8].includes(i);
+    return {
+      question_id: c.id, difficulty: c.difficulty, selected_option_id: i === 8 ? null : `${c.id}-o${right ? 2 : 1}`,
+      correct_option_id: `${c.id}-o2`, is_correct: right, explanation: 'Worked solution.',
+    };
+  }),
+});
+
 export const dailyResult = () => ({
   daily_set_id: 'ds-today',
   set_date: day(0),

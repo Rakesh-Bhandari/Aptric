@@ -67,18 +67,23 @@ const DailyCard = () => {
     );
   }
   const set = today.data;
+  // Soft violet glow in the top corner and a faint blue-and-violet mark watermark.
   const watermark = (
-    <AptricMark variant="onDark" className="pointer-events-none absolute -bottom-10 -right-8 h-56 opacity-[0.09] sm:h-72" />
+    <>
+      <span className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-violet/35 blur-3xl" aria-hidden />
+      <span className="pointer-events-none absolute -bottom-28 -left-16 size-56 rounded-full bg-primary/20 blur-3xl" aria-hidden />
+      <AptricMark variant="onDark" className="pointer-events-none absolute -bottom-10 -right-8 h-56 opacity-[0.12] sm:h-72" />
+    </>
   );
   const nextSet = (
     <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-      <Clock className="size-4" aria-hidden /> Next set in <span className="font-semibold tabular-nums text-navy-foreground">{countdown}</span>
+      <Clock className="size-4 text-sky" aria-hidden /> Next set in <span className="font-semibold tabular-nums text-navy-foreground">{countdown}</span>
     </p>
   );
 
   if (!set.daily_set_id || set.questions.length === 0) {
     return (
-      <Card variant="navy" className="relative overflow-hidden shadow-md">
+      <Card variant="navy" className="relative overflow-hidden shadow-lg">
         {watermark}
         <div className="relative flex flex-col gap-4 p-5 sm:p-7">
           <span className="grid size-11 place-items-center rounded-full bg-navy-foreground/10 text-sky"><CalendarClock className="size-5" aria-hidden /></span>
@@ -106,7 +111,7 @@ const DailyCard = () => {
   const minutes = Math.max(1, Math.round(set.questions.reduce((s, q) => s + q.est_seconds, 0) / 60));
 
   return (
-    <Card variant="navy" className="relative overflow-hidden shadow-md">
+    <Card variant="navy" className="relative overflow-hidden shadow-lg">
       {watermark}
       <div className="relative flex flex-col gap-5 p-5 sm:p-7">
         <div className="flex items-start justify-between gap-3">
@@ -116,9 +121,9 @@ const DailyCard = () => {
         <div className="space-y-2">
           <h2 className="text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">{set.title || `${set.track?.name ?? 'Today'}'s set`}</h2>
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><ListChecks className="size-4" aria-hidden /> {plural(total, 'question')}</span>
+            <span className="inline-flex items-center gap-1"><ListChecks className="size-4 text-sky" aria-hidden /> {plural(total, 'question')}</span>
             <span aria-hidden>·</span>
-            <span className="inline-flex items-center gap-1"><Clock className="size-4" aria-hidden /> About {minutes} min</span>
+            <span className="inline-flex items-center gap-1"><Clock className="size-4 text-sky" aria-hidden /> About {minutes} min</span>
             {mix.length > 0 && <span aria-hidden>·</span>}
             <span>{mix.map(({ d, n }) => `${n} ${DIFFICULTY_LABEL[d].toLowerCase()}`).join(', ')}</span>
           </p>
@@ -176,12 +181,12 @@ const StreakCard = () => {
       <CardLabel icon={Flame}>Streak</CardLabel>
       <div className="flex items-center gap-3">
         <span className={cn('grid size-12 shrink-0 place-items-center rounded-full',
-          p.current_streak > 0 ? 'bg-primary bg-gradient-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground')}
+          p.current_streak > 0 ? 'bg-streak/12 text-streak' : 'bg-muted text-muted-foreground')}
         >
-          <Flame className="size-6" aria-hidden />
+          <Flame className="size-6" fill={p.current_streak > 0 ? 'currentColor' : 'none'} fillOpacity={0.25} aria-hidden />
         </span>
         <div>
-          <p className="text-3xl font-extrabold leading-none tracking-tight text-heading tabular-nums">
+          <p className="text-4xl font-extrabold leading-none tracking-tight text-heading tabular-nums">
             {p.current_streak.toLocaleString()} <span className="text-base font-bold">{p.current_streak === 1 ? 'day' : 'days'}</span>
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Best {plural(p.longest_streak, 'day')}</p>
@@ -200,7 +205,7 @@ const StreakCard = () => {
                 <span
                   className={cn('size-6 rounded-full',
                     active ? 'bg-primary bg-gradient-primary' : 'border-2 border-input',
-                    isToday && !active && 'border-primary motion-safe:animate-pulse-ring',
+                    isToday && !active && 'border-primary motion-safe:animate-pulse-ring dark:border-accent-text',
                     isToday && 'ring-2 ring-primary/30 ring-offset-2 ring-offset-card')}
                   aria-hidden
                 />
@@ -263,7 +268,7 @@ const LevelCard = () => {
     <DashCard>
       <CardLabel icon={Crown}>Level</CardLabel>
       <div className="flex items-center gap-3">
-        <span className="grid h-12 min-w-12 place-items-center rounded-xl bg-navy px-2 text-xl font-extrabold tabular-nums text-navy-foreground shadow-sm">
+        <span className="grid h-12 min-w-12 place-items-center rounded-full bg-violet-soft px-3 text-xl font-extrabold tabular-nums text-violet-soft-foreground">
           <span><span className="sr-only">Level </span>{p.level}</span>
         </span>
         <div>
