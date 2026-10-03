@@ -1,27 +1,36 @@
 /*
- * Admin area. A dense tool in the Aptric brand: Dark Navy sidebar, white cards,
- * Off White table heads, orange for the primary action. Every colour is a theme
- * token from index.css, so both themes work without overrides here.
+ * Admin area. A dense tool in the Aptric brand: Primary Navy sidebar, white
+ * cards, pale table heads, primary-gradient pills for the main action and violet
+ * for "active" (counts, running jobs, roles). Every colour is a theme token from
+ * index.css; the few dark-mode rules below only swap which token is used.
  */
 
 .adm {
     display: grid;
     --adm-nav-w: 248px;
+    --adm-nav-bg: var(--chrome);
+    --adm-nav-edge: transparent;
+    /* Faint blue tint for hovered rows and list items. */
+    --adm-row-hover: color-mix(in srgb, var(--primary) 6%, transparent);
     grid-template-columns: var(--adm-nav-w) minmax(0, 1fr);
     min-height: calc(100dvh - var(--header-h));
     /* The sidebar's navy runs the full height of the page, past the sticky nav. */
-    background: linear-gradient(to right, var(--chrome-deep) var(--adm-nav-w), var(--bg) var(--adm-nav-w));
+    background: linear-gradient(to right, var(--adm-nav-bg) calc(var(--adm-nav-w) - 1px), var(--adm-nav-edge) calc(var(--adm-nav-w) - 1px), var(--adm-nav-edge) var(--adm-nav-w), var(--bg) var(--adm-nav-w));
     color: var(--text);
     font-variant-numeric: tabular-nums;
 }
 
-/* --- Navigation: Dark Navy sidebar --- */
+/* Dark mode: the sidebar is the midnight page colour, set off by a border. */
+[data-theme='dark'] .adm { --adm-nav-bg: var(--background); --adm-nav-edge: var(--border); --adm-row-hover: color-mix(in srgb, var(--primary) 12%, transparent); }
+
+/* --- Navigation: Primary Navy sidebar --- */
 .adm-nav {
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
     padding: 1.25rem 0.75rem;
-    background: var(--chrome-deep);
+    background: var(--adm-nav-bg);
+    border-right: 1px solid var(--adm-nav-edge);
     color: var(--chrome-muted-foreground);
     position: sticky;
     top: var(--header-h);
@@ -61,25 +70,26 @@
 .adm .adm-nav-link { color: var(--chrome-muted-foreground); }
 .adm-nav-icon { width: 1.1rem; height: 1.1rem; flex-shrink: 0; opacity: 0.85; }
 .adm-nav-label { flex: 1; min-width: 0; white-space: nowrap; }
-.adm .adm-nav-link:hover { color: var(--chrome-foreground); background: color-mix(in srgb, var(--chrome-foreground) 6%, transparent); }
+.adm .adm-nav-link:hover { color: var(--chrome-accent); background: color-mix(in srgb, var(--chrome-foreground) 6%, transparent); }
 .adm .adm-nav-link.active { color: var(--chrome-foreground); background: var(--chrome-raised); }
 .adm-nav-link.active .adm-nav-icon { opacity: 1; color: var(--chrome-accent); }
+.adm .adm-nav-link:focus-visible { outline-color: var(--ring-on-navy); }
 .adm-nav-link.active::before {
     content: '';
     position: absolute;
     left: -0.75rem;
     top: 0.45rem;
     bottom: 0.45rem;
-    width: 4px;
-    border-radius: 0 4px 4px 0;
-    background: var(--primary);
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--gradient-primary);
 }
 .adm-nav-count {
     min-width: 1.5rem;
     padding: 0 0.45rem;
     border-radius: 999px;
-    background: var(--primary);
-    color: var(--primary-foreground);
+    background: var(--violet);
+    color: var(--violet-foreground);
     font-size: 0.72rem;
     font-weight: 800;
     text-align: center;
@@ -157,8 +167,8 @@
 .adm-flag { color: var(--accent-text); font-weight: 700; }
 
 /* --- Status chips ---
- * One meaning everywhere: muted = idle/closed, soft orange = needs attention,
- * success = live/done, danger = removed/failed, navy = roles and queued work.
+ * One meaning everywhere: muted = idle/closed/queued, soft blue = needs review,
+ * violet = running work and roles, success = live/done, danger = removed/failed/banned.
  * Difficulty chips are outlined with a coloured dot so they never read as status.
  */
 .adm-badge {
@@ -177,12 +187,12 @@
     color: var(--muted-foreground);
     letter-spacing: 0.01em;
 }
-.adm-badge-draft, .adm-badge-dismissed, .adm-badge-cancelled, .adm-badge-user { background: var(--muted); color: var(--muted-foreground); }
-.adm-badge-in_review, .adm-badge-open, .adm-badge-running { background: var(--primary-soft); color: var(--primary-soft-foreground); }
+.adm-badge-draft, .adm-badge-dismissed, .adm-badge-cancelled, .adm-badge-queued { background: var(--muted); color: var(--muted-foreground); }
+.adm-badge-in_review, .adm-badge-open { background: var(--primary-soft); color: var(--primary-soft-foreground); }
+.adm-badge-running, .adm-badge-admin, .adm-badge-user { background: var(--violet-soft); color: var(--violet-soft-foreground); }
 .adm-badge-triaged { background: var(--warning-soft); color: var(--warning-soft-foreground); }
 .adm-badge-published, .adm-badge-done, .adm-badge-resolved, .adm-badge-correct { background: var(--success-soft); color: var(--success-soft-foreground); }
 .adm-badge-retired, .adm-badge-failed, .adm-badge-banned, .adm-badge-wrong { background: var(--danger-soft); color: var(--danger-soft-foreground); }
-.adm-badge-admin, .adm-badge-queued { background: var(--navy-soft); color: var(--navy-soft-foreground); }
 
 /* Job states carry a dot; running pulses (motion off under reduced motion). */
 .adm-badge-queued::before, .adm-badge-running::before, .adm-badge-done::before, .adm-badge-failed::before,
@@ -194,7 +204,11 @@
     background: currentColor;
     flex-shrink: 0;
 }
-.adm-badge-running::before { background: var(--primary); animation: var(--animate-pulse-ring); }
+.adm-badge-running::before { background: var(--violet-text); animation: adm-pulse 1.8s ease-out infinite; }
+@keyframes adm-pulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--violet) 55%, transparent); }
+    70%, 100% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--violet) 0%, transparent); }
+}
 .adm-badge-easy, .adm-badge-medium, .adm-badge-hard {
     background: transparent;
     color: var(--text);
@@ -213,9 +227,9 @@
     min-height: 2.5rem;
     padding: 0 1.1rem;
     border-radius: 999px;
-    border: 1.5px solid var(--navy);
+    border: 1.5px solid var(--primary);
     background: transparent;
-    color: var(--navy);
+    color: var(--accent-text);
     font: inherit;
     font-size: 0.875rem;
     font-weight: 600;
@@ -224,25 +238,22 @@
     text-decoration: none;
     transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out;
 }
-.adm a.adm-btn { color: var(--navy); }
-.adm-btn:hover:not(:disabled), .adm a.adm-btn:hover { background: var(--navy); color: var(--navy-foreground); text-decoration: none; }
+.adm a.adm-btn { color: var(--accent-text); }
+.adm-btn:hover:not(:disabled), .adm a.adm-btn:hover { background: var(--primary-wash); text-decoration: none; }
 .adm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .adm-btn-small { min-height: 2.1rem; padding: 0 0.85rem; font-size: 0.8rem; }
 .adm .adm-btn-primary {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--gradient-primary);
+    border-color: transparent;
     color: var(--primary-foreground);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-glow);
 }
-.adm .adm-btn-primary:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); color: var(--primary-foreground); }
-.adm .adm-btn-danger { background: var(--danger); border-color: var(--danger); color: var(--navy-foreground); }
-.adm .adm-btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 88%, var(--text)); border-color: transparent; color: var(--navy-foreground); }
-[data-theme='dark'] .adm .adm-btn-danger, [data-theme='dark'] .adm .adm-btn-danger:hover:not(:disabled) { color: var(--background); }
-[data-theme='dark'] .adm-btn, [data-theme='dark'] .adm a.adm-btn { border-color: color-mix(in srgb, var(--foreground) 70%, transparent); color: var(--foreground); }
-[data-theme='dark'] .adm-btn:hover:not(:disabled), [data-theme='dark'] .adm a.adm-btn:hover { background: var(--foreground); border-color: var(--foreground); color: var(--background); }
-/* Orange buttons keep navy text in dark mode too (the generic dark rules above would make it light). */
-[data-theme='dark'] .adm .adm-btn-primary { border-color: var(--primary); color: var(--primary-foreground); }
-[data-theme='dark'] .adm .adm-btn-primary:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); color: var(--primary-foreground); }
+.adm .adm-btn-primary:hover:not(:disabled) { background: var(--gradient-primary-hover); color: var(--primary-foreground); }
+.adm .adm-btn-primary:disabled { box-shadow: none; }
+.adm .adm-btn-danger { background: var(--danger); border-color: var(--danger); color: var(--status-foreground); }
+.adm .adm-btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 88%, var(--text)); border-color: transparent; color: var(--status-foreground); }
+/* Dark mode: the outline turns to the lighter link blue so the edge reads on midnight cards. */
+[data-theme='dark'] .adm-btn:not(.adm-btn-primary):not(.adm-btn-danger) { border-color: var(--accent-text); }
 
 .adm .adm-link {
     background: none;
@@ -350,10 +361,8 @@
     max-width: 100%;
     overflow-x: auto;
     padding: 0.25rem;
-    border: 1px solid var(--border);
     border-radius: 999px;
-    background: var(--card-bg);
-    box-shadow: var(--shadow-sm);
+    background: var(--muted);
 }
 .adm-tabs button, .adm-segmented button {
     min-height: 2.25rem;
@@ -370,9 +379,9 @@
     text-transform: capitalize;
     transition: background-color 150ms ease-out, color 150ms ease-out;
 }
-.adm-tabs button:hover, .adm-segmented button:hover { background: var(--muted); color: var(--text); }
-.adm-tabs button.active, .adm-segmented button.active { background: var(--navy); color: var(--navy-foreground); box-shadow: var(--shadow-sm); }
-[data-theme='dark'] .adm-tabs button.active, [data-theme='dark'] .adm-segmented button.active { background: var(--primary); color: var(--primary-foreground); }
+/* As the Tabs primitive: the active segment is a raised card-coloured pill with blue text on the muted track. */
+.adm-tabs button:hover, .adm-segmented button:hover { color: var(--text); }
+.adm-tabs button.active, .adm-segmented button.active { background: var(--card-bg); color: var(--accent-text); box-shadow: var(--shadow-sm); }
 
 .adm-bulk {
     display: flex;
@@ -413,11 +422,10 @@
     color: var(--text-muted);
     background: var(--background);
 }
-[data-theme='dark'] .adm-table th { background: color-mix(in srgb, var(--muted) 55%, var(--card)); }
 .adm-table td { color: var(--text); }
 .adm-table tbody tr:last-child td { border-bottom: none; }
 .adm-table tbody tr { transition: background-color 120ms ease-out; }
-.adm-table tbody tr:hover td { background: color-mix(in srgb, var(--muted) 65%, transparent); }
+.adm-table tbody tr:hover td { background: var(--adm-row-hover); }
 .adm-row-link { cursor: pointer; }
 .adm-cell-stem { min-width: 260px; max-width: 520px; }
 .adm .adm-cell-stem a { color: var(--heading); font-weight: 600; text-decoration: none; display: block; line-height: 1.4; }
@@ -481,7 +489,7 @@
     cursor: pointer;
     transition: background-color 120ms ease-out;
 }
-.adm-review-item:hover { background: color-mix(in srgb, var(--muted) 65%, transparent); }
+.adm-review-item:hover { background: var(--adm-row-hover); }
 .adm-review-item.active { background: var(--primary-soft); box-shadow: inset 4px 0 0 var(--primary); }
 .adm-review-item.active .adm-review-stem { color: var(--heading); }
 .adm-review-stem { font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
@@ -693,17 +701,17 @@
 .adm-progress { height: 8px; border-radius: 999px; background: var(--muted); overflow: hidden; }
 .adm-progress-bar { height: 100%; background: var(--gradient-primary); border-radius: 999px; transition: width 400ms ease-out; }
 .adm-progress-bar.is-active {
-    background-image: linear-gradient(90deg, var(--primary), var(--sky), var(--primary));
+    background-image: linear-gradient(90deg, var(--primary), var(--violet), var(--primary));
     background-size: 200% 100%;
     animation: adm-shimmer 1.6s linear infinite;
 }
 @keyframes adm-shimmer { from { background-position: 200% 0; } to { background-position: 0 0; } }
 .adm-job-stats { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; font-size: 0.875rem; align-items: baseline; }
 .adm-job-stats strong { color: var(--heading); font-size: 1.05rem; }
-.adm-running { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--accent-text); font-size: 0.82rem; font-weight: 700; }
-.adm-running::before { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--primary); animation: var(--animate-pulse-ring); }
+.adm-running { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--violet-text); font-size: 0.82rem; font-weight: 700; }
+.adm-running::before { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--violet-text); animation: adm-pulse 1.8s ease-out infinite; }
 
-/* --- Audit: navy dot timeline --- */
+/* --- Audit: blue → violet dot timeline --- */
 .adm-timeline { list-style: none; margin: 0; padding: 0.5rem 0; position: relative; }
 .adm-timeline-item { position: relative; display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); gap: 0.75rem; padding: 0 0 1rem; }
 .adm-timeline-item::before {
@@ -713,7 +721,7 @@
     top: 1.1rem;
     bottom: -0.1rem;
     width: 2px;
-    background: var(--border);
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--primary) 45%, transparent), color-mix(in srgb, var(--violet) 45%, transparent));
 }
 .adm-timeline-item:last-child::before { display: none; }
 .adm-timeline-dot {
@@ -721,12 +729,11 @@
     width: 0.75rem;
     height: 0.75rem;
     border-radius: 999px;
-    background: var(--navy);
-    box-shadow: 0 0 0 4px var(--navy-soft);
+    background: var(--gradient-primary);
+    box-shadow: 0 0 0 4px var(--violet-soft);
     position: relative;
     z-index: 1;
 }
-[data-theme='dark'] .adm-timeline-dot { background: var(--navy-soft-foreground); }
 .adm-timeline-body {
     min-width: 0;
     padding: 0.7rem 1rem;
@@ -753,7 +760,8 @@
 }
 .adm-action-approve, .adm-action-unban, .adm-action-insert, .adm-action-create, .adm-action-finish { background: var(--success-soft); color: var(--success-soft-foreground); }
 .adm-action-reject, .adm-action-ban, .adm-action-delete, .adm-action-cancel { background: var(--danger-soft); color: var(--danger-soft-foreground); }
-.adm-action-set_status, .adm-action-set_role { background: var(--primary-soft); color: var(--primary-soft-foreground); }
+.adm-action-set_status { background: var(--primary-soft); color: var(--primary-soft-foreground); }
+.adm-action-set_role { background: var(--violet-soft); color: var(--violet-soft-foreground); }
 .adm-diff {
     margin: 0;
     display: flex;
@@ -811,6 +819,7 @@
     .adm-nav-link { flex-shrink: 0; min-height: 2.75rem; padding: 0 0.95rem; border-radius: 999px; gap: 0.45rem; }
     .adm-nav-label { overflow: visible; }
     .adm-nav-link.active::before { left: 0.95rem; right: 0.95rem; top: auto; bottom: 0.2rem; width: auto; height: 3px; border-radius: 3px; }
+    .adm-nav { border-right: none; border-bottom: 1px solid var(--adm-nav-edge); }
     .adm-main { padding: 1.25rem 1rem 2.5rem; }
     .adm-header h1 { font-size: 1.35rem; }
     .adm-filters { padding: 0.75rem; }
