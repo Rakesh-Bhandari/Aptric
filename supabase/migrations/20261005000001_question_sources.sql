@@ -22,6 +22,9 @@ create table public.question_sources (
   tta_seconds   integer check (tta_seconds > 0),
   -- Exams the question appeared in, as printed: [{"exam": "SBI PO Prelims", "year": 2019, "date": "2019-06-08", "shift": "1"}].
   exams         jsonb not null default '[]'::jsonb check (jsonb_typeof(exams) = 'array'),
+  -- True when this row's import created the question (so re-imports may edit
+  -- it); false when it was linked to a question that already existed.
+  owns_question boolean not null default false,
   notes         text check (char_length(notes) <= 2000),
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
@@ -65,19 +68,20 @@ on conflict (topic_id, slug) do nothing;
 -- p_items is a JSON array; each item:
 --   ref, section, topic, subtopic (slugs), stem, options (2-10 strings),
 --   correct_index (0-based), explanation, hint?, difficulty, est_seconds?,
---   difficulty_rating?, tags?[], status? ('draft'|'in_review'|'published'),
+--   difficulty_rating?, tags?[], status? ('draft'|'in_review'|'published', default 'published'),
 --   review_note?, chapter?, level?, page?, book_answer?, key_status,
 --   correct_pct?, skipped_pct?, tta_seconds?, exams?[], notes?
 --
 -- Per item, in its own subtransaction (one bad item never loses the batch):
---   * (source, ref) already imported and still draft/in_review -> update that
---     question in place (options matched by position so attempts stay valid)
---   * (source, ref) already imported but published/retired, or linked to a
---     question from elsewhere -> keep its content, refresh tags and source row
+--   * (source, ref) already imported and this source created the question ->
+--     update it in place, status included (options matched by position so
+--     attempts stay valid); a retired question is left alone
+--   * (source, ref) linked to a question from elsewhere -> keep its content and
+--     status, refresh tags and the source row
 --   * same content_hash already in the bank -> leave its content alone, add
 --     the tags and link this source row to it
 --   * otherwise insert a new question (source 'import').
--- Status only ever moves forward (draft -> in_review -> published).
+-- Publishing stamps reviewed_at (published_at is stamped by its own trigger).
 -- Returns one {ref, outcome, question_id?, error?} per item.
 -- ---------------------------------------------------------------------------
 create or replace function private.import_questions(
@@ -145,7 +149,7 @@ begin
       if v_idx is null or v_idx < 0 or v_idx >= v_n then raise exception 'correct_index % out of range', v_idx; end if;
       if v_expl = '' then raise exception 'empty explanation'; end if;
 
-      v_status := coalesce(it ->> 'status', 'in_review')::public.question_status;
+      v_status := coalesce(it ->> 'status', 'published')::public.question_status;
       if v_status = 'retired' then raise exception 'cannot import as retired'; end if;
       v_hash := private.content_hash(v_stem, v_opts);
 
@@ -160,20 +164,21 @@ begin
       from public.question_sources qs where qs.source = p_source and qs.ref = v_ref;
 
       if v_qid is not null and not exists (
-        select 1 from public.questions q
-        where q.id = v_qid and q.source = 'import' and q.status in ('draft', 'in_review')
+        select 1 from public.question_sources qs
+        join public.questions q on q.id = qs.question_id
+        where qs.source = p_source and qs.ref = v_ref and qs.owns_question and q.status <> 'retired'
       ) then
-        -- Linked to a question from elsewhere, or already published/retired:
-        -- keep its content and status, refresh only tags and the source row.
+        -- Linked to a question from elsewhere, or retired by an admin: keep its
+        -- content and status, refresh only tags and the source row.
         v_outcome := 'kept';
       elsif v_qid is not null then
-        -- Re-import of a question this source created that is still unreviewed.
+        -- Re-import of a question this source created: the latest verification wins.
         select q.id into v_other from public.questions q where q.content_hash = v_hash and q.id <> v_qid;
         if v_other is not null then
           raise exception 'edited content duplicates question %', v_other;
         end if;
 
-        select md5(q.stem || q.content_hash || q.subtopic_id::text || q.difficulty::text || q.est_seconds::text
+        select md5(q.stem || q.content_hash || q.subtopic_id::text || q.difficulty::text || q.est_seconds::text || q.status::text
                    || coalesce((select a.explanation || a.correct_option_id::text || coalesce(a.hint, '')
                                 from public.question_answers a where a.question_id = q.id), ''))
           into v_before
@@ -187,8 +192,9 @@ begin
           est_seconds       = coalesce((it ->> 'est_seconds')::integer, q.est_seconds),
           difficulty_rating = coalesce((it ->> 'difficulty_rating')::integer, q.difficulty_rating),
           content_hash      = v_hash,
-          status            = case when q.status in ('draft', 'in_review') and v_status > q.status
-                                   then v_status else q.status end,
+          status            = v_status,
+          reviewed_at       = case when v_status = 'published' and q.status <> 'published'
+                                   then now() else q.reviewed_at end,
           review_note       = coalesce(nullif(btrim(it ->> 'review_note'), ''), q.review_note)
         where q.id = v_qid;
 
@@ -212,7 +218,7 @@ begin
                 is distinct from (excluded.correct_option_id, excluded.explanation, excluded.hint);
 
         v_outcome := case when v_before is distinct from (
-            select md5(q.stem || q.content_hash || q.subtopic_id::text || q.difficulty::text || q.est_seconds::text
+            select md5(q.stem || q.content_hash || q.subtopic_id::text || q.difficulty::text || q.est_seconds::text || q.status::text
                        || coalesce((select a.explanation || a.correct_option_id::text || coalesce(a.hint, '')
                                     from public.question_answers a where a.question_id = q.id), ''))
             from public.questions q where q.id = v_qid)
@@ -224,12 +230,13 @@ begin
           v_outcome := 'linked_existing';
         else
           insert into public.questions (subtopic_id, stem, difficulty, difficulty_rating, est_seconds, status,
-                                        source, content_hash, model, prompt_version, review_note)
+                                        source, content_hash, model, prompt_version, review_note, reviewed_at)
           values (v_sub, v_stem, (it ->> 'difficulty')::public.question_difficulty,
                   coalesce((it ->> 'difficulty_rating')::integer, 1200),
                   coalesce((it ->> 'est_seconds')::integer, 60),
                   v_status, 'import', v_hash, 'claude-code', p_version,
-                  nullif(btrim(it ->> 'review_note'), ''))
+                  nullif(btrim(it ->> 'review_note'), ''),
+                  case when v_status = 'published' then now() end)
           returning id into v_qid;
 
           insert into public.question_options (question_id, position, body)
@@ -248,11 +255,13 @@ begin
       on conflict do nothing;
 
       insert into public.question_sources as qs (question_id, source, ref, chapter, level, page, book_answer,
-                                                  key_status, correct_pct, skipped_pct, tta_seconds, exams, notes)
+                                                  key_status, correct_pct, skipped_pct, tta_seconds, exams, notes,
+                                                  owns_question)
       values (v_qid, p_source, v_ref, it ->> 'chapter', (it ->> 'level')::smallint, (it ->> 'page')::integer,
               nullif(btrim(it ->> 'book_answer'), ''), coalesce(it ->> 'key_status', 'unverified'),
               (it ->> 'correct_pct')::numeric, (it ->> 'skipped_pct')::numeric, (it ->> 'tta_seconds')::integer,
-              coalesce(it -> 'exams', '[]'::jsonb), nullif(btrim(it ->> 'notes'), ''))
+              coalesce(it -> 'exams', '[]'::jsonb), nullif(btrim(it ->> 'notes'), ''),
+              v_outcome = 'inserted')
       on conflict (source, ref) do update set
         question_id = excluded.question_id, chapter = excluded.chapter, level = excluded.level,
         page = excluded.page, book_answer = excluded.book_answer, key_status = excluded.key_status,

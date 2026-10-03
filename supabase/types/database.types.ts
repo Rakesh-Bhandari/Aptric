@@ -1025,6 +1025,7 @@ export type Database = {
           key_status: string;
           level: number | null;
           notes: string | null;
+          owns_question: boolean;
           page: number | null;
           question_id: string;
           ref: string;
@@ -1042,6 +1043,7 @@ export type Database = {
           key_status: string;
           level?: number | null;
           notes?: string | null;
+          owns_question?: boolean;
           page?: number | null;
           question_id: string;
           ref: string;
@@ -1059,6 +1061,7 @@ export type Database = {
           key_status?: string;
           level?: number | null;
           notes?: string | null;
+          owns_question?: boolean;
           page?: number | null;
           question_id?: string;
           ref?: string;

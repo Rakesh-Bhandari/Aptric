@@ -10,7 +10,7 @@ It relies on `supabase/migrations/20261005000001_question_sources.sql`, which th
 - `private.import_questions(source, version, items)`: an idempotent upsert, so re-running the prompt updates questions in place instead of duplicating them.
 - the subtopic `quantitative-aptitude / arithmetic / simplification`.
 
-Imported questions land as `in_review` (or `draft` when unverified) with `source = 'import'` and `prompt_version = 'pdf-import/…'`:
+Verified questions are **published** (approved) straight away, with no review-queue step; only questions the session could not verify land as `draft`. All carry `source = 'import'` and `prompt_version = 'pdf-import/…'`:
 
 ```sql
 select qs.key_status, q.status, count(*)

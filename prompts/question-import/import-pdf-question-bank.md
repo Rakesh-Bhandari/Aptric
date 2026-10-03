@@ -2,7 +2,7 @@
 
 You are working on **Aptric**, a daily aptitude practice app for Indian placement and competitive exams. I have attached a **PDF question bank** to this session. Your job: turn every usable question in it into a correct, self-contained multiple-choice question and write it to the Supabase database through the Supabase MCP tools (`execute_sql`, and `apply_migration` once if needed). The database is the only output. Do not change code or commit anything.
 
-The PDF may be messy. Questions may come without options, without an answer, with a wrong answer key, with garbled maths, split across columns or pages, or mixed with ads. **You are the examiner.** Nothing goes in unverified: a wrong answer key in front of a learner is the worst possible outcome. When you are unsure, keep the question out of the review queue's "ready" path (rules below) rather than guess.
+The PDF may be messy. Questions may come without options, without an answer, with a wrong answer key, with garbled maths, split across columns or pages, or mixed with ads. **You are the examiner.** Nothing goes in unverified: questions you approve are **published immediately** with no human review after you, and a wrong answer key in front of a learner is the worst possible outcome. When you are unsure, the question goes in as `draft` (rules below) rather than as a guess.
 
 ## Settings (change these only if I tell you to)
 
@@ -10,7 +10,7 @@ The PDF may be messy. Questions may come without options, without an answer, wit
 | --- | --- |
 | `SOURCE` | `testbook-banking-qa-smartbook` for *Best 4000 Smart Question Bank, Banking, Quantitative Aptitude in English* (Testbook SmartBook / S. Chand). For any other PDF, make a new short slug: publisher + exam + subject, lowercase-hyphenated. |
 | `VERSION` | `pdf-import/2026-10-05.1`. It goes into `questions.prompt_version` so the whole import can be found or rolled back. |
-| `STATUS` | `in_review` for every question that passed verification. The admin review queue (or `prompts/question-review/approve-top-100.md`) publishes them. Only if I say "publish directly" do you use `published`, and then only for `key_status = 'matched'`. |
+| `STATUS` | **`published` (approved)** for every question that passed verification. Do **not** put questions in `in_review`: this session is the reviewer, and verified questions go live to learners right away. Only `unverified` questions (Step 3c) go in as `draft`, out of learners' reach, for an admin to fix. |
 | Batch size | 15 questions per `execute_sql` call. |
 
 ## Step 0: connect and prepare the database
@@ -135,9 +135,9 @@ Work in book order, one level of one chapter at a time. For each batch:
 | --- | --- | --- | --- |
 | Your answer = book key, exactly one option correct | use it | `matched` | `STATUS` |
 | No book key | solve a second time by a different method; both agree | `supplied` | `STATUS` |
-| Your answer ≠ book key | re-read the image (a misread exponent is the usual cause), then solve again by a different method. If both of your solves agree, key **your** answer and say in `notes` and `review_note`: "Book key X is wrong because …" | `corrected` | `in_review` |
+| Your answer ≠ book key | re-read the image (a misread exponent is the usual cause), then solve again by a different method. If both of your solves agree, key **your** answer and say in `notes` and `review_note`: "Book key X is wrong because …" | `corrected` | `STATUS` |
 | Still unsure, two options defensible, or data missing or illegible | insert with your best key plus `review_note` starting `IMPORT-UNVERIFIED:` and the reason | `unverified` | `draft` |
-| **No options in the book** (open-ended question) | write 4 options: the correct value plus 3 plausible distractors from common mistakes; correct option at a varied position; note "options written by importer" | `supplied` | `in_review` |
+| **No options in the book** (open-ended question) | write 4 options: the correct value plus 3 plausible distractors from common mistakes; correct option at a varied position; check that no distractor is also correct; note "options written by importer" | `supplied` | `STATUS` |
 | Options partly garbled | rebuild them only if the image, solution or answer key makes them certain; otherwise treat as unverified | as above | as above |
 | Needs a figure, graph or image you can't render exactly as text or a table (geometry figures, unreadable charts, dice nets) | **skip it**: do not insert; list it in the final report | n/a | n/a |
 | Not a question (example, theory, ad) or unrecoverable | skip it and list it | n/a | n/a |
@@ -157,7 +157,7 @@ select jsonb_pretty(private.import_questions('<SOURCE>', '<VERSION>', $json$
    "explanation": "Take the nearest perfect squares: $5089 \\approx 5041 = 71^2$, $2641 \\approx 2601 = 51^2$, $1186 \\approx 1156 = 34^2$.\n\n$71 - 51 + 34 = 54$.\n\nHence ? ≈ **54**.",
    "hint": "Replace each number under the root with the nearest perfect square.",
    "difficulty": "easy", "est_seconds": 62, "difficulty_rating": 1144,
-   "tags": ["bank-po", "bank-prelims"], "status": "in_review", "review_note": null,
+   "tags": ["bank-po", "bank-prelims"], "status": "published", "review_note": null,
    "chapter": "Simplification", "level": 1, "page": 13, "book_answer": "A", "key_status": "matched",
    "correct_pct": 57, "skipped_pct": 35, "tta_seconds": 62, "exams": [], "notes": null}
 ]
@@ -169,10 +169,10 @@ The function handles each item in its own subtransaction and returns one result 
 | `outcome` | Meaning | Action |
 | --- | --- | --- |
 | `inserted` | new question, options, answer key, tags and source row written | none |
-| `updated` | this ref was imported before and is still draft/in_review; its content or key changed in place (option ids kept, so attempt history stays valid) | none |
+| `updated` | this source created this question on an earlier run; its content, key or status changed in place (option ids kept, so attempt history stays valid). A published question you now mark `unverified` goes back to `draft`. | none |
 | `unchanged` | re-run with identical content | none |
 | `linked_existing` | an identical question (same normalised stem + options) is already in the bank; its content was left alone, and your tags and source/exam row were attached to it | note it in the report |
-| `kept` | this ref is already published or retired, or belongs to another source: only tags and the source row were refreshed | if your new key differs, list it in the report for a human; don't touch it |
+| `kept` | the question belongs to another source, or an admin retired it: only tags and the source row were refreshed | if your new key differs, list it in the report for a human; don't touch it |
 | `error` | nothing was saved for that item; `error` says why (unknown subtopic, duplicate options, index out of range, empty explanation, content collides with another question, …) | fix the item and resend **only** the failed items |
 
 Keep a running tally of outcomes and of every `corrected`, `unverified` and skipped question, with its reason, in `<scratchpad>/import-log.md`. If the session gets long, that file and the Step 0 resume query are how you pick up where you left off.
@@ -190,7 +190,7 @@ where qs.source = '<SOURCE>'
 group by 1, 2, 3, 4, 5 order by 1, 2, 4, 5;
 ```
 
-Every row must have `with_key = n`. Spot-check 5 random imported questions by reading them back (stem, options, keyed option, explanation) and re-solving them.
+Every row must have `with_key = n`, and every row with `key_status` other than `unverified` must be `published`. Spot-check 10 random published questions by reading them back (stem, options, keyed option, explanation) and re-solving them.
 
 Then report to me:
 1. Totals per chapter and level: questions in the PDF, inserted, updated, linked to existing, kept, skipped, errors.
@@ -201,12 +201,16 @@ Then report to me:
 
 ## Undo
 
-Remove everything this import created that is still unreviewed and unplayed (a published question is never deleted, only retired):
+Take this import back out. Questions nobody has played yet are deleted; questions already played (or used in a daily set or contest) are retired, so learners' history stays intact:
 
 ```sql
+update public.questions q set status = 'retired'
+where q.prompt_version = '<VERSION>' and q.source = 'import' and q.status <> 'retired'
+  and (exists (select 1 from public.attempts a where a.question_id = q.id)
+    or exists (select 1 from public.daily_set_items d where d.question_id = q.id)
+    or exists (select 1 from public.contest_items c where c.question_id = q.id));
 delete from public.questions q
-where q.prompt_version = '<VERSION>' and q.source = 'import' and q.status in ('draft', 'in_review')
-  and not exists (select 1 from public.attempts a where a.question_id = q.id);
+where q.prompt_version = '<VERSION>' and q.source = 'import' and q.status <> 'retired';
 -- Source rows of deleted questions go with them (on delete cascade). This also
 -- drops the links this import attached to questions it did not create:
 delete from public.question_sources qs
