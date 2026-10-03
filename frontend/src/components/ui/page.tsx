@@ -26,17 +26,17 @@ const TONES = {
 /**
  * Stat tile (Progress KPIs, profile stats): muted label, big heading-ink number
  * and a tinted icon chip. Use tone="violet" for streak/level-style (achievement)
- * stats. `orange` is a deprecated alias of `violet`.
+ * stats.
  */
 export const StatTile = ({ label, value, hint, icon, tone = 'navy', className }: {
-  label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: keyof typeof TONES | 'orange'; className?: string;
+  label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: keyof typeof TONES; className?: string;
 }) => (
   <div className={cn('flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm sm:p-5', className)}>
     <div className="flex items-start justify-between gap-2">
       <span className="text-xs font-semibold text-muted-foreground sm:text-sm">{label}</span>
       {icon && (
         <span
-          className={cn('grid size-8 shrink-0 place-items-center rounded-full [&_svg]:size-4', TONES[tone === 'orange' ? 'violet' : tone])}
+          className={cn('grid size-8 shrink-0 place-items-center rounded-full [&_svg]:size-4', TONES[tone])}
           aria-hidden
         >
           {icon}

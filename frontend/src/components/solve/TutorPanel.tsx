@@ -422,7 +422,7 @@ export const TutorPanel = ({
                 maxLength={TUTOR_MAX_CHARS}
                 rows={1}
                 placeholder={answered ? 'Ask about this question…' : 'Ask about a step (no spoilers)…'}
-                className="max-h-32 min-h-11 w-full resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring/40 sm:text-sm"
+                className="max-h-32 min-h-11 w-full resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring sm:text-sm"
               />
               {busy ? (
                 <Button type="button" size="icon" variant="navy" aria-label="Stop" onClick={() => abortRef.current?.abort()}>

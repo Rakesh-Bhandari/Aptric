@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src=".github/readme/banner.svg" alt="Aptric: Practice. Compete. Get placed." width="100%">
+<img src=".github/readme/banner.svg" alt="Aptric: Practice. Compete. Grow." width="100%">
 
 <br>
 
@@ -10,14 +10,14 @@ on a question bank grown with verified AI generation.
 
 <br>
 
-<img alt="React 19" src="https://img.shields.io/badge/React-19-FF7800?style=for-the-badge&logo=react&logoColor=white&labelColor=0B1F4B">
-<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-FF7800?style=for-the-badge&logo=typescript&logoColor=white&labelColor=0B1F4B">
-<img alt="Node.js 22" src="https://img.shields.io/badge/Node.js-22-FF7800?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0B1F4B">
-<img alt="Express 5" src="https://img.shields.io/badge/Express-5-FF7800?style=for-the-badge&logo=express&logoColor=white&labelColor=0B1F4B">
+<img alt="React 19" src="https://img.shields.io/badge/React-19-2563EB?style=for-the-badge&logo=react&logoColor=white&labelColor=0A2540">
+<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-2563EB?style=for-the-badge&logo=typescript&logoColor=white&labelColor=0A2540">
+<img alt="Node.js 22" src="https://img.shields.io/badge/Node.js-22-2563EB?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0A2540">
+<img alt="Express 5" src="https://img.shields.io/badge/Express-5-2563EB?style=for-the-badge&logo=express&logoColor=white&labelColor=0A2540">
 <br>
-<img alt="Supabase Postgres 17" src="https://img.shields.io/badge/Postgres-17-FF7800?style=for-the-badge&logo=supabase&logoColor=white&labelColor=0B1F4B">
-<img alt="Tailwind CSS v4" src="https://img.shields.io/badge/Tailwind-v4-FF7800?style=for-the-badge&logo=tailwindcss&logoColor=white&labelColor=0B1F4B">
-<img alt="Vercel" src="https://img.shields.io/badge/Deployed_on-Vercel-FF7800?style=for-the-badge&logo=vercel&logoColor=white&labelColor=0B1F4B">
+<img alt="Supabase Postgres 17" src="https://img.shields.io/badge/Postgres-17-2563EB?style=for-the-badge&logo=supabase&logoColor=white&labelColor=0A2540">
+<img alt="Tailwind CSS v4" src="https://img.shields.io/badge/Tailwind-v4-2563EB?style=for-the-badge&logo=tailwindcss&logoColor=white&labelColor=0A2540">
+<img alt="Vercel" src="https://img.shields.io/badge/Deployed_on-Vercel-2563EB?style=for-the-badge&logo=vercel&logoColor=white&labelColor=0A2540">
 
 <br><br>
 
@@ -173,7 +173,7 @@ Questions carry exam tags: `tcs-nqt` `infosys` `amcat` `cat` `gate` `bank-po` `s
 | **Tests** | Vitest + Testing Library (frontend), Playwright (e2e), `node --test` (backend), pgTAP (`supabase test db`) |
 | **Hosting** | Vercel (frontend and API), Supabase (database) |
 
-**Brand:** deep navy `#0B1F4B` for trust, orange `#FF7800` for energy, Plus Jakarta Sans throughout. Every text/background pair meets WCAG AA in both themes, checked by `frontend/src/test/contrast.test.ts`.
+**Brand:** deep navy `#0A2540` for trust, electric blue `#2563EB` for action, violet `#7C3AED` for energy and achievement, Light Blue `#38BDF8` for interaction on dark surfaces, blue → violet gradients, Plus Jakarta Sans throughout. Every text/background pair meets WCAG AA in both themes, checked by `frontend/src/test/contrast.test.ts`.
 
 <img src=".github/readme/divider.svg" width="100%" alt="">
 
@@ -224,10 +224,10 @@ flowchart TB
     API --> AI
     API -- "pg (Supabase pooler),<br/>SQL as the signed-in user" --> DB
 
-    classDef navy fill:#0B1F4B,stroke:#123A78,color:#FFFFFF
-    classDef orange fill:#FF7800,stroke:#E86600,color:#06132F
+    classDef navy fill:#0A2540,stroke:#1E3A8A,color:#FFFFFF
+    classDef violet fill:#7C3AED,stroke:#6D28D9,color:#FFFFFF
     class SPA,API,DB navy
-    class AI orange
+    class AI violet
 ```
 
 Scheduled jobs (pg_cron, UTC): daily set generation, hourly streak settlement with streak freezes, weekly league rollover, rating updates, leaderboard refreshes and expired-session cleanup. See [supabase/README.md](supabase/README.md#scheduled-jobs-pg_cron).

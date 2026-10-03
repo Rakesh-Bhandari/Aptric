@@ -172,17 +172,18 @@ const Podium = ({ top, metric, label }: { top: LeaderboardEntry[]; metric: (e: L
   <Card variant="navy" className="relative overflow-hidden px-3 pt-6 shadow-md sm:px-10 sm:pt-8">
     <span aria-hidden className="pointer-events-none absolute inset-0 bg-dots" />
     <span aria-hidden className="pointer-events-none absolute -right-20 -top-24 size-56 rounded-full bg-violet/25 blur-3xl" />
-    <ol aria-label={`${label}: top ${top.length}`} className="relative mx-auto grid max-w-lg grid-cols-3 items-end gap-2 sm:gap-4">
+    <ol aria-label={`${label}: top ${top.length}`} className="relative isolate mx-auto grid max-w-lg grid-cols-3 items-end gap-2 sm:gap-4">
       {top.map((e, i) => {
         const s = PODIUM[i];
         const name = displayName(e);
         return (
           <li key={e.user_id} className={cn('relative flex min-w-0 flex-col items-center text-center', s.order)} aria-current={e.is_me ? 'true' : undefined}>
             {/* The winner's column: a soft Light Blue → violet glow behind it. */}
-            {i === 0 && <span aria-hidden className="pointer-events-none absolute inset-x-1 -top-4 bottom-0 rounded-t-3xl bg-gradient-secondary opacity-30 blur-2xl" />}
+            {i === 0 && <span aria-hidden className="pointer-events-none absolute inset-x-1 -top-4 bottom-0 -z-10 rounded-t-3xl bg-gradient-secondary opacity-30 blur-2xl" />}
             {i === 0 && <Crown className="relative mb-1 size-6 text-medal-gold" aria-hidden />}
             <Avatar src={e.avatar_url} name={name} className={cn('relative ring-4 text-lg', s.avatar)} />
-            <span className="relative mt-2 w-full truncate px-1 text-sm font-bold">
+            {/* Not positioned, so the name link's after: box stretches over the avatar and name. */}
+            <span className="mt-2 w-full truncate px-1 text-sm font-bold">
               {e.handle ? <Link to={`/u/${e.handle}`} className="underline-offset-2 after:absolute after:inset-0 hover:underline">{name}</Link> : name}
             </span>
             <span className={cn('relative text-xs font-bold tabular-nums sm:text-sm', s.metric)}>{metric(e)}</span>
@@ -320,8 +321,9 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
         )}
       </CardContent>
       <CardFooter>
-        {/* Gradient pill for the next step (enter, continue, join); outline once you're registered or it's over. */}
-        <Button asChild variant={live || (c.state === 'upcoming' && !c.my_entry) ? 'default' : 'outline'} className="w-full sm:w-auto">
+        {/* One gradient pill per list: live contests (enter, continue). Joining an upcoming one is
+            secondary; outline once you're registered or it's over. */}
+        <Button asChild variant={live ? 'default' : c.state === 'upcoming' && !c.my_entry ? 'secondary' : 'outline'} className="w-full sm:w-auto">
           <Link to={`/compete/contests/${c.id}`}>{cta} <ChevronRight /></Link>
         </Button>
       </CardFooter>

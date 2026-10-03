@@ -65,15 +65,15 @@ const Review = ({ questions }: { questions: ContestQuestion[] }) => (
       {questions.map((q, i) => {
         const correctIndex = q.options.findIndex((o) => o.id === q.correct_option_id);
         return (
-          <details key={q.id} className="group rounded-md border bg-card p-3 open:shadow-sm">
-            <summary className="flex min-h-8 cursor-pointer list-none items-center gap-2 font-semibold text-heading">
+          <details key={q.id} className="group rounded-md border bg-card open:shadow-sm">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-md px-3 font-semibold text-heading transition-colors duration-150 hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
               {q.answer ? (
                 q.answer.is_correct ? <Check className="size-4 text-success" aria-label="Correct" /> : <X className="size-4 text-danger" aria-label="Wrong" />
               ) : <span className="size-4 rounded-full border" aria-label="Not answered" />}
               Question {i + 1}
               <Badge variant="muted" className="ml-auto">{DIFFICULTY_LABEL[q.difficulty]}</Badge>
             </summary>
-            <div className="mt-3 space-y-3">
+            <div className="space-y-3 px-3 pb-3 pt-1">
               <Markdown text={q.stem} />
               <ol className="space-y-1.5">
                 {q.options.map((o, k) => (

@@ -1,18 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="480" viewBox="0 0 1280 480" role="img" aria-labelledby="t d">
 <title id="t">Aptric</title>
-<desc id="d">Practice. Compete. Get placed. A daily aptitude platform for placements and competitive exams.</desc>
+<desc id="d">Practice. Compete. Grow. A daily aptitude platform for placements and competitive exams.</desc>
 <style>
 text{font-family:'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif}
-.pill{font-size:12.5px;font-weight:600;fill:#c3cde3}
-.for{font-size:12.5px;font-weight:700;letter-spacing:.12em;fill:#ff9a3d}
+.pill{font-size:12.5px;font-weight:600;fill:#dbe4f5}
+.for{font-size:12.5px;font-weight:700;letter-spacing:.12em;fill:#38bdf8}
 .h{font-size:74px;font-weight:800;letter-spacing:-2.5px;fill:#ffffff}
-.sub{font-size:19px;fill:#c3cde3}
+.sub{font-size:19px;fill:#c7d2e6}
 .word{font-size:22px;font-weight:800;letter-spacing:4px;fill:#ffffff}
 </style>
 <defs>
-<linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#06132f"/><stop offset=".55" stop-color="#0b1f4b"/><stop offset="1" stop-color="#123a78"/></linearGradient>
-<linearGradient id="og" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff7800"/><stop offset="1" stop-color="#ff9a3d"/></linearGradient>
-<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7800" stop-opacity=".28"/><stop offset="1" stop-color="#ff7800" stop-opacity="0"/></radialGradient>
+<linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a1020"/><stop offset=".5" stop-color="#0a2540"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient>
+<linearGradient id="tg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+<linearGradient id="sg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#7c3aed"/></linearGradient>
+<radialGradient id="gv" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#7c3aed" stop-opacity=".35"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></radialGradient><radialGradient id="gb" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#2563eb" stop-opacity=".3"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></radialGradient>
 <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#ffffff" fill-opacity=".09"/></pattern>
 <radialGradient id="fade" cx=".3" cy=".2" r=".75"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
 <mask id="dm"><rect width="1280" height="480" fill="url(#fade)"/></mask>
@@ -21,22 +22,26 @@ text{font-family:'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, '
 <g clip-path="url(#c)">
 <rect width="1280" height="480" fill="url(#hero)"/>
 <rect width="1280" height="480" fill="url(#dots)" mask="url(#dm)"/>
-<circle cx="980" cy="270" r="300" fill="url(#glow)"/>
-<rect y="474" width="1280" height="6" fill="url(#og)"/>
+<circle cx="1080" cy="80" r="340" fill="url(#gv)"/>
+<circle cx="900" cy="330" r="280" fill="url(#gb)"/>
+<rect y="474" width="1280" height="6" fill="url(#sg)"/>
 </g>
 <text x="80" y="111" class="for">FOR</text>
-<rect x="128" y="92" width="82" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="169" y="111" text-anchor="middle" class="pill">TCS NQT</text><rect x="218" y="92" width="82" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="259" y="111" text-anchor="middle" class="pill">Infosys</text><rect x="308" y="92" width="66" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="341" y="111" text-anchor="middle" class="pill">AMCAT</text><rect x="382" y="92" width="50" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="407" y="111" text-anchor="middle" class="pill">CAT</text><rect x="440" y="92" width="58" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="469" y="111" text-anchor="middle" class="pill">GATE</text><rect x="506" y="92" width="82" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="547" y="111" text-anchor="middle" class="pill">Bank PO</text><rect x="596" y="92" width="50" height="28" rx="14" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".16"/><text x="621" y="111" text-anchor="middle" class="pill">SSC</text>
+<rect x="128" y="92" width="82" height="28" rx="14" fill="#2563eb" fill-opacity=".14" stroke="#38bdf8" stroke-opacity=".28"/><text x="169" y="111" text-anchor="middle" class="pill">TCS NQT</text><rect x="218" y="92" width="82" height="28" rx="14" fill="#2563eb" fill-opacity=".14" stroke="#38bdf8" stroke-opacity=".28"/><text x="259" y="111" text-anchor="middle" class="pill">Infosys</text><rect x="308" y="92" width="66" height="28" rx="14" fill="#2563eb" fill-opacity=".14" stroke="#38bdf8" stroke-opacity=".28"/><text x="341" y="111" text-anchor="middle" class="pill">AMCAT</text><rect x="382" y="92" width="50" height="28" rx="14" fill="#2563eb" fill-opacity=".14" stroke="#38bdf8" stroke-opacity=".28"/><text x="407" y="111" text-anchor="middle" class="pill">CAT</text><rect x="440" y="92" width="58" height="28" rx="14" fill="#2563eb" fill-opacity=".14" stroke="#38bdf8" stroke-opacity=".28"/><text x="469" y="111" text-anchor="middle" class="pill">GATE</text><rect x="506" y="92" width="82" height="28" rx="14" fill="#2563eb" fill-opacity=".14" stroke="#38bdf8" stroke-opacity=".28"/><text x="547" y="111" text-anchor="middle" class="pill">Bank PO</text><rect x="596" y="92" width="50" height="28" rx="14" fill="#2563eb" fill-opacity=".14" stroke="#38bdf8" stroke-opacity=".28"/><text x="621" y="111" text-anchor="middle" class="pill">SSC</text>
 <text x="80" y="208" class="h">Practice.</text>
 <text x="80" y="284" class="h">Compete.</text>
-<text x="80" y="360" class="h" style="fill:url(#og)">Get placed.</text>
+<text x="80" y="360" class="h" style="fill:url(#tg)">Grow.</text>
 <text x="80" y="412" class="sub">A daily aptitude platform for placements, CAT, banking and more.</text>
-<svg x="790" y="70" width="360" height="360" viewBox="25 -17 800 800"><defs>
-<linearGradient id="mn" gradientUnits="userSpaceOnUse" x1="120" y1="420" x2="420" y2="420"><stop offset="0" stop-color="#2c55ad"/><stop offset=".55" stop-color="#22468f"/><stop offset="1" stop-color="#1b3a78"/></linearGradient>
-<linearGradient id="ml" gradientUnits="userSpaceOnUse" x1="440" y1="330" x2="660" y2="230"><stop offset="0" stop-color="#e85400"/><stop offset=".5" stop-color="#ff7400"/><stop offset="1" stop-color="#ff9a2a"/></linearGradient>
-<linearGradient id="mr" gradientUnits="userSpaceOnUse" x1="250" y1="560" x2="800" y2="640"><stop offset="0" stop-color="#ff8000"/><stop offset=".42" stop-color="#ff9a3d"/><stop offset=".72" stop-color="#ff7200"/><stop offset="1" stop-color="#ff5a00"/></linearGradient>
+<svg x="800" y="60" width="340" height="340" viewBox="52 -60 1016 1016"><defs>
+<linearGradient id="mn" gradientUnits="userSpaceOnUse" x1="0" y1="70" x2="0" y2="790"><stop offset="0" stop-color="#1e40af"/><stop offset="1" stop-color="#1d3a9e"/></linearGradient>
+<radialGradient id="mh" gradientUnits="userSpaceOnUse" cx="450" cy="270" r="300"><stop offset="0" stop-color="#0a5ad6" stop-opacity=".85"/><stop offset="1" stop-color="#0a5ad6" stop-opacity="0"/></radialGradient>
+<linearGradient id="mr" gradientUnits="userSpaceOnUse" x1="537" y1="330" x2="754" y2="205"><stop offset="0" stop-color="#0047ff"/><stop offset=".22" stop-color="#0060fd"/><stop offset=".5" stop-color="#009afe"/><stop offset=".75" stop-color="#00cdfe"/><stop offset="1" stop-color="#00f0ff"/></linearGradient>
+<linearGradient id="mc" gradientUnits="userSpaceOnUse" x1="330" y1="0" x2="1000" y2="0"><stop offset="0" stop-color="#00b8ff"/><stop offset=".2" stop-color="#08a6fd"/><stop offset=".32" stop-color="#2b97fa"/><stop offset=".42" stop-color="#3e8cf9"/><stop offset=".52" stop-color="#5880fc"/><stop offset=".62" stop-color="#6d67fb"/><stop offset=".72" stop-color="#783dfb"/><stop offset=".85" stop-color="#7d24fe"/><stop offset="1" stop-color="#9405fd"/></linearGradient>
+<radialGradient id="mg" gradientUnits="userSpaceOnUse" cx="740" cy="470" r="160"><stop offset="0" stop-color="#9c9cff" stop-opacity=".45"/><stop offset="1" stop-color="#9c9cff" stop-opacity="0"/></radialGradient>
+<clipPath id="mk"><path d="M300 790L127 790C81 790 52 740 75 700L411 121C429 90 463 70 500 70L617 70C654 70 688 90 706 121L827 330L600 330L536 329L310 727C288 766 246 790 201 790Z"/></clipPath>
+<clipPath id="mf"><rect x="0" y="560" width="470" height="300"/></clipPath>
 </defs>
-<path d="M150 688L165 640L484 425C525 394 600 386 650 404C684 416 703 441 719 474L790 627C806 660 794 688 760 688H652C630 688 616 678 606 660L553 553C543 538 525 536 505 551L380 630C330 661 280 688 205 688Z" fill="url(#mr)"/>
-<path d="M330 104C342 84 358 78 380 78H490C512 78 527 90 536 108L592 240L416 290L244 615C228 648 212 688 168 688H104C66 688 44 660 56 628Z" fill="url(#mn)"/>
-<path d="M416 292C430 240 462 188 522 186C555 186 578 205 590 228L716 478C700 445 680 422 650 410C600 392 525 400 484 425Z" fill="url(#ml)"/></svg>
+<path d="M300 790L127 790C81 790 52 740 75 700L411 121C429 90 463 70 500 70L617 70C654 70 688 90 706 121L827 330L600 330L536 329L310 727C288 766 246 790 201 790Z" fill="url(#mn)"/><path d="M536 329L19 810L720 810L720 329Z" fill="#142a73" clip-path="url(#mk)"/><path d="M300 790L127 790C81 790 52 740 75 700L411 121C429 90 463 70 500 70L617 70C654 70 688 90 706 121L827 330L600 330L536 329L310 727C288 766 246 790 201 790Z" fill="url(#mh)"/><path d="M536 329L590 245C615 207 650 197 688 197C728 197 762 222 784 257L1013 650L723 650Z" fill="url(#mr)"/><path d="M170 790L300 790C310 789 340 790 360 786C380 782 400 776 420 768C440 760 460 751 480 741C500 731 520 720 540 709C560 698 582 686 600 675C618 664 637 653 650 646C663 639 670 636 678 633C686 630 690 628 696 628C702 628 708 630 711 631L790 765C798 781 815 790 833 790L992 790C1037 790 1065 741 1043 701L949 546C942 538 920 510 905 497C890 484 876 477 860 471C844 465 826 462 810 459C794 456 778 456 762 456C746 456 730 458 714 461C698 464 683 469 668 474C653 479 630 490 622 493L360 646L240 720Z" fill="url(#mc)"/><path d="M170 790L300 790C310 789 340 790 360 786C380 782 400 776 420 768C440 760 460 751 480 741C500 731 520 720 540 709C560 698 582 686 600 675C618 664 637 653 650 646C663 639 670 636 678 633C686 630 690 628 696 628C702 628 708 630 711 631L790 765C798 781 815 790 833 790L992 790C1037 790 1065 741 1043 701L949 546C942 538 920 510 905 497C890 484 876 477 860 471C844 465 826 462 810 459C794 456 778 456 762 456C746 456 730 458 714 461C698 464 683 469 668 474C653 479 630 490 622 493L360 646L240 720Z" fill="url(#mg)"/><g clip-path="url(#mf)"><path d="M300 790L127 790C81 790 52 740 75 700L411 121C429 90 463 70 500 70L617 70C654 70 688 90 706 121L827 330L600 330L536 329L310 727C288 766 246 790 201 790Z" fill="url(#mn)"/><path d="M536 329L19 810L720 810L720 329Z" fill="#142a73" clip-path="url(#mk)"/></g>
+</svg>
 <text x="970" y="452" text-anchor="middle" class="word">APTRIC</text>
 </svg>

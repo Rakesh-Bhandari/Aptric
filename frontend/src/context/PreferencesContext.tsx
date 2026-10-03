@@ -58,11 +58,11 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
     const root = document.documentElement;
     root.dataset.theme = resolvedTheme;
     root.style.colorScheme = resolvedTheme;
-    // The browser bar matches the page (--background) of the chosen theme, which can differ
+    // The browser bar matches the app header (--header) of the chosen theme, which can differ
     // from the system one; index.html sets the system theme's value before first paint.
     // Read it from the tokens so they stay in sync.
-    const page = getComputedStyle(root).getPropertyValue('--background').trim();
-    if (page) document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', page));
+    const bar = getComputedStyle(root).getPropertyValue('--header').trim();
+    if (bar) document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bar));
   }, [resolvedTheme]);
 
   useEffect(() => {

@@ -55,13 +55,14 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
           <span className="absolute -bottom-24 left-1/2 size-48 rounded-full bg-sky/15 blur-3xl" />
         </div>
         <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
-          <div className="-mt-12 flex flex-col items-center gap-3 text-center sm:-mt-14 sm:flex-row sm:items-end sm:gap-5 sm:text-left">
+          <div className="-mt-12 flex flex-col items-center gap-3 text-center sm:-mt-14 sm:flex-row sm:items-start sm:gap-5 sm:text-left">
             <Avatar src={p.avatar_url} name={p.display_name || p.handle} className="size-24 text-3xl shadow-md ring-4 ring-white sm:size-28 dark:ring-card" />
-            <div className="min-w-0 flex-1 sm:pb-1 sm:pt-4">
+            {/* sm:pt-16 starts the name just below the cover band (the avatar overlaps it by 56px). */}
+            <div className="min-w-0 flex-1 sm:pt-16">
               <h1 className="truncate font-display text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">{displayName(p)}</h1>
               {p.handle && p.display_name && <p className="font-medium text-muted-foreground">@{p.handle}</p>}
             </div>
-            {action && <div className="sm:pb-1">{action}</div>}
+            {action && <div className="sm:self-end sm:pb-1">{action}</div>}
           </div>
           {p.bio && <p className="mx-auto mt-3 max-w-prose text-center text-sm sm:mx-0 sm:text-left">{p.bio}</p>}
           <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -366,8 +367,9 @@ const AppearanceForm = () => {
                 {t.previews.map((tone) => <ThemePreview key={tone} tone={tone} />)}
               </span>
               <span className="flex items-center justify-between gap-1 px-1 pb-0.5 pt-2 text-sm font-semibold text-heading [&_svg]:size-4">
-                <span className="flex items-center gap-1.5">{t.icon} {t.label}</span>
-                <span aria-hidden className={cn('grid size-5 place-items-center rounded-full border-2 transition-colors', theme === t.value ? 'border-primary bg-primary text-primary-foreground' : 'border-input')}>
+                {/* The icon drops on phones so the label and the radio dot fit a third of the row. */}
+                <span className="flex min-w-0 items-center gap-1.5 max-sm:[&_svg]:hidden">{t.icon} {t.label}</span>
+                <span aria-hidden className={cn('grid size-5 shrink-0 place-items-center rounded-full border-2 transition-colors', theme === t.value ? 'border-primary bg-primary text-primary-foreground' : 'border-input')}>
                   {theme === t.value && <Check className="size-3!" strokeWidth={3} />}
                 </span>
               </span>
