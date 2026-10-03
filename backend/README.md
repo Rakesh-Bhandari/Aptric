@@ -5,6 +5,7 @@ Node.js + Express API for Aptric. It is the only thing the browser talks to and 
 - **Auth**: email + password (with email confirmation), email sign-in links, password reset, Google sign-in, short-lived JWT access tokens and rotating refresh tokens. Accounts live in `private.accounts` (see [supabase/README.md](../supabase/README.md#accounts-20261002000001_backend_authsql)).
 - **Game and admin data**: every rule stays in the Postgres functions in `supabase/migrations`. The API runs them **as the signed-in user** (`auth.uid()` = the user), so the `SECURITY DEFINER` checks apply unchanged. See [Database access](#database-access).
 - **AI question generation**: the generate → validate → dedupe → computed check → independent solve pipeline, one batch per request.
+- **Aptric Tutor**: a streamed AI chat on the solve screen, on free open-source models, grounded in the answer key in Postgres. See [Aptric Tutor](#aptric-tutor).
 - **Scheduled jobs** stay in Postgres (`pg_cron`): daily sets, streaks, leagues, ratings, leaderboards, auth-token cleanup.
 
 ```text
@@ -23,7 +24,7 @@ cd backend
 cp .env.example .env      # SUPABASE_URL, SUPABASE_SECRET_KEY, JWT_SECRET (openssl rand -base64 48), FRONTEND_URL, ...
 npm install
 npm run dev               # http://localhost:5000 (restarts on change)
-npm test                  # node:test: generation pipeline + RPC whitelist
+npm test                  # node:test: generation pipeline, RPC whitelist, tutor
 ```
 
 Database: either the local stack (`npx supabase start && npx supabase db reset`, then `SUPABASE_URL=http://127.0.0.1:54321` and the "Secret key" from `npx supabase status`) or the hosted project's URL and secret key. Without `SMTP_HOST`, email links are printed to the console instead of sent.
@@ -45,7 +46,7 @@ Then point the frontend at it: `VITE_API_URL=http://localhost:5000` in `frontend
    | `NODE_ENV` | `production` |
    | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | any SMTP provider (Resend: `smtp.resend.com`, 465, `resend`, API key) |
 
-   Optional: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, `OPEN_ROUTER_API_KEY` (+ the `QUESTION_*`, `EMBEDDING_*`, `GENERATE_*` settings), `CORS_ORIGINS`.
+   Optional: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, `OPEN_ROUTER_API_KEY` (+ the `QUESTION_*`, `EMBEDDING_*`, `GENERATE_*` settings, and the `TUTOR_*` settings for [Aptric Tutor](#aptric-tutor)), `CORS_ORIGINS`.
 3. Deploy, check `GET <API_URL>/health` → `{"status":"ok","database":"ok","migrations":"ok"}`. A 503 names the problem: missing or wrong environment variables (`server_misconfigured`, e.g. a publishable key in `SUPABASE_SECRET_KEY`), Supabase unreachable or the key rejected, or migrations not yet applied (`npx supabase db push`; `public.backend_sql` comes from `20261002000002_backend_gateway.sql`).
 4. In the frontend's Vercel project set `VITE_API_URL=<API_URL>` and redeploy it.
 
@@ -110,6 +111,8 @@ All bodies are JSON. Errors are `{ "error": { "code", "message", ... } }`; datab
 | `POST /reports`, `POST /feedback` | user | report a question / send feedback |
 | `GET /catalog/exam-tags`, `GET /catalog/levels` | user | small catalogs |
 | `GET /questions/:id/subtopic` | user | subtopic of a question the user can see |
+| `POST /tutor/chat` | user | one Aptric Tutor turn, streamed as server-sent events (see [Aptric Tutor](#aptric-tutor)) |
+| `GET /tutor/history?question_id&context` | user | `{ available, messages }`: the stored chat for one question, and whether the tutor is configured |
 | `/admin/*` | admin | taxonomy, tags, question search and counts, user attempts, reports (list, update, open count), generation jobs (list, active count), `POST /admin/generate-questions`, audit log |
 
 ## Layout
@@ -125,8 +128,60 @@ backend/
 │   ├── http.js             # HttpError, error → JSON (SQLSTATE codes)
 │   ├── auth/               # accounts + sessions, tokens, mailer, Google
 │   ├── middleware/         # requireUser / requireAdmin, Postgres-backed rate limits
-│   ├── routes/             # auth, rpc, me (profile, catalogs, reports), admin
-│   └── generation/         # AI question pipeline, OpenAI-compatible LLM + embeddings, pg store
+│   ├── routes/             # auth, rpc, me (profile, catalogs, reports), admin, tutor
+│   ├── generation/         # AI question pipeline, OpenAI-compatible LLM + embeddings, pg store
+│   └── tutor/              # Aptric Tutor: streaming chat client + model fallback, prompt, leak guard
 ├── test/                   # node --test
 └── vercel.json
 ```
+
+## Aptric Tutor
+
+An AI chat on the daily and practice solve screens (`src/routes/tutor.js`, `src/tutor/`). It teaches around the current question and is grounded in the verified answer key; it is off for contests (until they end) and placement.
+
+### Free, open-source models
+
+Any OpenAI-compatible chat API, streamed, with no `response_format`:
+
+| Provider | Settings |
+| --- | --- |
+| **OpenRouter free models** (default) | `OPEN_ROUTER_API_KEY` (or `TUTOR_LLM_API_KEY`). Model `meta-llama/llama-3.3-70b-instruct:free`, then `deepseek/deepseek-chat-v3-0324:free`, `qwen/qwen-2.5-72b-instruct:free`, `mistralai/mistral-small-3.1-24b-instruct:free` |
+| **Groq** (free tier, Llama 3.x) | `TUTOR_LLM_BASE_URL=https://api.groq.com/openai/v1`, `TUTOR_LLM_API_KEY=gsk_...`, `TUTOR_MODEL=llama-3.3-70b-versatile`, `TUTOR_FALLBACK_MODELS=llama-3.1-8b-instant` |
+| **Ollama** (self-hosted) | `TUTOR_LLM_BASE_URL=http://localhost:11434/v1`, `TUTOR_MODEL=llama3.1`, `TUTOR_FALLBACK_MODELS=` (no key needed for a local server) |
+
+**Only free models by default.** On OpenRouter, models whose id doesn't end in `:free` are skipped unless `TUTOR_ALLOW_PAID_MODELS=true`; other providers (Groq's free tier, Ollama) are used as configured. A model that fails before its first token with 429, 5xx, 404 (retired free model), a timeout or a network error hands over to the next one; a bad key (401/403) does not. Without a key (and not a local URL), `POST /tutor/chat` answers `503 tutor_unavailable` and the app shows the stored hint (through `use_hint`, charged as before) and the official explanation instead.
+
+| Variable | Default |
+| --- | --- |
+| `TUTOR_LLM_BASE_URL` | `LLM_BASE_URL`, else `https://openrouter.ai/api/v1` |
+| `TUTOR_LLM_API_KEY` | `OPEN_ROUTER_API_KEY` |
+| `TUTOR_MODEL` | `meta-llama/llama-3.3-70b-instruct:free` |
+| `TUTOR_FALLBACK_MODELS` | the three `:free` models above (comma-separated; empty = none) |
+| `TUTOR_ALLOW_PAID_MODELS` | `false` |
+| `TUTOR_MAX_TOKENS` / `TUTOR_TEMPERATURE` | `700` / `0.3` |
+| `TUTOR_MESSAGES_PER_HOUR` / `TUTOR_MESSAGES_PER_DAY` | `60` / `200` per user, plus 1 request per 2 s |
+
+### `POST /tutor/chat`
+
+Body `{ question_id, context, intent, message?, history_id? }` (strict). `context` is `daily` or `practice` (`assessment` is refused as locked). `intent` is one of `hint`, `steps`, `next_step`, `understand`, `concept`, `explain`, `training`, `free` (`free` needs `message`, at most 500 characters). `history_id` retries a stored question turn after an error instead of storing it again.
+
+1. Rate limits (`tutor:burst`, `tutor:hour`, `tutor:day` in `private.rate_limits`), then **`private.tutor_context`** from Postgres before every model call (scope, phase, verified answer key, attempt, hint state, learner profile; see [supabase/README.md](../supabase/README.md#aptric-tutor-20261003000001_tutorsql)). `42501` when the question isn't the player's to see in that context.
+2. `phase = 'locked'` (live or upcoming contest, placement) → `403 tutor_locked`.
+3. Not `verified` (not published, no answer key) → the fixed reply "This question isn't verified yet, so I can't tutor it. Please report it." without a model call.
+4. While solving, `explain` or a typed request for the answer ("what's the answer?", "is it B?", "just tell me the correct option") → `409 tutor_requires_give_up`; the app runs the usual give-up confirm and `give_up` RPC, after which the phase is `answered`.
+5. Typed messages: a keyword pre-check (prompt-injection attempts and clear off-topic requests get canned replies), then, for unclear ones, a one-word `on_topic|off_topic` classification by the same free model.
+6. **Hint charging**: while solving, the first `hint`, `steps` or `next_step` calls the existing `use_hint` as the player, so the penalty applies exactly once (as before, questions without a stored hint cost nothing). `understand`, `concept` and `training` are free; typed questions before a paid hint are limited by the prompt to wording and concepts.
+7. The prompt (`src/tutor/prompt.js`) carries the rules and the verified context in `<question>`, `<answer_key>` (model only), `<attempt>` and `<learner>` blocks, the last 8 turns, and the message in a `<user_message>` block treated as data.
+8. **Leak guard** (`src/tutor/guard.js`), while solving: the reply is buffered by sentence and any sentence stating the correct option's letter or number as the answer ("answer is C", "option 3", "the third option"), its text or value as a result, or the explanation's final value, is replaced with "(I won't give the final answer yet. Try the next step!)" and logged. The answer key itself never reaches the browser before an attempt.
+9. Both turns are stored in `public.tutor_messages` (through `private.tutor_append_message`).
+
+Response: `text/event-stream` with
+
+| Event | Data |
+| --- | --- |
+| `meta` | `{ phase, context, intent, hint_used, hint_charged, user_message_id }` |
+| `delta` | `{ text }` (repeated) |
+| `done` | `{ message_id, model, phase, hint_used, blocked }` (`blocked` = sentences the guard replaced) |
+| `error` | `{ error: { code, message, user_message_id? } }`, the same shape as other errors (`tutor_unavailable` when every model failed) |
+
+Errors before the stream are ordinary JSON: `400` bad body, `401`, `403 tutor_locked` / `42501`, `409 tutor_requires_give_up`, `429 over_request_rate_limit`, `503 tutor_unavailable`.

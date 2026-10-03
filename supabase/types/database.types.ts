@@ -1548,6 +1548,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      tutor_messages: {
+        Row: {
+          content: string;
+          context: Database["public"]["Enums"]["attempt_context"];
+          created_at: string;
+          id: string;
+          intent: string | null;
+          model: string | null;
+          question_id: string;
+          role: string;
+          user_id: string;
+        };
+        Insert: {
+          content: string;
+          context: Database["public"]["Enums"]["attempt_context"];
+          created_at?: string;
+          id?: string;
+          intent?: string | null;
+          model?: string | null;
+          question_id: string;
+          role: string;
+          user_id: string;
+        };
+        Update: {
+          content?: string;
+          context?: Database["public"]["Enums"]["attempt_context"];
+          created_at?: string;
+          id?: string;
+          intent?: string | null;
+          model?: string | null;
+          question_id?: string;
+          role?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tutor_messages_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tutor_messages_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       user_badges: {
         Row: {
           awarded_at: string;

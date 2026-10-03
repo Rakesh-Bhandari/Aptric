@@ -1,8 +1,14 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/context/ToastContext';
+import { getTutorHistory, streamTutor, type TutorDone } from '@/lib/tutor';
 import { SolveScreen, type Reveal, type SolveQuestion } from './SolveScreen';
+
+vi.mock('@/lib/tutor', () => ({ streamTutor: vi.fn(), getTutorHistory: vi.fn() }));
+const stream = vi.mocked(streamTutor);
+const history = vi.mocked(getTutorHistory);
+const done = (over: Partial<TutorDone> = {}): TutorDone => ({ message_id: 'm2', model: 'llama:free', phase: 'solving', hint_used: false, blocked: 0, ...over });
 
 const question: SolveQuestion = {
   id: 'q1',
@@ -69,12 +75,108 @@ describe('SolveScreen', () => {
     expect(screen.getByText(/the right answer is/i)).toHaveTextContent('option B');
   });
 
-  it('labels the hint with its cost and reveals it', async () => {
-    const onHint = vi.fn(async () => 'Count on your fingers.');
-    const { user } = setup({ onHint, hintCost: 3 });
-    await user.click(screen.getByRole('button', { name: /show hint \(−3\)/i }));
-    expect(await screen.findByText('Count on your fingers.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /show hint/i })).not.toBeInTheDocument();
+  describe('Aptric Tutor', () => {
+    beforeEach(() => {
+      history.mockResolvedValue({ available: true, messages: [] });
+      stream.mockImplementation(async (req, handlers) => {
+        handlers?.onMeta?.({
+          phase: 'solving', context: 'practice', intent: req.intent, hint_used: req.intent === 'hint',
+          hint_charged: req.intent === 'hint', user_message_id: 'm1',
+        });
+        handlers?.onDelta?.(req.intent === 'explain' ? 'Two plus two: count up.' : 'Count on your fingers.');
+        return done();
+      });
+    });
+    afterEach(() => vi.clearAllMocks());
+
+    it('the Hint button keeps its cost and opens the tutor with a hint', async () => {
+      const onHint = vi.fn(async () => 'stored hint');
+      const { user } = setup({ onHint, hintCost: 3, tutor: true });
+      await user.click(screen.getByRole('button', { name: /show hint \(−3\)/i }));
+      const dialog = await screen.findByRole('dialog', { name: 'Aptric Tutor' });
+      expect(await within(dialog).findByText('Count on your fingers.')).toBeInTheDocument();
+      expect(stream).toHaveBeenCalledWith(expect.objectContaining({ questionId: 'q1', context: 'practice', intent: 'hint' }), expect.anything(), expect.anything());
+      expect(within(dialog).getByText('Solving: no spoilers')).toBeInTheDocument();
+      // Charged server-side through use_hint, not the static RPC.
+      expect(within(dialog).getByText('Hint used (−3 XP)')).toBeInTheDocument();
+      expect(onHint).not.toHaveBeenCalled();
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      // The cost chip goes once the hint is paid for.
+      expect(screen.getByRole('button', { name: 'Show hint' })).toBeInTheDocument();
+    });
+
+    it('H opens the tutor without sending anything', async () => {
+      const { user } = setup({ tutor: true });
+      await user.keyboard('h');
+      expect(await screen.findByRole('dialog', { name: 'Aptric Tutor' })).toBeInTheDocument();
+      expect(stream).not.toHaveBeenCalled();
+    });
+
+    it('giving up opens the tutor in explain mode; Ask Tutor stays after', async () => {
+      const onGiveUp = vi.fn(async () => reveal(null));
+      const { user } = setup({ onGiveUp, tutor: true });
+      await user.click(screen.getByRole('button', { name: /more actions/i }));
+      await user.click(await screen.findByRole('menuitem', { name: /give up & see answer/i }));
+      await user.click(await screen.findByRole('button', { name: /show me the answer/i }));
+      expect(await screen.findByRole('heading', { name: "Here's the answer" })).toBeInTheDocument();
+      const dialog = await screen.findByRole('dialog', { name: 'Aptric Tutor' });
+      expect(await within(dialog).findByText('Two plus two: count up.')).toBeInTheDocument();
+      expect(stream).toHaveBeenCalledWith(expect.objectContaining({ intent: 'explain' }), expect.anything(), expect.anything());
+      expect(within(dialog).getByText('Answered: full explanations')).toBeInTheDocument();
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      // The official explanation is collapsed while the tutor is around.
+      const toggle = screen.getByRole('button', { name: /official explanation/i });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await user.click(toggle);
+      expect(screen.getByText('four')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Ask Tutor' }));
+      expect(await screen.findByRole('dialog', { name: 'Aptric Tutor' })).toBeInTheDocument();
+    });
+
+    it('the tutor asking for a give-up runs the usual confirm', async () => {
+      const onGiveUp = vi.fn(async () => reveal(null));
+      const { user } = setup({ onGiveUp, tutor: true });
+      await user.keyboard('h');
+      const dialog = await screen.findByRole('dialog', { name: 'Aptric Tutor' });
+      await user.click(within(dialog).getByRole('button', { name: /full explanation/i }));
+      expect(await screen.findByRole('dialog', { name: /give up on this question/i })).toBeInTheDocument();
+      expect(stream).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: /keep trying/i }));
+      expect(onGiveUp).not.toHaveBeenCalled();
+      expect(await screen.findByRole('dialog', { name: 'Aptric Tutor' })).toBeInTheDocument();
+    });
+
+    it.each(['contest', 'placement'] as const)('no tutor in %s', async (kind) => {
+      const { user } = setup({ kind, tutor: true, onHint: vi.fn(async () => 'x'), hintCost: 3 });
+      expect(screen.queryByRole('button', { name: /show hint/i })).not.toBeInTheDocument();
+      await user.keyboard('h');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      if (kind === 'contest') {
+        await user.keyboard('2{Enter}');
+        await screen.findByRole('heading', { name: 'Correct!' });
+        expect(screen.queryByRole('button', { name: 'Ask Tutor' })).not.toBeInTheDocument();
+      }
+      expect(history).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the stored hint and explanation without the tutor (503)', async () => {
+      history.mockResolvedValue({ available: false, messages: [] });
+      const onHint = vi.fn(async () => 'Count on your fingers.');
+      const { user } = setup({ onHint, hintCost: 3, tutor: true });
+      await user.click(screen.getByRole('button', { name: /show hint/i }));
+      const dialog = await screen.findByRole('dialog', { name: 'Aptric Tutor' });
+      expect(await within(dialog).findByText('Count on your fingers.')).toBeInTheDocument();
+      expect(onHint).toHaveBeenCalledTimes(1);
+      expect(stream).not.toHaveBeenCalled();
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      await user.keyboard('2{Enter}');
+      await screen.findByRole('heading', { name: 'Correct!' });
+      // Without the tutor the explanation is open.
+      expect(screen.getByText('four')).toBeInTheDocument();
+    });
   });
 
   it('asks before giving up, then shows the answer', async () => {

@@ -5,6 +5,8 @@ interface Handlers {
   enabled: boolean;
   onPick: (index: number) => void;
   onEnter: () => void;
+  /** H opens the tutor, when there is one. */
+  onTutor?: () => void;
 }
 
 const isTyping = (target: EventTarget | null) => {
@@ -15,11 +17,12 @@ const isTyping = (target: EventTarget | null) => {
 
 /**
  * Solve-screen shortcuts: 1–9 pick an option, Enter checks the answer (or
- * moves on once it's checked). Ignored while typing or when a dialog is open.
+ * moves on once it's checked), H opens the tutor. Ignored while typing or
+ * when a dialog is open.
  */
-export const useSolveKeys = ({ optionCount, enabled, onPick, onEnter }: Handlers) => {
-  const ref = useRef({ optionCount, enabled, onPick, onEnter });
-  ref.current = { optionCount, enabled, onPick, onEnter };
+export const useSolveKeys = ({ optionCount, enabled, onPick, onEnter, onTutor }: Handlers) => {
+  const ref = useRef({ optionCount, enabled, onPick, onEnter, onTutor });
+  ref.current = { optionCount, enabled, onPick, onEnter, onTutor };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -33,6 +36,11 @@ export const useSolveKeys = ({ optionCount, enabled, onPick, onEnter }: Handlers
           e.preventDefault();
           h.onPick(index);
         }
+        return;
+      }
+      if ((e.key === 'h' || e.key === 'H') && h.onTutor) {
+        e.preventDefault();
+        h.onTutor();
         return;
       }
       if (e.key === 'Enter') {

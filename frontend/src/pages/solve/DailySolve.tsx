@@ -139,6 +139,7 @@ const DailySolve = () => {
           return record(r, timeMs, optionId);
         }}
         onHint={async () => (await api.requestHint({ questionId: question.id, context: 'daily' })).hint}
+        tutor
         onGiveUp={async (timeMs) => {
           const r = await api.giveUp({ questionId: question.id, context: 'daily' });
           return record(r, timeMs, null);

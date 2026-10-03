@@ -11,6 +11,7 @@ import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
 import meRoutes from './routes/me.js';
 import rpcRoutes from './routes/rpc.js';
+import tutorRoutes from './routes/tutor.js';
 
 const DEV_ORIGINS = ['http://localhost:6969', 'http://localhost:5173', 'http://127.0.0.1:6969', 'http://127.0.0.1:5173'];
 
@@ -117,6 +118,7 @@ export function createApp() {
 
   app.use('/auth', authRoutes);
   app.use('/rpc', rpcRoutes);
+  app.use('/tutor', tutorRoutes);
   app.use('/admin', adminRoutes);
   app.use('/', meRoutes);
 

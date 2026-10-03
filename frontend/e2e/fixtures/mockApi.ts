@@ -22,6 +22,18 @@ export interface MockOptions {
 const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
+/** A canned Aptric Tutor reply as server-sent events. */
+function tutorStream(body: Record<string, unknown>) {
+  const intent = String(body.intent ?? 'free');
+  const text = intent === 'hint'
+    ? 'Find the speed in m/s first: $\\frac{120}{6}$. Then think about how to turn m/s into km/h.'
+    : '1. Divide the length by the time.\n2. Convert m/s to km/h by multiplying by $\\frac{18}{5}$.\n\nTry the last step yourself!';
+  const event = (name: string, data: unknown) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
+  return event('meta', { phase: 'solving', context: body.context, intent, hint_used: true, hint_charged: intent === 'hint', user_message_id: 'tm1' })
+    + event('delta', { text })
+    + event('done', { message_id: 'tm2', model: 'meta-llama/llama-3.3-70b-instruct:free', phase: 'solving', hint_used: true, blocked: 0 });
+}
+
 /** Answers a player or admin API call with fixture data, or null when unknown. */
 function respond(method: string, path: string, body: Record<string, unknown>, opts: MockOptions): unknown {
   const url = new URL(path, API_URL);
@@ -51,6 +63,7 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
     }
   }
 
+  if (p === '/tutor/history') return { available: true, messages: [] };
   if (p === '/me/profile') return method === 'PATCH' ? { ...d.profile(opts.profile), ...body } : d.profile(opts.profile);
   if (p === '/me/placement') return { completed_at: d.FIXED_NOW.toISOString(), placed_level: 3, correct: 7, score: 70 };
   if (p === '/catalog/exam-tags') return d.examTags();
@@ -101,6 +114,7 @@ export async function mockApi(page: Page, opts: MockOptions = {}) {
     if (opts.failAll && !isProfile) return json(route, { error: { code: 'XX000', message: 'Server error' } }, 500);
     let body: Record<string, unknown> = {};
     try { body = req.postDataJSON() ?? {}; } catch { /* no body */ }
+    if (path === '/tutor/chat') return route.fulfill({ status: 200, contentType: 'text/event-stream', body: tutorStream(body) });
     const res = respond(req.method(), path, body, { ...opts, signedIn });
     if (res === null) {
       unknown.push(`${req.method()} ${path}`);

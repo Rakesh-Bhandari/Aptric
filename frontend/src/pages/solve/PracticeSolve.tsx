@@ -77,6 +77,7 @@ const Runner = ({ batch, title, againHref }: { batch: PracticeBatch; title: stri
         onSubmit={async (optionId, timeMs) =>
           record(await api.submitAnswer({ questionId: question.id, optionId, context: 'practice', timeMs }), timeMs, optionId)}
         onHint={async () => (await api.requestHint({ questionId: question.id, context: 'practice' })).hint}
+        tutor
         onGiveUp={async (timeMs) => record(await api.giveUp({ questionId: question.id, context: 'practice' }), timeMs, null)}
         onNext={() => {
           setLastResult(null);
