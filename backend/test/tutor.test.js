@@ -489,3 +489,20 @@ test('chatClient streams OpenAI-style SSE without response_format', async () => 
     for await (const d of failing.stream({ model: 'm', messages: [], timeoutMs: 5000 })) void d;
   }, (e) => e instanceof LlmError && e.status === 503 && e.retryable);
 });
+
+test('a database without the tutor migration answers 503 tutor_not_ready, not a bare 500', async (t) => {
+  const { DbError } = await import('../src/http.js');
+  const s = await serve();
+  t.after(s.close);
+  s.state.db.query = async () => {
+    throw new DbError({ code: '42883', message: 'function private.tutor_context(uuid, uuid, public.attempt_context) does not exist' });
+  };
+  const r = await s.chat({ intent: 'hint' });
+  assert.equal(r.status, 503);
+  assert.equal(r.json.error.code, 'tutor_not_ready');
+  assert.match(r.json.error.message, /20261003000001_tutor\.sql/);
+  const h = await s.get(`/tutor/history?question_id=${Q}&context=practice`);
+  assert.equal(h.status, 503);
+  assert.equal(h.json.error.code, 'tutor_not_ready');
+  assert.ok(s.log.lines.some((l) => l.includes('npx supabase db push')));
+});

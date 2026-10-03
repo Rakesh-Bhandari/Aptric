@@ -195,4 +195,23 @@ describe('TutorPanel', () => {
     expect(await within(d).findByText('Stored hint text.')).toBeInTheDocument();
     expect(onAvailability).toHaveBeenCalledWith(false);
   });
+
+  it('a database without the tutor migration falls back instead of erroring', async () => {
+    history.mockRejectedValue(new ApiError(503, 'tutor_not_ready', 'Apply the migration.'));
+    const fallbackHint = vi.fn(async () => 'Stored hint text.');
+    const { user, onAvailability } = setup({ fallbackHint });
+    const d = await dialog();
+    await waitFor(() => expect(onAvailability).toHaveBeenCalledWith(false));
+    await user.click(within(d).getByRole('button', { name: /^hint$/i }));
+    expect(await within(d).findByText('Stored hint text.')).toBeInTheDocument();
+    expect(stream).not.toHaveBeenCalled();
+  });
+
+  it('other server errors show their code', async () => {
+    stream.mockRejectedValue(new ApiError(500, 'internal', 'boom'));
+    const { user } = setup();
+    const d = await dialog();
+    await user.click(within(d).getByRole('button', { name: /concept/i }));
+    expect(await within(d).findByRole('alert')).toHaveTextContent('(internal)');
+  });
 });
