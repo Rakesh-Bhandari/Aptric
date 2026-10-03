@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router-dom';
-import { ArrowLeft, Home, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
 import { AptricMark } from '@/components/brand/AptricMark';
 import { Button } from '@/components/ui/button';
 
@@ -12,17 +12,18 @@ const SystemState = ({ eyebrow, title, message, actions, alert }: {
   eyebrow?: string; title: string; message: string; actions: ReactNode; alert?: boolean;
 }) => (
   <div role={alert ? 'alert' : undefined} className="mx-auto flex max-w-md flex-col items-center gap-5 px-6 py-16 text-center sm:py-24">
-    <div className="relative grid place-items-center" aria-hidden>
-      <span className="absolute size-40 rounded-full bg-primary-soft/70 blur-2xl dark:bg-primary-soft/40" />
-      <AptricMark className="relative h-28 opacity-25 dark:opacity-35" />
+    <div className="relative grid size-48 place-items-center" aria-hidden>
+      {/* Soft blue and violet radial glow behind the faded mark. */}
+      <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_40%,var(--primary)_0%,transparent_60%),radial-gradient(circle_at_70%_65%,var(--violet)_0%,transparent_60%)] opacity-20 blur-2xl dark:opacity-35" />
+      <AptricMark className="relative h-28 opacity-30 dark:opacity-40" />
       {eyebrow && (
-        <span className="absolute -bottom-2 rounded-full bg-navy px-3 py-1 font-display text-sm font-extrabold tracking-widest text-navy-foreground shadow-md">
+        <span className="absolute bottom-3 rounded-full bg-primary bg-gradient-primary px-3 py-1 font-display text-sm font-extrabold tracking-widest text-primary-foreground shadow-glow">
           {eyebrow}
         </span>
       )}
     </div>
     <div className="space-y-2">
-      <h1 className="font-display text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">{title}</h1>
+      <h1 className="font-display text-3xl font-extrabold tracking-tight text-heading sm:text-4xl">{title}</h1>
       <p className="text-muted-foreground">{message}</p>
     </div>
     <div className="flex flex-wrap justify-center gap-3">{actions}</div>
@@ -43,7 +44,7 @@ export const CrashScreen = ({ error, onRetry }: { error: unknown; onRetry?: () =
       actions={(
         <>
           <Button asChild>
-            <a href="/"><Home /> Go home</a>
+            <a href="/">Go home <ArrowRight /></a>
           </Button>
           <Button variant="outline" onClick={stale || !onRetry ? () => window.location.reload() : onRetry}>
             <RotateCcw /> {stale ? 'Reload' : 'Try again'}
@@ -100,7 +101,7 @@ export const NotFound = ({ title = 'Page not found', message = 'The link may be 
     actions={(
       <>
         <Button asChild>
-          <Link to="/"><Home /> Go home</Link>
+          <Link to="/">Go home <ArrowRight /></Link>
         </Button>
         <Button variant="outline" onClick={() => window.history.back()}>
           <ArrowLeft /> Go back

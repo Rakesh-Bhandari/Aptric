@@ -54,6 +54,8 @@ const TEXT_PAIRS: [string, string][] = [
   ['navy-foreground', 'brand-navy'], ['navy-muted-foreground', 'brand-navy'], ['on-navy-success', 'brand-navy'], ['on-navy-danger', 'brand-navy'],
   // App header: white in light mode, midnight in dark mode.
   ['header-foreground', 'header'], ['header-muted-foreground', 'header'],
+  // Mobile tab bar (on --header): muted labels, and the active tab's blue label (--accent-text in dark mode).
+  ['muted-foreground', 'header'], ['accent-text', 'header'],
   // Navy chrome: footer, auth banner, dark tab bar. Light Blue is the link and icon colour there.
   ['chrome-foreground', 'chrome'], ['chrome-foreground', 'chrome-deep'],
   ['chrome-muted-foreground', 'chrome'], ['chrome-muted-foreground', 'chrome-deep'],
@@ -76,6 +78,14 @@ describe.each([['light', light], ['dark', dark]] as const)('%s theme contrast', 
     expect(tokens[fg], `missing --${fg}`).toBeDefined();
     expect(tokens[bg], `missing --${bg}`).toBeDefined();
     expect(ratio(tokens[fg], tokens[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// Active header nav link and tab in light mode: Primary Blue text on the white header.
+// (Dark mode switches to --accent-text, checked in TEXT_PAIRS.)
+describe('light theme header', () => {
+  it('primary on header meets AA', () => {
+    expect(ratio(light.primary, light.header)).toBeGreaterThanOrEqual(4.5);
   });
 });
 

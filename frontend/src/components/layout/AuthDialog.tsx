@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
+import { AlertCircle, ArrowRight, Eye, EyeOff, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FieldHint, Input, Label } from '@/components/ui/input';
@@ -172,7 +172,7 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
     <>
       <Button
         variant="outline" size="lg"
-        className="w-full border-[1.5px] border-input text-heading hover:border-navy hover:bg-navy-soft hover:text-heading dark:border-input dark:hover:border-foreground/60 dark:hover:bg-muted dark:hover:text-foreground"
+        className="w-full border-[1.5px] border-input bg-card text-heading hover:border-primary hover:bg-primary-wash hover:text-heading dark:border-input dark:text-heading dark:hover:border-accent-text dark:hover:bg-primary-wash dark:hover:text-heading"
         onClick={() => void google()} disabled={busy}
       >
         <svg viewBox="0 0 24 24" aria-hidden className="size-5!">
@@ -204,7 +204,7 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
             {needsVerification && (
               <Button variant="link" onClick={() => void resend()} disabled={busy}>Resend the confirmation email</Button>
             )}
-            <Button type="submit" className="w-full" size="lg" loading={busy}>Sign in</Button>
+            <Button type="submit" className="w-full" size="lg" loading={busy}>Sign in <ArrowRight aria-hidden /></Button>
             <div className="flex flex-col items-center gap-1 text-sm">
               <button type="button" className="inline-flex min-h-11 items-center font-semibold text-accent-text hover:underline" onClick={() => switchMode('magic')}>
                 Email me a sign-in link instead
@@ -227,7 +227,7 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
             {emailField}
             {passwordField}
             {errorNote}
-            <Button type="submit" className="w-full" size="lg" loading={busy}>Create account</Button>
+            <Button type="submit" className="w-full" size="lg" loading={busy}>Create account <ArrowRight aria-hidden /></Button>
             <p className="text-center text-xs text-muted-foreground">
               By creating an account you agree to our <a className="font-medium text-accent-text underline" href="/terms" target="_blank" rel="noreferrer">terms</a>.
             </p>
