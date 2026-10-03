@@ -56,7 +56,7 @@ export const ReportDialog = ({ questionId, open, onOpenChange }: { questionId: s
                       'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
                       checked
                         ? 'border-primary bg-primary-soft text-primary-soft-foreground'
-                        : 'border-border bg-card text-foreground hover:border-navy/35 dark:hover:border-navy-soft-foreground/40',
+                        : 'border-border bg-card text-foreground hover:border-hover-border',
                     )}
                   >
                     <input

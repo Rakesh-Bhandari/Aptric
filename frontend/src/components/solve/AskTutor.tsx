@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Bot } from 'lucide-react';
+import { Bot, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { TutorContext } from '@/lib/tutor';
 import { cn } from '@/lib/utils';
 import { TutorPanel } from './TutorPanel';
 
 /**
- * Floating chatbot icon that opens Aptric Tutor. Sits above the solve
+ * Floating violet chatbot launcher that opens Aptric Tutor. Sits above the solve
  * screen's sticky action bar (and the safe area) on phones.
  */
 export const TutorFab = ({ onClick, className }: { onClick: () => void; className?: string }) => (
@@ -17,14 +17,14 @@ export const TutorFab = ({ onClick, className }: { onClick: () => void; classNam
     aria-keyshortcuts="H"
     title="Aptric Tutor (H)"
     className={cn(
-      'fixed right-4 z-30 grid size-12 place-items-center rounded-full bg-gradient-navy text-chrome-foreground shadow-lg ring-2 ring-primary/70',
+      'fixed right-4 z-30 grid size-12 place-items-center rounded-full bg-violet text-violet-foreground shadow-lg ring-4 ring-violet/20 hover:bg-violet-strong',
       'bottom-[calc(5.25rem+env(safe-area-inset-bottom))] sm:bottom-24 sm:right-6',
       'transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:animate-pop-in',
       className,
     )}
   >
     <Bot className="size-6" aria-hidden />
-    <span aria-hidden className="absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-card bg-primary" />
+    <span aria-hidden className="absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-card bg-sky" />
   </button>
 );
 
@@ -56,7 +56,7 @@ export const AskTutorButton = ({ questionId, context, topic, explanation = null,
           setOpen(true);
         }}
       >
-        <Bot /> Ask Tutor
+        <Sparkles className="text-violet-text" /> Ask Tutor
       </Button>
       {/* Mounted on first use, so a long list doesn't load every chat. */}
       {mounted && (

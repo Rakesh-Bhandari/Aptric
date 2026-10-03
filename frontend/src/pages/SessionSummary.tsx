@@ -130,7 +130,8 @@ const SessionSummary = () => {
     <Page className="max-w-2xl space-y-4 sm:space-y-5">
       {/* Hero: score ring, accuracy, time, XP */}
       <Card variant="navy" className="relative overflow-hidden">
-        <span aria-hidden className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-primary/20 blur-3xl" />
+        <span aria-hidden className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-violet/30 blur-3xl" />
+        <span aria-hidden className="pointer-events-none absolute -bottom-24 -left-10 size-48 rounded-full bg-primary/20 blur-3xl" />
         <div className="relative flex flex-col items-center gap-5 p-5 text-center sm:flex-row sm:gap-7 sm:p-7 sm:text-left">
           <ScoreRing correct={correct} total={total} perfect={perfect} />
           <div className="min-w-0 flex-1 space-y-3">
@@ -148,7 +149,7 @@ const SessionSummary = () => {
             <dl className="flex flex-wrap justify-center gap-2 sm:justify-start">
               <HeroStat icon={<Target />} label="Accuracy" value={accuracy} />
               <HeroStat icon={<Clock />} label="Time" value={formatDuration(timeMs)} hint={answered ? `${formatDuration(timeMs / answered)} each` : undefined} />
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-bold text-primary-foreground [&_svg]:size-4">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-sky px-3 py-1.5 text-sm font-bold text-brand-navy [&_svg]:size-4">
                 <dt className="contents"><Sparkles aria-hidden /><span className="sr-only">XP earned</span></dt>
                 <dd className="tabular-nums">+{xp} XP{local?.bonusXp ? <span className="font-medium"> (incl. {local.bonusXp} bonus)</span> : null}</dd>
               </div>
@@ -194,7 +195,7 @@ const SessionSummary = () => {
       {(streak != null || local?.leveledUpTo || local?.newBadges?.length || ratingChange || result?.league) && (
         <ul className="grid grid-cols-2 gap-3" aria-label="Your progress">
           {streak != null && (
-            <UpdateCard icon={<Flame className="text-streak" />} label="Streak" value={plural(streak, 'day')} tint="orange" />
+            <UpdateCard icon={<Flame className="text-streak" />} label="Streak" value={plural(streak, 'day')} tint="blue" />
           )}
           {result?.league && (
             <UpdateCard icon={<Trophy className="text-gold" />} label={`${result.league.name} league`} value={`#${result.league.rank}`} hint={`of ${result.league.members} this week`} />
@@ -206,7 +207,7 @@ const SessionSummary = () => {
             />
           )}
           {local?.leveledUpTo && (
-            <UpdateCard icon={<TrendingUp className="text-accent-text" />} label="Level up" value={`Level ${local.leveledUpTo}`} tint="navy" />
+            <UpdateCard icon={<TrendingUp className="text-violet-text" />} label="Level up" value={`Level ${local.leveledUpTo}`} tint="violet" />
           )}
           {local?.newBadges?.map((b) => (
             <UpdateCard
@@ -242,7 +243,7 @@ const SessionSummary = () => {
           <Button size="lg" asChild><Link to={local.againHref}><RotateCcw /> Keep practising</Link></Button>
         )}
         <Button size="lg" variant={weakFirst ? 'default' : 'outline'} asChild>
-          <Link to={practiceHref({ mode: 'weak', title: 'Weak areas' })}><Target /> Practice weak areas</Link>
+          <Link to={practiceHref({ mode: 'weak', title: 'Weak areas' })}><Target /> Practice weak areas <ArrowRight /></Link>
         </Button>
         <Button size="lg" variant="outline" asChild>
           <Link to={local?.kind === 'practice' ? '/practice' : '/'}><Home /> {local?.kind === 'practice' ? 'Back to Practice' : 'Back to Today'}</Link>
@@ -265,7 +266,7 @@ const SessionSummary = () => {
   );
 };
 
-/** Big score inside a ring with an orange-gradient stroke; a confetti burst for a perfect score. */
+/** Big score inside a ring with a Light Blue → soft violet stroke (visible on navy); a confetti burst for a perfect score. */
 const ScoreRing = ({ correct, total, perfect }: { correct: number; total: number; perfect: boolean }) => {
   const id = useId().replace(/:/g, '');
   const size = 136;
@@ -279,8 +280,8 @@ const ScoreRing = ({ correct, total, perfect }: { correct: number; total: number
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
         <defs>
           <linearGradient id={`${id}-score`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" style={{ stopColor: 'var(--primary)' }} />
-            <stop offset="1" style={{ stopColor: 'var(--sky)' }} />
+            <stop offset="0" style={{ stopColor: 'var(--sky)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--on-navy-violet)' }} />
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeOpacity={0.14} strokeWidth={stroke} />
@@ -301,7 +302,8 @@ const ScoreRing = ({ correct, total, perfect }: { correct: number; total: number
   );
 };
 
-const BURST_COLORS = ['bg-primary', 'bg-sky', 'bg-navy-foreground', 'bg-success'];
+// Blue, violet and light blue, as the brief asks; all read on the navy hero.
+const BURST_COLORS = ['bg-primary', 'bg-on-navy-violet', 'bg-sky', 'bg-violet'];
 
 /** CSS-only confetti; .confetti hides it under reduced motion (OS or in-app). */
 const Burst = () => (
@@ -332,12 +334,12 @@ const HeroStat = ({ icon, label, value, hint }: { icon: ReactNode; label: string
 );
 
 const UpdateCard = ({ icon, label, value, hint, tint }: {
-  icon: ReactNode; label: string; value: ReactNode; hint?: ReactNode; tint?: 'orange' | 'navy';
+  icon: ReactNode; label: string; value: ReactNode; hint?: ReactNode; tint?: 'blue' | 'violet';
 }) => (
   <li
     className={cn(
       'flex items-center gap-3 rounded-lg border p-3 shadow-sm sm:p-4',
-      tint === 'orange' ? 'border-primary/25 bg-primary-soft' : tint === 'navy' ? 'border-transparent bg-navy-soft' : 'bg-card',
+      tint === 'blue' ? 'border-primary/20 bg-primary-soft' : tint === 'violet' ? 'border-violet/20 bg-violet-soft' : 'bg-card',
     )}
   >
     <span className="grid size-10 shrink-0 place-items-center rounded-full bg-card shadow-sm [&_svg]:size-5" aria-hidden>{icon}</span>
@@ -394,7 +396,7 @@ const ReviewItem = ({ item, number, tutorContext }: { item: SessionItem; number:
           </ul>
           {review.selectedOptionId === null && <p className="text-sm text-muted-foreground">You gave up on this one.</p>}
           {review.explanation && (
-            <div className="rounded-md border border-l-4 border-l-navy bg-card p-3 dark:border-l-navy-strong sm:p-4">
+            <div className="accent-left rounded-md border bg-card p-3 pl-4 sm:p-4 sm:pl-5">
               <h3 className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Explanation</h3>
               <Markdown text={review.explanation} className="text-sm" />
             </div>

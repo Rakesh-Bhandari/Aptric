@@ -131,9 +131,15 @@
   /* Status colours on navy-gradient panels (same in both themes). */
   --on-navy-success: #4ade80;
   --on-navy-danger: #fca5a5;
+  /* Soft violet stop for rings and art on navy (the session score ring: --sky → this). */
+  --on-navy-violet: #a78bfa;
+  /* Hover border for tappable answer cards and choice chips: a light blue edge. */
+  --hover-border: #93c5fd;
   /* Brand gradients. Secondary is decorative only: never under body text. */
   --gradient-primary: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
   --gradient-primary-hover: linear-gradient(90deg, #1d4ed8 0%, #6d28d9 100%);
+  /* The primary gradient top to bottom, for thin vertical accents (explanation cards). */
+  --gradient-primary-vertical: linear-gradient(180deg, #2563eb 0%, #7c3aed 100%);
   --gradient-secondary: linear-gradient(90deg, #38bdf8 0%, #7c3aed 100%);
   --gradient-navy: linear-gradient(135deg, #0a2540 0%, #1e3a8a 100%);
   /* Display-size gradient text (the hero's "Grow."). */
@@ -217,6 +223,7 @@
   --warning-soft: #36290c;
   --warning-soft-foreground: #fde68a;
   --status-foreground: #0a1020;
+  --hover-border: rgb(56 189 248 / 0.45);
   --streak: #fb923c;
   --gold: #fbbf24;
   --chart-accent: #60a5fa;
@@ -338,6 +345,8 @@
   --color-preview-dark-line: var(--preview-dark-line);
   --color-on-navy-success: var(--on-navy-success);
   --color-on-navy-danger: var(--on-navy-danger);
+  --color-on-navy-violet: var(--on-navy-violet);
+  --color-hover-border: var(--hover-border);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 4px);
   --radius-sm: calc(var(--radius) - 8px);
@@ -363,6 +372,19 @@
 }
 @utility bg-gradient-primary-hover {
   background-image: var(--gradient-primary-hover);
+}
+/* A 3px primary-gradient bar down a card's left edge (explanations). */
+@utility accent-left {
+  position: relative;
+  overflow: hidden;
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 3px;
+    background-image: var(--gradient-primary-vertical);
+  }
 }
 @utility bg-gradient-secondary {
   background-image: var(--gradient-secondary);
@@ -667,7 +689,6 @@
 .prose-question th + th, .prose-question td + td { border-left: 1px solid var(--border); }
 .prose-question tr:last-child td { border-bottom: 0; }
 .prose-question th { background: var(--background); color: var(--heading); font-weight: 700; white-space: nowrap; }
-[data-theme='dark'] .prose-question th { background: var(--muted); }
 .prose-question img { max-width: 100%; height: auto; border-radius: calc(var(--radius) - 4px); }
 /* KaTeX inherits the text colour, so it reads in both themes. */
 .prose-question .katex { font-size: 1.08em; color: inherit; }
