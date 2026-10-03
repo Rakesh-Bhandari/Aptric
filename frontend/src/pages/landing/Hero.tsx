@@ -16,7 +16,7 @@ export const Hero = () => {
   };
 
   return (
-    <section aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-gradient-hero text-chrome-foreground">
+    <section aria-labelledby="hero-title" data-theme="dark" className="relative isolate overflow-hidden bg-gradient-hero text-chrome-foreground">
       {/* Calm background: a dot grid that fades out, and an orange glow behind the peak. Decorative. */}
       <div aria-hidden className="absolute inset-0 -z-10 bg-dots [mask-image:radial-gradient(ellipse_at_30%_20%,black,transparent_70%)]" />
       <div aria-hidden className="absolute -right-32 top-1/3 -z-10 size-[28rem] rounded-full bg-primary/10 blur-3xl lg:right-10" />
@@ -38,7 +38,7 @@ export const Hero = () => {
           >
             <span className="block">Practice.</span>
             <span className="block">Compete.</span>
-            <span className="block text-gradient-orange pb-[0.06em]">Get placed.</span>
+            <span className="block text-gradient-brand pb-[0.06em]">Get placed.</span>
           </h1>
 
           <p className="mt-5 max-w-xl text-base leading-relaxed text-chrome-muted-foreground sm:text-lg">

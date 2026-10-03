@@ -239,7 +239,7 @@ const PlacementIntro = ({ onStart, onSkip, retake }: { onStart: () => void; onSk
           { icon: TrendingUp, big: 'Sets', small: 'your level' },
         ].map(({ icon: Icon, big, small }) => (
           <li key={small} className="flex flex-col items-center gap-1 rounded-md bg-navy-foreground/[0.08] px-2 py-3">
-            <Icon className="size-5 text-orange-light" aria-hidden />
+            <Icon className="size-5 text-sky" aria-hidden />
             <span className="text-xl font-extrabold leading-none">{big}</span>
             <span className="text-xs text-muted-foreground">{small}</span>
           </li>
@@ -252,7 +252,7 @@ const PlacementIntro = ({ onStart, onSkip, retake }: { onStart: () => void; onSk
           { icon: Lightbulb, text: "No hints and no XP. If you don't know, just skip." },
           { icon: Target, text: "Your score sets your daily challenge level. You can retake it after a week." },
         ].map(({ icon: Icon, text }) => (
-          <li key={text} className="flex gap-3"><Icon className="mt-0.5 size-4 shrink-0 text-orange-light" aria-hidden /><span>{text}</span></li>
+          <li key={text} className="flex gap-3"><Icon className="mt-0.5 size-4 shrink-0 text-sky" aria-hidden /><span>{text}</span></li>
         ))}
       </ul>
       <div className="flex flex-col items-center gap-3">
@@ -260,7 +260,7 @@ const PlacementIntro = ({ onStart, onSkip, retake }: { onStart: () => void; onSk
         {onSkip && (
           <button
             type="button" onClick={onSkip}
-            className="min-h-11 rounded-full px-3 text-sm font-semibold text-orange-light underline-offset-4 hover:underline"
+            className="min-h-11 rounded-full px-3 text-sm font-semibold text-sky underline-offset-4 hover:underline"
           >
             Skip for now and start at Beginner
           </button>
@@ -360,7 +360,7 @@ const PlacementRunner = ({ onExit, onFinished }: { onExit: () => void; onFinishe
 };
 
 // Brand-colour confetti: fixed positions so the burst looks the same on every render.
-const CONFETTI_COLORS = ['bg-primary', 'bg-orange-light', 'bg-navy', 'bg-gold', 'bg-primary-strong'];
+const CONFETTI_COLORS = ['bg-primary', 'bg-sky', 'bg-navy', 'bg-gold', 'bg-primary-strong'];
 const CONFETTI = Array.from({ length: 28 }, (_, i) => ({
   left: (i * 37 + 7) % 100,
   delay: ((i * 7) % 10) / 20,

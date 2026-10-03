@@ -6,7 +6,7 @@ interface ProgressProps {
   max?: number;
   label: string;
   className?: string;
-  /** Extra classes for the fill. It is the orange gradient by default; add `bg-none` with a `bg-*` colour to replace it. */
+  /** Extra classes for the fill. It is the primary (blue → violet) gradient by default; add `bg-none` with a `bg-*` colour to replace it. */
   barClassName?: string;
   /** Text read by screen readers instead of the percentage, e.g. "3 of 10". */
   valueText?: string;
@@ -25,14 +25,14 @@ export const Progress = ({ value, max = 100, label, className, barClassName, val
       className={cn('h-2 w-full overflow-hidden rounded-full bg-muted', className)}
     >
       <div
-        className={cn('h-full rounded-full bg-primary bg-gradient-orange transition-[width] duration-500 ease-out', barClassName)}
+        className={cn('h-full rounded-full bg-primary bg-gradient-primary transition-[width] duration-500 ease-out', barClassName)}
         style={{ width: `${pct}%` }}
       />
     </div>
   );
 };
 
-/** Circular progress for the daily target. Orange gradient stroke; green once complete. */
+/** Circular progress for the daily target. Blue → violet gradient stroke; green once complete. */
 export const Ring = ({ value, max, size = 64, label, children }: { value: number; max: number; size?: number; label: string; children?: React.ReactNode }) => {
   const id = useId().replace(/:/g, '');
   const stroke = 7;
@@ -45,7 +45,7 @@ export const Ring = ({ value, max, size = 64, label, children }: { value: number
         <defs>
           <linearGradient id={`${id}-ring`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" style={{ stopColor: 'var(--primary)' }} />
-            <stop offset="1" style={{ stopColor: 'var(--orange-light)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--violet)' }} />
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--muted)" strokeWidth={stroke} />

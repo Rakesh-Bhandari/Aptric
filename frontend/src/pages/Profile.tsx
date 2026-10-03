@@ -50,7 +50,7 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
         <div className="relative h-28 overflow-hidden bg-gradient-navy sm:h-36 dark:border-b dark:border-white/10 dark:bg-gradient-hero">
           <span aria-hidden className="absolute inset-0 bg-dots" />
           <span aria-hidden className="absolute -right-16 -top-20 size-64 rounded-full bg-primary/30 blur-3xl" />
-          <span aria-hidden className="absolute -bottom-24 left-1/4 size-48 rounded-full bg-orange-light/10 blur-3xl" />
+          <span aria-hidden className="absolute -bottom-24 left-1/4 size-48 rounded-full bg-sky/10 blur-3xl" />
         </div>
         <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
           <div className="-mt-12 flex flex-col items-center gap-3 text-center sm:-mt-14 sm:flex-row sm:items-end sm:gap-5 sm:text-left">
@@ -85,8 +85,8 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile icon={<CheckCheck />} label="Solved" value={p.solved.toLocaleString()} hint={plural(p.attempts, 'attempt')} />
         <StatTile icon={<Target />} label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
-        <StatTile icon={<Flame />} tone="orange" label="Best streak" value={plural(p.longest_streak, 'day')} hint={`Now ${p.current_streak}`} />
-        <StatTile icon={<Trophy />} tone="orange" label="Rating" value={p.rating} hint={plural(p.rated_sets, 'rated set')} />
+        <StatTile icon={<Flame />} tone="violet" label="Best streak" value={plural(p.longest_streak, 'day')} hint={`Now ${p.current_streak}`} />
+        <StatTile icon={<Trophy />} tone="violet" label="Rating" value={p.rating} hint={plural(p.rated_sets, 'rated set')} />
       </div>
 
       <Card>

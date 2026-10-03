@@ -280,7 +280,7 @@ const ScoreRing = ({ correct, total, perfect }: { correct: number; total: number
         <defs>
           <linearGradient id={`${id}-score`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" style={{ stopColor: 'var(--primary)' }} />
-            <stop offset="1" style={{ stopColor: 'var(--orange-light)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--sky)' }} />
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeOpacity={0.14} strokeWidth={stroke} />
@@ -301,7 +301,7 @@ const ScoreRing = ({ correct, total, perfect }: { correct: number; total: number
   );
 };
 
-const BURST_COLORS = ['bg-primary', 'bg-orange-light', 'bg-navy-foreground', 'bg-success'];
+const BURST_COLORS = ['bg-primary', 'bg-sky', 'bg-navy-foreground', 'bg-success'];
 
 /** CSS-only confetti; .confetti hides it under reduced motion (OS or in-app). */
 const Burst = () => (

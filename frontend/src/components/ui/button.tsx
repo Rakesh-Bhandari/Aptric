@@ -5,19 +5,26 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const buttonVariants = cva(
-  'inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:active:scale-[.98] disabled:pointer-events-none disabled:opacity-55 [&_svg]:size-4 [&_svg]:shrink-0',
+  // btn-nudge: a trailing arrow or chevron slides 2px right on hover (index.css; off under reduced motion).
+  'btn-nudge inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:active:scale-[.98] disabled:pointer-events-none disabled:opacity-55 [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        /** Primary CTA: orange pill, navy text (white on orange fails AA). */
-        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary-strong',
-        /** Secondary: navy pill, white text. */
+        /**
+         * Primary CTA: blue → violet gradient pill, white text, soft blue glow. The solid
+         * bg-primary underneath shows when the gradient is dropped (disabled, forced colours).
+         */
+        default:
+          'bg-primary bg-gradient-primary text-primary-foreground shadow-glow hover:bg-gradient-primary-hover disabled:bg-none disabled:shadow-none',
+        /** Navy pill, white text. */
         navy: 'bg-navy text-navy-foreground shadow-sm hover:bg-navy-strong',
-        /** Soft orange tint for low-emphasis actions. */
-        secondary: 'bg-primary-soft text-primary-soft-foreground hover:bg-primary-soft/70',
-        /** Navy outline that fills on hover; light outline in dark mode. */
+        /** Secondary: soft blue pill with deep blue text (#2563EB on #E0E7FF fails AA, so #1D4ED8). */
+        secondary: 'bg-primary-soft text-primary-soft-foreground hover:bg-primary-soft-hover hover:text-primary-soft-hover-foreground',
+        /** Outline: 2px blue border and text, pale blue wash on hover; lighter blue in dark mode. */
         outline:
-          'border-2 border-navy bg-transparent text-navy hover:bg-navy hover:text-navy-foreground dark:border-foreground/70 dark:text-foreground dark:hover:border-foreground dark:hover:bg-foreground dark:hover:text-background',
+          'border-2 border-primary bg-transparent text-primary hover:bg-primary-wash dark:border-accent-text dark:text-accent-text',
+        /** Solid violet for achievement CTAs (claim a reward, view a badge). */
+        violet: 'bg-violet text-violet-foreground shadow-sm hover:bg-violet-strong',
         ghost: 'text-foreground hover:bg-muted',
         danger: 'bg-danger text-status-foreground hover:bg-danger/90',
         link: 'h-auto px-0 text-accent-text underline-offset-4 hover:underline motion-safe:active:scale-100',

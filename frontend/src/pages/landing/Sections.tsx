@@ -82,7 +82,7 @@ export const HowItWorks = () => (
     <SectionHeading id="how-title" eyebrow="How it works" title="Three steps to a daily habit" />
     <ol className="relative mx-auto mt-12 grid max-w-5xl gap-10 md:grid-cols-3 md:gap-8">
       {/* Connecting line between the numerals (desktop). */}
-      <span aria-hidden className="absolute left-[16.67%] right-[16.67%] top-7 hidden h-0.5 bg-gradient-orange opacity-60 md:block" />
+      <span aria-hidden className="absolute left-[16.67%] right-[16.67%] top-7 hidden h-0.5 bg-gradient-primary opacity-60 md:block" />
       {STEPS.map(({ title, text }, i) => (
         <li key={title} data-reveal style={delay(i)} className="relative flex gap-4 md:flex-col md:items-center md:text-center">
           <span
@@ -142,12 +142,12 @@ export const SectionsShowcase = () => (
 export const FinalCta = () => {
   const { openAuth } = useAuthDialog();
   return (
-    <section aria-labelledby="cta-title" className="relative isolate overflow-hidden bg-gradient-hero px-4 py-16 text-center text-chrome-foreground sm:px-6 sm:py-20">
+    <section aria-labelledby="cta-title" data-theme="dark" className="relative isolate overflow-hidden bg-gradient-hero px-4 py-16 text-center text-chrome-foreground sm:px-6 sm:py-20">
       <div aria-hidden className="absolute inset-0 -z-10 bg-dots [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
       <div aria-hidden className="absolute left-1/2 top-full -z-10 size-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-3xl" />
       <div data-reveal className="mx-auto max-w-2xl">
         <h2 id="cta-title" className="font-display text-[clamp(2rem,6vw,3.25rem)] font-extrabold leading-[1.05] tracking-tight">
-          Start your streak <span className="text-gradient-orange">today.</span>
+          Start your streak <span className="text-gradient-brand">today.</span>
         </h2>
         <p className="mt-4 text-base text-chrome-muted-foreground sm:text-lg">Free, and it works great on your phone.</p>
         <div className="mt-8 flex flex-col justify-center gap-3 min-[420px]:flex-row">

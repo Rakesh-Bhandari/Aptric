@@ -81,7 +81,7 @@ const DailyCard = () => {
       <Card variant="navy" className="relative overflow-hidden shadow-md">
         {watermark}
         <div className="relative flex flex-col gap-4 p-5 sm:p-7">
-          <span className="grid size-11 place-items-center rounded-full bg-navy-foreground/10 text-orange-light"><CalendarClock className="size-5" aria-hidden /></span>
+          <span className="grid size-11 place-items-center rounded-full bg-navy-foreground/10 text-sky"><CalendarClock className="size-5" aria-hidden /></span>
           <div className="space-y-1.5">
             <h2 className="text-2xl font-extrabold tracking-tight">Today's challenge is on its way</h2>
             <p className="max-w-md text-muted-foreground">A fresh set of questions arrives every day at midnight. Meanwhile, practice keeps your skills sharp.</p>
@@ -110,7 +110,7 @@ const DailyCard = () => {
       {watermark}
       <div className="relative flex flex-col gap-5 p-5 sm:p-7">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-light">Daily challenge · {formatDay(set.set_date)}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky">Daily challenge · {formatDay(set.set_date)}</p>
           {done && <Badge variant="success"><CalendarCheck /> Done</Badge>}
         </div>
         <div className="space-y-2">
@@ -134,7 +134,7 @@ const DailyCard = () => {
               <span
                 key={q.id}
                 className={cn('h-2 flex-1 rounded-full transition-colors duration-200',
-                  !q.attempt ? 'bg-navy-foreground/15' : q.attempt.is_correct ? 'bg-primary bg-gradient-orange' : 'bg-on-navy-danger')}
+                  !q.attempt ? 'bg-navy-foreground/15' : q.attempt.is_correct ? 'bg-primary bg-gradient-primary' : 'bg-on-navy-danger')}
               />
             ))}
           </div>
@@ -176,7 +176,7 @@ const StreakCard = () => {
       <CardLabel icon={Flame}>Streak</CardLabel>
       <div className="flex items-center gap-3">
         <span className={cn('grid size-12 shrink-0 place-items-center rounded-full',
-          p.current_streak > 0 ? 'bg-primary bg-gradient-orange text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground')}
+          p.current_streak > 0 ? 'bg-primary bg-gradient-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground')}
         >
           <Flame className="size-6" aria-hidden />
         </span>
@@ -199,7 +199,7 @@ const StreakCard = () => {
               <li key={d.date} className="flex flex-col items-center gap-1">
                 <span
                   className={cn('size-6 rounded-full',
-                    active ? 'bg-primary bg-gradient-orange' : 'border-2 border-input',
+                    active ? 'bg-primary bg-gradient-primary' : 'border-2 border-input',
                     isToday && !active && 'border-primary motion-safe:animate-pulse-ring',
                     isToday && 'ring-2 ring-primary/30 ring-offset-2 ring-offset-card')}
                   aria-hidden

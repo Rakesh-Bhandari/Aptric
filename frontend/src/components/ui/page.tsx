@@ -17,20 +17,26 @@ export const PageHeader = ({ title, description, actions, className }: {
   </div>
 );
 
+const TONES = {
+  navy: 'bg-navy-soft text-navy-soft-foreground',
+  blue: 'bg-primary-soft text-primary-soft-foreground',
+  violet: 'bg-violet-soft text-violet-soft-foreground',
+} as const;
+
 /**
- * Stat tile (Progress KPIs, profile stats): muted label, big navy number and a
- * tinted icon chip. Use tone="orange" for streak/level-style stats.
+ * Stat tile (Progress KPIs, profile stats): muted label, big heading-ink number
+ * and a tinted icon chip. Use tone="violet" for streak/level-style (achievement)
+ * stats. `orange` is a deprecated alias of `violet`.
  */
 export const StatTile = ({ label, value, hint, icon, tone = 'navy', className }: {
-  label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: 'navy' | 'orange'; className?: string;
+  label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: keyof typeof TONES | 'orange'; className?: string;
 }) => (
   <div className={cn('flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm sm:p-5', className)}>
     <div className="flex items-start justify-between gap-2">
       <span className="text-xs font-semibold text-muted-foreground sm:text-sm">{label}</span>
       {icon && (
         <span
-          className={cn('grid size-8 shrink-0 place-items-center rounded-full [&_svg]:size-4',
-            tone === 'orange' ? 'bg-primary-soft text-primary-soft-foreground' : 'bg-navy-soft text-navy-soft-foreground')}
+          className={cn('grid size-8 shrink-0 place-items-center rounded-full [&_svg]:size-4', TONES[tone === 'orange' ? 'violet' : tone])}
           aria-hidden
         >
           {icon}

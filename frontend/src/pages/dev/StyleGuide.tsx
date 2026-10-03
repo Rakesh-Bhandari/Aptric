@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Flame, Moon, Sparkles, Sun } from 'lucide-react';
+import { ArrowRight, Flame, Moon, Sparkles, Sun, Trophy } from 'lucide-react';
 import { AptricLogo, AptricMark, AptricWordmark } from '@/components/brand';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -23,10 +23,15 @@ import { usePreferences } from '@/context/PreferencesContext';
 const TOKENS: [group: string, names: string[]][] = [
   ['Surfaces', ['background', 'card', 'muted', 'border', 'input']],
   ['Text', ['foreground', 'heading', 'card-foreground', 'muted-foreground', 'accent-text']],
-  ['Orange', ['primary', 'primary-strong', 'primary-foreground', 'orange-light', 'primary-soft', 'primary-soft-foreground', 'ring', 'streak']],
-  ['Navy', ['navy', 'navy-strong', 'navy-foreground', 'navy-soft', 'navy-soft-foreground', 'navy-muted-foreground']],
+  ['Blue', ['primary', 'primary-strong', 'primary-foreground', 'primary-soft', 'primary-soft-foreground', 'primary-soft-hover', 'primary-soft-hover-foreground', 'primary-wash', 'ring', 'ring-on-navy']],
+  ['Violet and Light Blue', ['violet', 'violet-strong', 'violet-foreground', 'violet-soft', 'violet-soft-foreground', 'violet-text', 'sky']],
+  ['Navy', ['navy', 'navy-strong', 'navy-foreground', 'navy-soft', 'navy-soft-foreground', 'navy-muted-foreground', 'brand-navy']],
+  ['Header and chrome', ['header', 'header-foreground', 'header-muted-foreground', 'chrome', 'chrome-deep', 'chrome-raised', 'chrome-foreground', 'chrome-muted-foreground', 'chrome-accent']],
+  ['Charts', ['chart-accent', 'muted', 'heat-1', 'heat-2', 'heat-3', 'heat-4']],
+  ['Semantic warm', ['streak', 'gold']],
   ['Status', ['success', 'success-soft', 'success-soft-foreground', 'danger', 'danger-soft', 'danger-soft-foreground', 'warning', 'warning-soft', 'warning-soft-foreground', 'gold']],
-  ['League', ['medal-gold', 'medal-silver', 'medal-bronze', 'metal-bronze-lo', 'metal-silver-lo', 'metal-gold-lo', 'metal-platinum-lo', 'metal-diamond-lo']],
+  ['League', ['tier-bronze', 'tier-silver', 'tier-gold', 'tier-platinum', 'tier-diamond', 'medal-gold', 'medal-silver', 'medal-bronze', 'metal-bronze-lo', 'metal-silver-lo', 'metal-gold-lo', 'metal-platinum-lo', 'metal-diamond-lo']],
+  ['Theme previews', ['preview-light-bg', 'preview-light-card', 'preview-light-line', 'preview-dark-bg', 'preview-dark-card', 'preview-dark-line']],
 ];
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -34,6 +39,32 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">{title}</h2>
     {children}
   </section>
+);
+
+/*
+ * The light hero's tokens, pinned so the light sample still shows in dark mode
+ * (the dark sample uses data-theme="dark", which redefines the tokens below it).
+ */
+const LIGHT_HERO = {
+  '--heading': '#0a2540',
+  '--gradient-text': 'linear-gradient(90deg, #2563eb 0%, #7c3aed 100%)',
+  '--gradient-hero':
+    'radial-gradient(60% 55% at 85% 20%, rgb(237 233 254 / 0.95) 0%, transparent 70%), radial-gradient(50% 50% at 65% 85%, rgb(224 242 254 / 0.9) 0%, transparent 70%), linear-gradient(160deg, #f8fafc 0%, #f8fafc 40%, #eef2ff 100%)',
+} as React.CSSProperties;
+
+const GRADIENTS = ['primary', 'primary-hover', 'secondary', 'navy', 'hero'] as const;
+
+/** A logo tile on a fixed surface colour (white, the page, navy, midnight). */
+const LogoTile = ({ bg, label, dark }: { bg: string; label: string; dark?: boolean }) => (
+  <div className="flex flex-col items-center gap-4 rounded-lg border p-5" style={{ background: bg }}>
+    <AptricLogo size="lg" stacked variant={dark ? 'onDark' : 'onLight'} />
+    <div className="flex flex-wrap items-center justify-center gap-4">
+      <AptricLogo size="sm" variant={dark ? 'onDark' : 'onLight'} />
+      <AptricLogo size="md" variant={dark ? 'onDark' : 'onLight'} />
+      <AptricMark className="h-10" variant={dark ? 'onDark' : 'onLight'} />
+    </div>
+    <span className={dark ? 'font-mono text-xs text-navy-muted-foreground' : 'font-mono text-xs text-brand-navy'}>{label}</span>
+  </div>
 );
 
 const Swatch = ({ name }: { name: string }) => (
@@ -61,32 +92,28 @@ const StyleGuide = () => {
       />
 
       <Section title="Logo">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="flex flex-col items-center gap-6 rounded-lg border bg-white p-6">
-            <AptricLogo size="lg" stacked variant="onLight" />
-            <div className="flex flex-wrap items-center justify-center gap-6">
-              <AptricLogo size="sm" variant="onLight" />
-              <AptricLogo size="md" variant="onLight" />
-              <AptricLogo size="lg" variant="onLight" />
-            </div>
-          </div>
-          <div className="flex flex-col items-center gap-6 rounded-lg bg-gradient-navy p-6">
-            <AptricLogo size="lg" stacked variant="onDark" />
-            <div className="flex flex-wrap items-center justify-center gap-6">
-              <AptricLogo size="sm" variant="onDark" />
-              <AptricLogo size="md" variant="onDark" />
-              <AptricLogo size="lg" variant="onDark" />
-            </div>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <LogoTile bg="#ffffff" label="on white (#FFFFFF)" />
+          <LogoTile bg="#f8fafc" label="on the page (#F8FAFC)" />
+          <LogoTile bg="#0a2540" label="on navy (#0A2540)" dark />
+          <LogoTile bg="#0a1020" label="on midnight (#0A1020)" dark />
         </div>
         <div id="logo-reference" className="grid grid-cols-2 items-center gap-4 rounded-lg border bg-white p-4">
           <figure className="flex flex-col items-center gap-2">
-            <img src="/brand/aptric-logo-wordmark.jpg" alt="Original logo artwork" className="h-56 w-auto" />
+            <img src="/brand/aptric-logo-wordmark.jpg" alt="Original logo artwork" className="h-40 w-auto sm:h-56" />
             <figcaption className="text-xs text-brand-navy">Source JPG</figcaption>
           </figure>
           <figure className="flex flex-col items-center gap-2">
-            <AptricLogo size="lg" stacked variant="onLight" className="h-56 justify-center" />
+            <AptricLogo size="lg" stacked variant="onLight" className="h-40 justify-center sm:h-56" />
             <figcaption className="text-xs text-brand-navy">AptricLogo (SVG)</figcaption>
+          </figure>
+          <figure className="flex flex-col items-center gap-2">
+            <img src="/brand/aptric-mark.jpg" alt="Original mark artwork" className="h-28 w-auto sm:h-44" />
+            <figcaption className="text-xs text-brand-navy">Source JPG</figcaption>
+          </figure>
+          <figure className="flex flex-col items-center gap-2">
+            <AptricMark variant="onLight" className="h-28 sm:h-44" />
+            <figcaption className="text-xs text-brand-navy">AptricMark (SVG)</figcaption>
           </figure>
         </div>
         <div className="flex flex-wrap items-end gap-6 rounded-lg border bg-card p-4">
@@ -94,7 +121,7 @@ const StyleGuide = () => {
           <AptricMark className="h-10" />
           <AptricMark className="h-16" title="Aptric" />
           <AptricWordmark className="text-3xl" />
-          <span className="text-sm text-muted-foreground">Theme-aware (card surface): the navy leg lifts in dark mode.</span>
+          <span className="text-sm text-muted-foreground">Theme-aware (card surface): the navy leg lifts and the wordmark turns white in dark mode.</span>
         </div>
       </Section>
 
@@ -108,12 +135,15 @@ const StyleGuide = () => {
               </div>
             </div>
           ))}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex h-20 items-end rounded-lg bg-gradient-navy p-3 font-mono text-xs text-navy-foreground">--gradient-navy</div>
-            <div className="flex h-20 items-end rounded-lg bg-gradient-orange p-3 font-mono text-xs text-primary-foreground">--gradient-orange</div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {GRADIENTS.map((g) => (
+              <div key={g} className="flex h-20 items-end rounded-lg border p-3" style={{ backgroundImage: `var(--gradient-${g})` }}>
+                <span className="rounded-full bg-card px-2 py-0.5 font-mono text-[11px] text-foreground">--gradient-{g}</span>
+              </div>
+            ))}
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {(['sm', 'md', 'lg'] as const).map((s) => (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(['sm', 'md', 'lg', 'glow'] as const).map((s) => (
               <div key={s} className="grid h-20 place-items-center rounded-lg bg-card font-mono text-xs" style={{ boxShadow: `var(--shadow-${s})` }}>--shadow-{s}</div>
             ))}
           </div>
@@ -122,9 +152,15 @@ const StyleGuide = () => {
 
       <Section title="Typography">
         <div className="space-y-3 rounded-lg border bg-card p-5">
-          <p className="font-display text-5xl font-extrabold leading-[0.95] tracking-tight text-heading sm:text-6xl">
-            Build.<br />Solve.<br /><span className="text-accent-text">Grow.</span>
-          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Gradient text on the light and the midnight hero (scoped themes, so both show in either theme). */}
+            <p style={LIGHT_HERO} className="rounded-lg bg-gradient-hero p-5 font-display text-5xl font-extrabold leading-[0.95] tracking-tight text-heading">
+              Practice.<br />Compete.<br /><span className="text-gradient-brand">Grow.</span>
+            </p>
+            <p data-theme="dark" className="rounded-lg bg-gradient-hero p-5 font-display text-5xl font-extrabold leading-[0.95] tracking-tight text-heading">
+              Practice.<br />Compete.<br /><span className="text-gradient-brand">Grow.</span>
+            </p>
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-heading">Heading 1 · 30/800</h1>
           <h2 className="text-2xl font-bold tracking-tight text-heading">Heading 2 · 24/700</h2>
           <h3 className="text-lg font-bold tracking-tight text-heading">Heading 3 · 18/700</h3>
@@ -136,11 +172,11 @@ const StyleGuide = () => {
 
       <Section title="Buttons">
         <div className="space-y-4 rounded-lg border bg-card p-5">
-          {(['default', 'navy', 'outline', 'secondary', 'ghost', 'danger', 'link'] as const).map((v) => (
+          {(['default', 'secondary', 'outline', 'navy', 'violet', 'ghost', 'danger', 'link'] as const).map((v) => (
             <div key={v} className="flex flex-wrap items-center gap-3">
               <span className="w-20 font-mono text-xs text-muted-foreground">{v}</span>
               <Button variant={v} size="sm">Small</Button>
-              <Button variant={v}>Medium</Button>
+              <Button variant={v}>Get Started <ArrowRight /></Button>
               <Button variant={v} size="lg">Large</Button>
               <Button variant={v} size="icon" aria-label="Sparkle"><Sparkles /></Button>
               <Button variant={v} loading>Loading</Button>
@@ -150,13 +186,13 @@ const StyleGuide = () => {
         </div>
         <div className="flex flex-wrap items-center gap-3 rounded-lg bg-gradient-navy p-5">
           <span className="w-full text-sm font-semibold text-navy-foreground">On a navy hero</span>
-          <Button size="lg">Get Started</Button>
-          <Button variant="outline" size="lg" className="border-navy-foreground text-navy-foreground hover:bg-navy-foreground hover:text-navy">Learn More</Button>
+          <Button size="lg">Get Started <ArrowRight /></Button>
+          <Button variant="outline" size="lg" className="border-navy-foreground/80 text-navy-foreground hover:bg-white/10 dark:border-navy-foreground/80 dark:text-navy-foreground">Learn More</Button>
         </div>
       </Section>
 
       <Section title="Cards">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Card>
             <CardHeader>
               <CardTitle>Default card</CardTitle>
@@ -170,13 +206,21 @@ const StyleGuide = () => {
               <CardTitle>Navy card</CardTitle>
               <CardDescription>variant="navy" for feature and hero cards.</CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center gap-2"><Flame className="size-5 text-orange-light" aria-hidden /> 12-day streak</CardContent>
-            <CardFooter><Button size="sm">Continue</Button></CardFooter>
+            <CardContent className="flex items-center gap-2"><Flame className="size-5 text-sky" aria-hidden /> 12-day streak</CardContent>
+            <CardFooter><Button size="sm">Continue <ArrowRight /></Button></CardFooter>
+          </Card>
+          <Card variant="soft">
+            <CardHeader>
+              <CardTitle>Soft card</CardTitle>
+              <CardDescription>variant="soft": Soft Purple for highlighted sections.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center gap-2"><Trophy className="size-5 text-violet-text" aria-hidden /> Gold league unlocked</CardContent>
+            <CardFooter><Button size="sm" variant="violet">View badge</Button></CardFooter>
           </Card>
           <div className="grid grid-cols-2 gap-3">
             <StatTile label="Streak" value="12" hint="days" icon={<Flame className="text-streak" />} />
             <StatTile label="Accuracy" value="78%" />
-            <StatTile label="Level" value="7" />
+            <StatTile label="Level" value="7" tone="violet" icon={<Trophy />} />
             <StatTile label="XP" value="1,240" />
           </div>
         </div>
@@ -184,7 +228,7 @@ const StyleGuide = () => {
 
       <Section title="Badges, avatars, stars">
         <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-5">
-          {(['default', 'navy', 'solid', 'muted', 'success', 'danger', 'warning', 'outline'] as const).map((v) => (
+          {(['default', 'blue', 'navy', 'solid', 'violet', 'muted', 'success', 'danger', 'warning', 'outline'] as const).map((v) => (
             <Badge key={v} variant={v}>{v}</Badge>
           ))}
           <Avatar name="Asha Rao" />
@@ -224,6 +268,7 @@ const StyleGuide = () => {
           </div>
           <Ring value={3} max={5} label="3 of 5"><span className="text-sm font-bold">3/5</span></Ring>
           <Ring value={5} max={5} label="5 of 5"><span className="text-sm font-bold">5/5</span></Ring>
+          <Ring value={7} max={10} size={88} label="7 of 10"><span className="text-base font-bold">70%</span></Ring>
         </div>
       </Section>
 
@@ -236,10 +281,17 @@ const StyleGuide = () => {
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
             <Dialog>
-              <DialogTrigger asChild><Button variant="navy" size="sm" className="mt-2">Open dialog</Button></DialogTrigger>
+              <DialogTrigger asChild><Button variant="navy" size="sm" className="mr-2 mt-2">Open dialog</Button></DialogTrigger>
               <DialogContent title="Report a problem" description="Tell us what looks wrong with this question.">
                 <Textarea aria-label="Details" placeholder="Details" />
                 <div className="mt-4 flex justify-end gap-2"><Button variant="ghost">Cancel</Button><Button>Send</Button></div>
+              </DialogContent>
+            </Dialog>
+            <Dialog>
+              <DialogTrigger asChild><Button variant="secondary" size="sm" className="mt-2">Open brand dialog</Button></DialogTrigger>
+              <DialogContent variant="brand" title="Welcome back" description="Sign in to keep your streak.">
+                <Input aria-label="Email" placeholder="you@college.edu" />
+                <Button className="mt-4 w-full">Continue <ArrowRight /></Button>
               </DialogContent>
             </Dialog>
           </div>

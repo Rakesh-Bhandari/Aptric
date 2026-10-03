@@ -79,7 +79,7 @@ export const ProductPreview = () => (
       </div>
       <figure data-reveal className="relative mx-auto w-full max-w-md">
         {/* Soft glow behind the card. Decorative. */}
-        <div aria-hidden className="absolute -inset-6 -z-0 rounded-[2rem] bg-gradient-orange opacity-15 blur-2xl" />
+        <div aria-hidden className="absolute -inset-6 -z-0 rounded-[2rem] bg-gradient-primary opacity-15 blur-2xl" />
         <div aria-hidden className="relative [&_svg]:shrink-0" inert>
           <QuestionMock />
         </div>

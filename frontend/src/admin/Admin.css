@@ -691,9 +691,9 @@
 /* --- Jobs --- */
 .adm-job { display: flex; flex-direction: column; gap: 0.7rem; }
 .adm-progress { height: 8px; border-radius: 999px; background: var(--muted); overflow: hidden; }
-.adm-progress-bar { height: 100%; background: var(--gradient-orange); border-radius: 999px; transition: width 400ms ease-out; }
+.adm-progress-bar { height: 100%; background: var(--gradient-primary); border-radius: 999px; transition: width 400ms ease-out; }
 .adm-progress-bar.is-active {
-    background-image: linear-gradient(90deg, var(--primary), var(--orange-light), var(--primary));
+    background-image: linear-gradient(90deg, var(--primary), var(--sky), var(--primary));
     background-size: 200% 100%;
     animation: adm-shimmer 1.6s linear infinite;
 }

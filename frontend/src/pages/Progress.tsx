@@ -49,8 +49,8 @@ const Overview = () => {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile icon={<CheckCheck />} label="Questions solved" value={p.solved.toLocaleString()} hint={`${plural(p.attempts, 'answer')} in total`} />
         <StatTile icon={<Target />} label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
-        <StatTile icon={<Flame />} tone="orange" label="Best streak" value={plural(p.longest_streak, 'day')} hint={p.current_streak > 0 ? `Current: ${plural(p.current_streak, 'day')}` : 'Play today to start one'} />
-        <StatTile icon={<Sparkles />} tone="orange" label="Level" value={p.level}
+        <StatTile icon={<Flame />} tone="violet" label="Best streak" value={plural(p.longest_streak, 'day')} hint={p.current_streak > 0 ? `Current: ${plural(p.current_streak, 'day')}` : 'Play today to start one'} />
+        <StatTile icon={<Sparkles />} tone="violet" label="Level" value={p.level}
           hint={<>Rating <strong className="font-semibold text-foreground">{p.rating}</strong> · {p.rated_sets > 0 ? plural(p.rated_sets, 'rated set') : 'unrated'}</>} />
       </div>
 
@@ -128,8 +128,8 @@ const HistoryTab = () => {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile icon={<CalendarDays />} label="This week" value={week.q} hint="questions answered" />
         <StatTile icon={<Target />} label="Correct" value={formatPercent(week.c, week.q)} hint="this week" />
-        <StatTile icon={<Sparkles />} tone="orange" label="XP" value={`+${week.xp}`} hint="this week" />
-        <StatTile icon={<Flag />} tone="orange" label="Goal met" value={`${goalDays}/7`} hint={`days with ${a.daily_target}+ questions`} />
+        <StatTile icon={<Sparkles />} tone="violet" label="XP" value={`+${week.xp}`} hint="this week" />
+        <StatTile icon={<Flag />} tone="violet" label="Goal met" value={`${goalDays}/7`} hint={`days with ${a.daily_target}+ questions`} />
       </div>
       <Card>
         <CardHeader>

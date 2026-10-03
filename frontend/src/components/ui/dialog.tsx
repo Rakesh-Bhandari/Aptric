@@ -29,9 +29,10 @@ const BrandDialogContent = ({ title, description, children, className, hideClose
         className,
       )}
     >
-      <div className="relative overflow-hidden bg-gradient-navy px-5 pb-6 pt-6 text-chrome-foreground sm:px-6">
-        {/* Soft orange glow, echoing the spec's hero. Decorative. */}
-        <span aria-hidden className="pointer-events-none absolute -right-10 -top-16 size-44 rounded-full bg-primary/25 blur-3xl" />
+      <div className="relative overflow-hidden bg-gradient-navy px-5 pb-6 pt-6 text-chrome-foreground [--ring:var(--ring-on-navy)] sm:px-6">
+        {/* Soft violet and blue glows, echoing the spec's hero. Decorative. */}
+        <span aria-hidden className="pointer-events-none absolute -right-10 -top-16 size-44 rounded-full bg-violet/30 blur-3xl" />
+        <span aria-hidden className="pointer-events-none absolute -bottom-20 left-1/4 size-40 rounded-full bg-primary/20 blur-3xl" />
         <div className="relative flex items-start justify-between gap-4">
           <div className="space-y-3">
             <AptricMark variant="onDark" className="h-9" />

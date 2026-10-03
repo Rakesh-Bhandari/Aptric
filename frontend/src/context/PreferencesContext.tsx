@@ -58,10 +58,11 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
     const root = document.documentElement;
     root.dataset.theme = resolvedTheme;
     root.style.colorScheme = resolvedTheme;
-    // The browser bar matches the navy header (--chrome) in both themes; index.html
-    // sets the same value before first paint. Read it from the tokens so they stay in sync.
-    const chrome = getComputedStyle(root).getPropertyValue('--chrome').trim();
-    if (chrome) document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', chrome));
+    // The browser bar matches the page (--background) of the chosen theme, which can differ
+    // from the system one; index.html sets the system theme's value before first paint.
+    // Read it from the tokens so they stay in sync.
+    const page = getComputedStyle(root).getPropertyValue('--background').trim();
+    if (page) document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', page));
   }, [resolvedTheme]);
 
   useEffect(() => {

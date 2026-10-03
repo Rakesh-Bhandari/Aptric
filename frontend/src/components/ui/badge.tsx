@@ -5,9 +5,13 @@ import { cn } from '@/lib/utils';
 const badgeVariants = cva('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 [&_svg]:size-3.5', {
   variants: {
     variant: {
-      default: 'bg-primary-soft text-primary-soft-foreground',
+      /** Soft Purple chip (the spec's badge style). */
+      default: 'bg-violet-soft text-violet-soft-foreground',
+      /** Soft blue chip for interactive or informational tags. */
+      blue: 'bg-primary-soft text-primary-soft-foreground',
       navy: 'bg-navy-soft text-navy-soft-foreground',
       solid: 'bg-primary text-primary-foreground',
+      violet: 'bg-violet text-violet-foreground',
       muted: 'bg-muted text-muted-foreground',
       success: 'bg-success-soft text-success-soft-foreground',
       danger: 'bg-danger-soft text-danger-soft-foreground',
