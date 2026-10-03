@@ -2,18 +2,23 @@ import type { HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  /** `navy`: the navy gradient with white text, for feature and hero cards. */
-  variant?: 'default' | 'navy';
+  /**
+   * `navy`: the navy gradient with white text, for feature and hero cards.
+   * `soft`: a Soft Purple fill for highlighted sections.
+   */
+  variant?: 'default' | 'navy' | 'soft';
 }
 
 export const Card = ({ className, variant = 'default', ...props }: CardProps) => (
   <div
     className={cn(
       'rounded-lg border shadow-sm',
-      variant === 'navy'
-        ? // Headings and muted text inside follow the panel, not the page theme.
-          'border-transparent bg-gradient-navy text-navy-foreground [--heading:var(--navy-foreground)] [--muted-foreground:var(--navy-muted-foreground)]'
-        : 'bg-card text-card-foreground',
+      {
+        default: 'bg-card text-card-foreground',
+        // Headings, muted text, links and focus rings inside follow the panel, not the page theme.
+        navy: 'border-transparent bg-gradient-navy text-navy-foreground [--heading:var(--navy-foreground)] [--muted-foreground:var(--navy-muted-foreground)] [--accent-text:var(--sky)] [--ring:var(--ring-on-navy)]',
+        soft: 'border-transparent bg-violet-soft text-foreground shadow-none',
+      }[variant],
       className,
     )}
     {...props}

@@ -20,7 +20,7 @@ const CATALOG: { slug: string; name: string; description: string; icon: LucideIc
 ];
 
 const TONE: Record<Tone, string> = {
-  orange: 'bg-gradient-orange text-primary-foreground',
+  orange: 'bg-gradient-primary text-primary-foreground',
   navy: 'bg-gradient-navy text-chrome-accent',
   gold: 'bg-medal-gold text-medal-foreground',
 };

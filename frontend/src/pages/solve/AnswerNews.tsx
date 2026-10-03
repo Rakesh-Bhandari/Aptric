@@ -23,7 +23,7 @@ export const AnswerNews = ({ result }: { result: AnswerResult | null }) => {
   return (
     <ul className="flex flex-wrap gap-2" aria-label="Progress news">
       {p.leveled_up && (
-        <Chip className="bg-gradient-navy text-navy-foreground"><TrendingUp className="text-orange-light" aria-hidden /> Level {p.level} reached!</Chip>
+        <Chip className="bg-gradient-navy text-navy-foreground"><TrendingUp className="text-sky" aria-hidden /> Level {p.level} reached!</Chip>
       )}
       {p.bonus_xp > 0 && (
         <Chip className="bg-primary text-primary-foreground"><Sparkles aria-hidden /> +{p.bonus_xp} bonus XP</Chip>

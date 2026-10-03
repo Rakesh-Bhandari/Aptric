@@ -162,7 +162,7 @@ const LeaderboardRow = ({ e, metric }: { e: LeaderboardEntry; metric: string }) 
 
 const PODIUM = [
   // DOM order is 1st, 2nd, 3rd for screen readers; `order` puts 1st in the middle.
-  { order: 'order-2', avatar: 'size-16 sm:size-20 ring-medal-gold', pedestal: 'h-24 sm:h-28 bg-gradient-orange text-primary-foreground', metric: 'text-chrome-accent' },
+  { order: 'order-2', avatar: 'size-16 sm:size-20 ring-medal-gold', pedestal: 'h-24 sm:h-28 bg-gradient-primary text-primary-foreground', metric: 'text-chrome-accent' },
   { order: 'order-1', avatar: 'size-12 sm:size-16 ring-medal-silver', pedestal: 'h-16 sm:h-20 bg-white/10 text-navy-foreground border-t-4 border-medal-silver', metric: 'text-navy-muted-foreground' },
   { order: 'order-3', avatar: 'size-12 sm:size-16 ring-medal-bronze', pedestal: 'h-12 sm:h-14 bg-white/10 text-navy-foreground border-t-4 border-medal-bronze', metric: 'text-navy-muted-foreground' },
 ];
@@ -291,7 +291,7 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
       : 'View results';
   return (
     <Card className={cn('flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-md', live && 'border-primary/60 ring-1 ring-primary/25')}>
-      <div aria-hidden className={cn('h-1', live ? 'bg-gradient-orange' : c.state === 'upcoming' ? 'bg-gradient-navy' : 'bg-muted')} />
+      <div aria-hidden className={cn('h-1', live ? 'bg-gradient-primary' : c.state === 'upcoming' ? 'bg-gradient-navy' : 'bg-muted')} />
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <ContestStateBadge c={c} />

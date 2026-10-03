@@ -13,8 +13,8 @@ const MAX_SEGMENTS = 30;
 
 const SEGMENT_CLASS: Record<SegmentState, string> = {
   pending: 'bg-muted',
-  current: 'bg-primary bg-gradient-orange',
-  answered: 'bg-primary bg-gradient-orange',
+  current: 'bg-primary bg-gradient-primary',
+  answered: 'bg-primary bg-gradient-primary',
   correct: 'bg-success',
   // Half height as well as red, so a wrong answer doesn't rely on colour alone.
   wrong: 'h-1 self-center bg-danger',
@@ -53,7 +53,7 @@ export const SessionHeader = ({ title, index, total, onExit, exitLabel = 'Exit',
         >
           {total > MAX_SEGMENTS ? (
             <div className="h-full w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-primary bg-gradient-orange transition-[width] duration-300 ease-out" style={{ width: `${(position / total) * 100}%` }} />
+              <div className="h-full rounded-full bg-primary bg-gradient-primary transition-[width] duration-300 ease-out" style={{ width: `${(position / total) * 100}%` }} />
             </div>
           ) : (
             states.map((s, i) => (

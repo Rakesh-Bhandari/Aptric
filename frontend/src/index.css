@@ -4,70 +4,99 @@
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 /*
- * Colour tokens (Aptric brand: navy + orange). Every foreground/background pair
- * used for text meets WCAG AA (4.5:1) in both themes; src/test/contrast.test.ts
- * checks them. Orange (#ff7800) is a fill colour: text on it is navy, and orange
- * *text* on light surfaces uses --accent-text.
+ * Colour tokens (Aptric brand: navy, blue and violet, with blue → violet
+ * gradients; see prompts/frontend-redesign/BRAND.md). Every foreground and
+ * background pair used for text meets WCAG AA (4.5:1) in both themes, and focus
+ * rings and chart marks meet 3:1; src/test/contrast.test.ts checks them.
+ * AA rules the palette forces:
+ * - Blue (--primary) and violet fills carry white text; both gradient stops pass.
+ * - Blue text on light surfaces is --accent-text (#1D4ED8), which also passes on
+ *   the grey --muted and the --primary-soft tint, where #2563EB does not.
+ * - Light Blue (--sky) is for icons, links and glows on navy and dark surfaces
+ *   only; it fails as text or meaningful icon colour on light surfaces.
+ * - Gradient text (--gradient-text) is display-size only: the primary gradient
+ *   on light surfaces, Light Blue → soft violet on dark ones.
+ * - Warm colours are semantic only: --streak (the flame icon), --gold, --warning.
  */
 :root {
-  --background: #f7f9fc;
-  --foreground: #26354d;
-  --heading: #0b1f4b;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --heading: #0a2540;
   --card: #ffffff;
-  --card-foreground: #26354d;
-  --muted: #eef2f8;
-  --muted-foreground: #5e6a80;
-  --border: #e3e8f0;
-  --input: #cbd3e0;
-  --ring: #d95f00;
-  --primary: #ff7800;
-  --primary-strong: #e86600;
-  --primary-foreground: #06132f;
-  --primary-soft: #fff1e6;
-  --primary-soft-foreground: #9a3412;
-  --navy: #0b1f4b;
-  --navy-strong: #06132f;
+  --card-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #2563eb;
+  /* Focus ring on navy surfaces (navy cards, footer, auth banner) in either theme. */
+  --ring-on-navy: #38bdf8;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e0e7ff;
+  --primary-soft-foreground: #1d4ed8;
+  /* Hover step for --primary-soft fills (the Secondary button). */
+  --primary-soft-hover: #c7d2fe;
+  --primary-soft-hover-foreground: #1e40af;
+  /* Pale blue wash (Outline button hover). */
+  --primary-wash: #eff6ff;
+  --violet: #7c3aed;
+  --violet-strong: #6d28d9;
+  --violet-foreground: #ffffff;
+  --violet-soft: #ede9fe;
+  --violet-soft-foreground: #5b21b6;
+  /* Violet as text or icon colour on page surfaces (filled stars, achievement labels). */
+  --violet-text: #7c3aed;
+  /* Light Blue: icons, glows and links on navy and dark surfaces only. */
+  --sky: #38bdf8;
+  --navy: #0a2540;
+  --navy-strong: #071a2f;
   --navy-foreground: #ffffff;
-  --navy-soft: #e8edf7;
-  --navy-soft-foreground: #0b1f4b;
-  --navy-muted-foreground: #c3cde3;
-  /* Fixed brand navy for logos on fixed light surfaces (same in both themes). */
-  --brand-navy: #0b1f4b;
-  /* App chrome (header, footer, auth banner): navy in both themes. */
-  --chrome: #0b1f4b;
-  --chrome-deep: #06132f;
+  --navy-soft: #e6ecf5;
+  --navy-soft-foreground: #0a2540;
+  --navy-muted-foreground: #b6c2d6;
+  /* Fixed wordmark ink for logos on fixed light surfaces (same in both themes). */
+  --brand-navy: #0a1633;
+  /* App header: white in light mode, midnight in dark mode. */
+  --header: #ffffff;
+  --header-foreground: #0a2540;
+  --header-muted-foreground: #475569;
+  /* Navy chrome (footer, auth banner, admin sidebar): navy in both themes. */
+  --chrome: #0a2540;
+  --chrome-deep: #071a2f;
   --chrome-foreground: #ffffff;
-  --chrome-muted-foreground: #c3cde3;
-  --chrome-accent: #ff9a3d;
+  --chrome-muted-foreground: #b6c2d6;
+  --chrome-accent: #38bdf8;
   /* Raised step on chrome (active admin nav item). */
-  --chrome-raised: #123a78;
-  --accent-text: #c2410c;
-  --orange-light: #ff9a3d;
+  --chrome-raised: #1e3a8a;
+  --accent-text: #1d4ed8;
   --success: #15803d;
-  --success-soft: #e7f6ed;
+  --success-soft: #dcfce7;
   --success-soft-foreground: #14532d;
-  --danger: #c62828;
-  --danger-soft: #fdecec;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
   --danger-soft-foreground: #7f1d1d;
   --warning: #a16207;
-  --warning-soft: #fef6dc;
+  --warning-soft: #fef3c7;
   --warning-soft-foreground: #713f12;
   /* Icons and numbers on solid success/danger/warning fills (outcome squares, answer badges). */
   --status-foreground: #ffffff;
-  --streak: #f06a00;
+  /* Semantic warm colours: the streak flame icon and gold rewards only. */
+  --streak: #ea580c;
   --gold: #c58a00;
-  /* Charts: radar stroke/points (3:1+ on cards) and the 5-step activity scale (--muted, then heat-1..4). */
-  --chart-accent: #e86600;
-  --heat-1: #ffe0c2;
-  --heat-2: #ffb066;
-  --heat-3: #ff7800;
-  --heat-4: #d95a00;
+  /* Charts: radar stroke/points (3:1+ on cards) and the 5-step activity scale (--muted, then heat-1..4, pale blue to violet). */
+  --chart-accent: #2563eb;
+  --heat-1: #dbeafe;
+  --heat-2: #93c5fd;
+  --heat-3: #6366f1;
+  --heat-4: #7c3aed;
   /* League tiers (icons, chips and tier names on cards). */
   --tier-bronze: #9a5426;
-  --tier-silver: #5b687e;
+  --tier-silver: #526075;
   --tier-gold: #a16207;
   --tier-platinum: #0f766e;
-  --tier-diamond: #2f5fc4;
+  --tier-diamond: #4338ca;
   /*
    * Tier emblem metals (shield/gem fills on the navy league banner) and podium
    * medals (rank 1–3 fills with navy text). Same in both themes: they sit on
@@ -75,40 +104,50 @@
    */
   --metal-bronze-hi: #f0b183;
   --metal-bronze-lo: #a85d2c;
-  --metal-silver-hi: #f1f4f9;
+  --metal-silver-hi: #f1f5f9;
   --metal-silver-lo: #8d9bb3;
   --metal-gold-hi: #ffdb70;
   --metal-gold-lo: #d08a00;
   --metal-platinum-hi: #b4f5e8;
   --metal-platinum-lo: #2a9d90;
-  --metal-diamond-hi: #d3e0ff;
-  --metal-diamond-lo: #5b82e6;
+  --metal-diamond-hi: #ddd6fe;
+  --metal-diamond-lo: #6d5ce8;
   --medal-gold: #f7c23c;
-  --medal-silver: #ccd5e3;
+  --medal-silver: #cbd5e1;
   --medal-bronze: #e3a06e;
-  --medal-foreground: #06132f;
+  --medal-foreground: #0a1633;
   /* Fixed palettes for the theme picker's preview swatches (never themed). */
-  --preview-light-bg: #f7f9fc;
+  --preview-light-bg: #f8fafc;
   --preview-light-card: #ffffff;
-  --preview-light-line: #e3e8f0;
-  --preview-dark-bg: #06132f;
-  --preview-dark-card: #0e2552;
-  --preview-dark-line: #1e3563;
+  --preview-light-line: #e2e8f0;
+  --preview-dark-bg: #0a1020;
+  --preview-dark-card: #111a33;
+  --preview-dark-line: #24304f;
   /* Status colours on navy-gradient panels (same in both themes). */
   --on-navy-success: #4ade80;
   --on-navy-danger: #fca5a5;
-  --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
-  --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
-  /* Landing hero and CTA band: Dark Navy into navy (navy in both themes). */
-  --gradient-hero: linear-gradient(160deg, #06132f 0%, #0b1f4b 55%, #123a78 100%);
-  --shadow-sm: 0 1px 2px rgb(11 31 75 / 0.06), 0 4px 12px rgb(11 31 75 / 0.04);
-  --shadow-md: 0 1px 2px rgb(11 31 75 / 0.06), 0 8px 24px rgb(11 31 75 / 0.08);
-  --shadow-lg: 0 2px 6px rgb(11 31 75 / 0.08), 0 20px 48px rgb(11 31 75 / 0.14);
-  --shadow-top: 0 -1px 2px rgb(11 31 75 / 0.04), 0 -8px 24px rgb(11 31 75 / 0.08);
-  /* Navy leg of the AptricMark; lifted in dark mode so it stays visible. */
-  --mark-navy-a: #0d2662;
-  --mark-navy-b: #0b1f4b;
-  --mark-navy-c: #081a42;
+  /* Brand gradients. Secondary is decorative only: never under body text. */
+  --gradient-primary: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+  --gradient-primary-hover: linear-gradient(90deg, #1d4ed8 0%, #6d28d9 100%);
+  --gradient-secondary: linear-gradient(90deg, #38bdf8 0%, #7c3aed 100%);
+  --gradient-navy: linear-gradient(135deg, #0a2540 0%, #1e3a8a 100%);
+  /* Display-size gradient text (the hero's "Grow."). */
+  --gradient-text: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+  /* Landing hero: pale page colour into a lavender and pale-blue mist. */
+  --gradient-hero:
+    radial-gradient(60% 55% at 85% 20%, rgb(237 233 254 / 0.95) 0%, transparent 70%),
+    radial-gradient(50% 50% at 65% 85%, rgb(224 242 254 / 0.9) 0%, transparent 70%),
+    linear-gradient(160deg, #f8fafc 0%, #f8fafc 40%, #eef2ff 100%);
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 12px rgb(15 23 42 / 0.04);
+  --shadow-md: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.06);
+  --shadow-lg: 0 2px 6px rgb(15 23 42 / 0.08), 0 20px 48px rgb(15 23 42 / 0.12);
+  --shadow-top: 0 -1px 2px rgb(15 23 42 / 0.04), 0 -8px 24px rgb(15 23 42 / 0.08);
+  /* Coloured lift for primary (gradient) buttons. */
+  --shadow-glow: 0 8px 20px rgb(37 99 235 / 0.25);
+  /* AptricMark's navy left leg and its shadow; lifted in dark mode so they stay visible. */
+  --mark-leg-a: #00227f;
+  --mark-leg-b: #00175f;
+  --mark-shadow: #061640;
   --radius: 1rem;
   /* Height of the sticky app header (AppShell's h-16); sticky panels offset by it. */
   --header-h: 4rem;
@@ -124,29 +163,43 @@
 }
 
 [data-theme='dark'] {
-  --background: #06132f;
-  --foreground: #e8edf7;
-  --heading: #f5f7fc;
-  --card: #0e2552;
-  --card-foreground: #e8edf7;
-  --muted: #15306a;
-  --muted-foreground: #a3b0c8;
-  --border: #1e3563;
-  --input: #2d4a85;
-  --ring: #ff9a3d;
-  --primary: #ff7800;
-  --primary-strong: #ff9a3d;
-  --primary-foreground: #06132f;
-  --primary-soft: #3a2412;
-  --primary-soft-foreground: #ffc999;
-  --navy: #1d3f85;
-  --navy-strong: #244a96;
+  --background: #0a1020;
+  --foreground: #e2e8f0;
+  --heading: #f8fafc;
+  --card: #111a33;
+  --card-foreground: #e2e8f0;
+  --muted: #1a2547;
+  --muted-foreground: #94a3b8;
+  --border: #24304f;
+  --input: #33426a;
+  --ring: #38bdf8;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --primary-soft: #172554;
+  --primary-soft-foreground: #bfdbfe;
+  --primary-soft-hover: #1e3a8a;
+  --primary-soft-hover-foreground: #dbeafe;
+  --primary-wash: #16234a;
+  --violet: #7c3aed;
+  --violet-strong: #6d28d9;
+  --violet-foreground: #ffffff;
+  --violet-soft: #2a1f57;
+  --violet-soft-foreground: #c4b5fd;
+  --violet-text: #a78bfa;
+  --navy: #1e3a8a;
+  --navy-strong: #172e6e;
   --navy-foreground: #ffffff;
-  --navy-soft: #15306a;
-  --navy-soft-foreground: #dce4f5;
-  --navy-muted-foreground: #c3cde3;
-  --accent-text: #ff9a3d;
-  --orange-light: #ff9a3d;
+  --navy-soft: #1a2547;
+  --navy-soft-foreground: #dbe4f5;
+  --navy-muted-foreground: #c7d2e6;
+  --header: #0b1226;
+  --header-foreground: #f8fafc;
+  --header-muted-foreground: #94a3b8;
+  --chrome: #0b1226;
+  --chrome-deep: #070c1a;
+  --chrome-raised: #1a2547;
+  --accent-text: #60a5fa;
   --success: #4ade80;
   --success-soft: #0f3326;
   --success-soft-foreground: #bbf7d0;
@@ -156,29 +209,34 @@
   --warning: #fbbf24;
   --warning-soft: #36290c;
   --warning-soft-foreground: #fde68a;
-  --status-foreground: #06132f;
-  --streak: #ff8a1f;
+  --status-foreground: #0a1020;
+  --streak: #fb923c;
   --gold: #fbbf24;
-  --chart-accent: #ff9a3d;
-  --heat-1: #4f3324;
-  --heat-2: #8f4615;
-  --heat-3: #d9650c;
-  --heat-4: #ff9a3d;
+  --chart-accent: #60a5fa;
+  --heat-1: #1e3a8a;
+  --heat-2: #4f46e5;
+  --heat-3: #818cf8;
+  --heat-4: #c4b5fd;
   --tier-bronze: #f0a46a;
-  --tier-silver: #c3cde3;
+  --tier-silver: #cbd5e1;
   --tier-gold: #fbbf24;
   --tier-platinum: #5eead4;
-  --tier-diamond: #9db8ff;
-  --gradient-navy: linear-gradient(135deg, #0b1f4b 0%, #123a78 100%);
-  --gradient-orange: linear-gradient(90deg, #ff7800 0%, #ff9a3d 100%);
-  --gradient-hero: linear-gradient(160deg, #06132f 0%, #0b1f4b 55%, #123a78 100%);
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
+  --tier-diamond: #a5b4fc;
+  --gradient-navy: linear-gradient(135deg, #0a2540 0%, #1e3a8a 100%);
+  --gradient-text: linear-gradient(90deg, #38bdf8 0%, #a78bfa 100%);
+  /* Landing hero: midnight with soft blue and violet glows. */
+  --gradient-hero:
+    radial-gradient(55% 60% at 85% 25%, rgb(124 58 237 / 0.28) 0%, transparent 70%),
+    radial-gradient(45% 55% at 60% 90%, rgb(37 99 235 / 0.22) 0%, transparent 70%),
+    linear-gradient(160deg, #0a1020 0%, #0a1020 35%, #111a33 100%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-md: 0 2px 4px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.3);
   --shadow-lg: 0 4px 8px rgb(0 0 0 / 0.3), 0 20px 48px rgb(0 0 0 / 0.45);
   --shadow-top: 0 -8px 24px rgb(0 0 0 / 0.35);
-  --mark-navy-a: #2c55ad;
-  --mark-navy-b: #22468f;
-  --mark-navy-c: #1b3a78;
+  --shadow-glow: 0 8px 24px rgb(37 99 235 / 0.35);
+  --mark-leg-a: #1e40af;
+  --mark-leg-b: #1d3a9e;
+  --mark-shadow: #142a73;
   color-scheme: dark;
 }
 
@@ -193,11 +251,22 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-ring-on-navy: var(--ring-on-navy);
   --color-primary: var(--primary);
   --color-primary-strong: var(--primary-strong);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-primary-soft-hover: var(--primary-soft-hover);
+  --color-primary-soft-hover-foreground: var(--primary-soft-hover-foreground);
+  --color-primary-wash: var(--primary-wash);
+  --color-violet: var(--violet);
+  --color-violet-strong: var(--violet-strong);
+  --color-violet-foreground: var(--violet-foreground);
+  --color-violet-soft: var(--violet-soft);
+  --color-violet-soft-foreground: var(--violet-soft-foreground);
+  --color-violet-text: var(--violet-text);
+  --color-sky: var(--sky);
   --color-navy: var(--navy);
   --color-navy-strong: var(--navy-strong);
   --color-navy-foreground: var(--navy-foreground);
@@ -206,13 +275,15 @@
   --color-navy-muted-foreground: var(--navy-muted-foreground);
   --color-accent-text: var(--accent-text);
   --color-brand-navy: var(--brand-navy);
+  --color-header: var(--header);
+  --color-header-foreground: var(--header-foreground);
+  --color-header-muted-foreground: var(--header-muted-foreground);
   --color-chrome: var(--chrome);
   --color-chrome-deep: var(--chrome-deep);
   --color-chrome-foreground: var(--chrome-foreground);
   --color-chrome-muted-foreground: var(--chrome-muted-foreground);
   --color-chrome-accent: var(--chrome-accent);
   --color-chrome-raised: var(--chrome-raised);
-  --color-orange-light: var(--orange-light);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-success-soft-foreground: var(--success-soft-foreground);
@@ -263,6 +334,7 @@
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
+  --shadow-glow: var(--shadow-glow);
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --animate-pop: pop 180ms ease-out;
@@ -274,24 +346,42 @@
   --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
 }
 
-/* Brand gradients as utilities: bg-gradient-navy, bg-gradient-orange. */
+/* Brand gradients as utilities: bg-gradient-primary, bg-gradient-navy and so on. */
+@utility bg-gradient-primary {
+  background-image: var(--gradient-primary);
+}
+@utility bg-gradient-primary-hover {
+  background-image: var(--gradient-primary-hover);
+}
+@utility bg-gradient-secondary {
+  background-image: var(--gradient-secondary);
+}
 @utility bg-gradient-navy {
   background-image: var(--gradient-navy);
-}
-@utility bg-gradient-orange {
-  background-image: var(--gradient-orange);
 }
 @utility bg-gradient-hero {
   background-image: var(--gradient-hero);
 }
-/* Orange-gradient text (the hero's accent word). Only on navy: orange text fails AA on light surfaces. */
-@utility text-gradient-orange {
-  background-image: var(--gradient-orange);
+/* Gradient text for display-size words (the hero's "Grow."): blue → violet on light, Light Blue → violet on dark. */
+@utility text-gradient-brand {
+  background-image: var(--gradient-text);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
 }
-/* Faint dot grid for navy hero surfaces. Decorative. */
+/*
+ * Buttons: a trailing arrow or chevron nudges 2px right on hover. Only when
+ * motion is allowed (OS setting and the in-app switch).
+ */
+.btn-nudge > svg:is(.lucide-arrow-right, .lucide-chevron-right, .lucide-arrow-up-right) {
+  transition: transform 200ms ease-out;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-reduce-motion='true']) .btn-nudge:hover > svg:is(.lucide-arrow-right, .lucide-chevron-right, .lucide-arrow-up-right) {
+    transform: translateX(2px);
+  }
+}
+/* Faint dot grid for navy surfaces. Decorative. */
 @utility bg-dots {
   background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.07) 1px, transparent 0);
   background-size: 24px 24px;
@@ -333,8 +423,8 @@
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgb(255 120 0 / 0.55); }
-  70%, 100% { box-shadow: 0 0 0 7px rgb(255 120 0 / 0); }
+  0% { box-shadow: 0 0 0 0 rgb(37 99 235 / 0.5); }
+  70%, 100% { box-shadow: 0 0 0 7px rgb(37 99 235 / 0); }
 }
 
 /* Placement result confetti: brand-colour shapes that fall once. Hidden under reduced motion. */
