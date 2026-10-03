@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { BarChart3, BookOpen, Home, LogOut, Settings, Shield, Swords, User, X } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, Home, LogOut, Settings, Shield, Swords, User, X } from 'lucide-react';
 import { AptricLogo } from '@/components/brand/AptricLogo';
 import { AptricMark } from '@/components/brand/AptricMark';
 import { Avatar } from '@/components/ui/avatar';
@@ -11,7 +11,7 @@ import { useSession } from '@/context/SessionContext';
 import { displayName } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary';
-import { HeaderOverlayContext } from './headerOverlay';
+import { HeaderOverlayContext, type HeaderOverlayTone } from './headerOverlay';
 import { PageSkeleton } from './PageSkeleton';
 import { SiteFooter, type FooterColumn, type FooterLink } from './SiteFooter';
 
@@ -21,6 +21,13 @@ const NAV = [
   { to: '/compete', label: 'Compete', icon: Swords },
   { to: '/progress', label: 'Progress', icon: BarChart3 },
   { to: '/profile', label: 'Profile', icon: User },
+];
+
+// Visitors' header links: anchors into the landing page (Landing scrolls to the hash).
+const VISITOR_NAV = [
+  { to: '/#features', label: 'Features' },
+  { to: '/#how-it-works', label: 'How it works' },
+  { to: '/#sections', label: 'Sections' },
 ];
 
 export const SkipLink = () => (
@@ -37,21 +44,21 @@ const UserMenu = () => {
   if (!profile) return null;
   const name = profile.display_name || profile.handle;
   const item =
-    'flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md px-3 text-sm font-medium text-card-foreground outline-none transition-colors data-[highlighted]:bg-primary-soft data-[highlighted]:text-primary-soft-foreground [&_svg]:size-4 [&_svg]:text-muted-foreground data-[highlighted]:[&_svg]:text-current';
+    'flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-card-foreground outline-none transition-colors data-[highlighted]:bg-primary-soft data-[highlighted]:text-primary-soft-foreground [&_svg]:size-4 [&_svg]:text-muted-foreground data-[highlighted]:[&_svg]:text-current';
   return (
     <Dropdown.Root>
       <Dropdown.Trigger
-        className="rounded-full p-1 transition-shadow hover:ring-2 hover:ring-primary/70 data-[state=open]:ring-2 data-[state=open]:ring-primary"
+        className="rounded-full p-1 ring-2 ring-transparent transition-shadow hover:ring-primary/40 data-[state=open]:ring-primary dark:hover:ring-accent-text/50 dark:data-[state=open]:ring-accent-text"
         aria-label="Account menu"
       >
-        <Avatar src={profile.avatar_url} name={name} className="ring-white/25" />
+        <Avatar src={profile.avatar_url} name={name} className="ring-header" />
       </Dropdown.Trigger>
       <Dropdown.Portal>
         <Dropdown.Content
           align="end" sideOffset={10}
-          className="z-50 min-w-60 overflow-hidden rounded-lg border bg-card p-1.5 text-card-foreground shadow-lg motion-safe:animate-fade-in"
+          className="z-50 min-w-64 overflow-hidden rounded-2xl border bg-card p-1.5 text-card-foreground shadow-lg motion-safe:animate-fade-in"
         >
-          <div className="flex items-center gap-3 px-2.5 py-2">
+          <div className="flex items-center gap-3 rounded-xl bg-violet-soft/60 px-2.5 py-2.5 dark:bg-violet-soft/40">
             <Avatar src={profile.avatar_url} name={name} className="size-10" />
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-heading">{displayName(profile)}</p>
@@ -70,18 +77,20 @@ const UserMenu = () => {
   );
 };
 
-/** True once the window has scrolled past a few pixels (only tracked while `active`). */
-const useScrolled = (active: boolean) => {
+/** True once the window has scrolled past a few pixels. */
+const useScrolled = () => {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    if (!active) return;
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [active]);
-  return active && scrolled;
+  }, []);
+  return scrolled;
 };
+
+const headerLink =
+  'relative flex h-10 items-center rounded-full px-3.5 text-sm font-semibold transition-colors hover:bg-muted';
 
 /** Header + content + footer + (on phones, signed in) a bottom tab bar. */
 export const AppShell = () => {
@@ -89,10 +98,10 @@ export const AppShell = () => {
   const { openAuth } = useAuthDialog();
   const { pathname } = useLocation();
   const signedIn = status === 'signed_in';
-  // A page with a navy hero (the landing page) opts in through useHeaderOverlay().
-  const [overlay, setOverlay] = useState(false);
-  const scrolled = useScrolled(overlay);
-  const transparent = overlay && !scrolled;
+  // A page with its own hero (the landing page) opts in through useHeaderOverlay().
+  const [overlay, setOverlay] = useState<HeaderOverlayTone | null>(null);
+  const scrolled = useScrolled();
+  const transparent = overlay !== null && !scrolled;
 
   const footerLinks: FooterLink[] = signedIn
     ? [{ label: 'Practice', to: '/practice' }, { label: 'Compete', to: '/compete' }, { label: 'Terms & privacy', to: '/terms' }]
@@ -103,7 +112,7 @@ export const AppShell = () => {
     ];
   // Visitors get the rich footer: anchors into the landing page, account actions, legal.
   const footerColumns: FooterColumn[] | undefined = signedIn ? undefined : [
-    { title: 'Explore', links: [{ label: 'Features', to: '/#features' }, { label: 'How it works', to: '/#how-it-works' }, { label: 'Sections', to: '/#sections' }] },
+    { title: 'Explore', links: VISITOR_NAV },
     { title: 'Account', links: footerLinks.slice(0, 2) },
     { title: 'Company', links: [{ label: 'Terms & privacy', to: '/terms' }, { label: 'Contact us', href: 'mailto:aptricofficials@gmail.com' }] },
   ];
@@ -113,17 +122,20 @@ export const AppShell = () => {
       <div className={cn('flex min-h-dvh flex-col', signedIn && 'pb-tabbar md:pb-0')}>
         <SkipLink />
         <header
+          // Over a hero that is dark in both themes, the transparent header takes the dark tokens.
+          data-theme={transparent && overlay === 'dark' ? 'dark' : undefined}
           className={cn(
-            'sticky top-0 z-40 border-b text-chrome-foreground transition-[background-color,border-color,box-shadow] duration-200 ease-out',
+            'sticky top-0 z-40 border-b text-header-foreground transition-[background-color,border-color,box-shadow] duration-200 ease-out',
             transparent
               ? 'border-transparent bg-transparent'
-              : 'border-white/10 bg-chrome shadow-md supports-[backdrop-filter]:bg-chrome/[0.97] supports-[backdrop-filter]:backdrop-blur-md',
+              : 'border-border bg-header supports-[backdrop-filter]:bg-header/90 supports-[backdrop-filter]:backdrop-blur-md',
+            !transparent && scrolled && 'shadow-sm',
           )}
         >
           <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4 sm:gap-4 sm:px-6">
             <Link to="/" className="flex min-h-11 shrink-0 items-center rounded-md" aria-label="Aptric home">
-              <AptricLogo variant="onDark" size="sm" className="sm:hidden" />
-              <AptricLogo variant="onDark" className="hidden sm:inline-flex" />
+              <AptricLogo size="sm" className="sm:hidden" />
+              <AptricLogo className="hidden sm:inline-flex" />
             </Link>
             {signedIn && (
               <nav aria-label="Main" className="ml-4 hidden h-full items-center gap-1 md:flex">
@@ -131,9 +143,11 @@ export const AppShell = () => {
                   <NavLink
                     key={to} to={to} end={end}
                     className={({ isActive }) => cn(
-                      'relative flex h-10 items-center rounded-full px-3.5 text-sm font-semibold text-chrome-muted-foreground transition-colors hover:bg-white/10 hover:text-chrome-foreground',
-                      'after:absolute after:inset-x-3.5 after:-bottom-[11px] after:h-[3px] after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity',
-                      isActive && 'text-chrome-foreground after:opacity-100',
+                      headerLink,
+                      'text-header-muted-foreground hover:text-header-foreground',
+                      // Active: blue label and a 2px primary-gradient underline on the header's bottom edge.
+                      'after:absolute after:inset-x-3.5 after:-bottom-3 after:h-0.5 after:rounded-full after:bg-gradient-primary after:opacity-0 after:transition-opacity',
+                      isActive && 'text-primary after:opacity-100 hover:text-primary dark:text-accent-text dark:hover:text-accent-text',
                     )}
                   >
                     {label}
@@ -141,18 +155,29 @@ export const AppShell = () => {
                 ))}
               </nav>
             )}
-            <div className="ml-auto flex items-center gap-1 sm:gap-3">
+            {status === 'signed_out' && (
+              <nav aria-label="Explore" className="ml-6 hidden items-center gap-1 md:flex">
+                {VISITOR_NAV.map(({ to, label }) => (
+                  <Link key={to} to={to} className={cn(headerLink, 'text-header-foreground hover:text-primary dark:hover:text-accent-text')}>
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+            <div className="ml-auto flex items-center gap-1 sm:gap-2">
               {signedIn && <UserMenu />}
               {status === 'signed_out' && (
                 <>
                   <Button
                     variant="ghost" size="sm"
-                    className="h-11 px-2.5 text-chrome-foreground sm:px-3 hover:bg-white/10 hover:text-chrome-foreground"
+                    className="h-11 px-2.5 text-header-foreground sm:px-4"
                     onClick={() => openAuth({ mode: 'signin', next: '/' })}
                   >
                     Sign in
                   </Button>
-                  <Button size="sm" className="h-11 px-4 sm:px-5" onClick={() => openAuth({ mode: 'signup', next: '/' })}>Get Started</Button>
+                  <Button size="sm" className="h-11 px-4 sm:px-5" onClick={() => openAuth({ mode: 'signup', next: '/' })}>
+                    Get Started <ArrowRight aria-hidden />
+                  </Button>
                 </>
               )}
             </div>
@@ -172,7 +197,7 @@ export const AppShell = () => {
         {signedIn && (
           <nav
             aria-label="Main"
-            className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-safe shadow-[0_-4px_16px_rgb(11_31_75/0.06)] backdrop-blur-md md:hidden dark:border-white/10 dark:bg-chrome/95"
+            className="fixed inset-x-0 bottom-0 z-40 border-t bg-header pb-safe shadow-top supports-[backdrop-filter]:bg-header/90 supports-[backdrop-filter]:backdrop-blur-md md:hidden"
           >
             <ul className="mx-auto grid max-w-md grid-cols-5">
               {NAV.map(({ to, label, icon: Icon, end }) => (
@@ -181,7 +206,7 @@ export const AppShell = () => {
                     to={to} end={end}
                     className={({ isActive }) => cn(
                       'relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-muted-foreground transition-colors',
-                      isActive && 'text-accent-text',
+                      isActive && 'text-primary dark:text-accent-text',
                     )}
                   >
                     {({ isActive }) => (
@@ -189,7 +214,7 @@ export const AppShell = () => {
                         <span
                           aria-hidden
                           className={cn(
-                            'absolute top-0 h-[3px] w-8 rounded-b-full bg-primary transition-opacity',
+                            'absolute top-0 h-[3px] w-8 rounded-b-full bg-gradient-primary transition-opacity',
                             isActive ? 'opacity-100' : 'opacity-0',
                           )}
                         />
@@ -218,7 +243,7 @@ export const FocusBar = ({ onClose, closeLabel = 'Close', children }: {
 }) => (
   <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
     <div className="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4 sm:px-6">
-      <Link to="/" className="rounded-md" aria-label="Aptric home">
+      <Link to="/" className="flex min-h-11 items-center rounded-md" aria-label="Aptric home">
         <AptricMark className="h-7" />
       </Link>
       <div className="min-w-0 flex-1">{children}</div>

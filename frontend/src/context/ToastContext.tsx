@@ -20,7 +20,7 @@ export interface ToastApi {
 const ToastContext = createContext<ToastApi | null>(null);
 
 const ICONS = { success: CheckCircle2, error: XCircle, warning: AlertTriangle, info: Info };
-// A card with a coloured left accent; the icon carries the same colour.
+// A white (dark: card navy) card with a coloured left accent; the icon carries the same colour. Info is blue.
 const STYLES: Record<ToastKind, { accent: string; icon: string }> = {
   success: { accent: 'border-l-success', icon: 'text-success' },
   error: { accent: 'border-l-danger', icon: 'text-danger' },
@@ -76,7 +76,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
               key={t.id}
               role={t.kind === 'error' ? 'alert' : 'status'}
               className={cn(
-                'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border border-l-4 bg-card py-3 pl-3.5 pr-3 text-card-foreground shadow-lg motion-safe:animate-fade-in dark:border-y-white/10 dark:border-r-white/10',
+                'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-l-4 bg-card py-3 pl-3.5 pr-3 text-card-foreground shadow-lg motion-safe:animate-fade-in',
                 STYLES[t.kind].accent,
               )}
             >
@@ -84,7 +84,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
               <p className="flex-1 text-sm font-medium">{t.message}</p>
               <button
                 type="button" onClick={() => dismiss(t.id)}
-                className="-m-1 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="-m-1 grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 aria-label="Dismiss"
               >
                 <X className="size-4" />

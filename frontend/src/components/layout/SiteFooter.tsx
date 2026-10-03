@@ -9,7 +9,7 @@ export interface FooterLink { label: string; to?: string; href?: string; onClick
 export interface FooterColumn { title: string; links: FooterLink[] }
 
 const linkClass =
-  'inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-chrome-muted-foreground transition-colors hover:text-chrome-foreground md:min-h-0';
+  'inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-chrome-muted-foreground transition-colors hover:text-chrome-accent md:min-h-0';
 
 const FooterItem = ({ label, to, href, onClick }: FooterLink) =>
   to ? <Link to={to} className={linkClass}>{label}</Link>
@@ -23,7 +23,19 @@ const FooterLinks = ({ links, className }: { links: FooterLink[]; className?: st
 );
 
 /**
- * Dark Navy footer. `compact` (the signed-in app) is a single row; `full` (visitors,
+ * Primary Navy footer, the same in both themes: a 1px blue → violet line and a faint
+ * glow along its top edge, Light Blue link hovers, and the on-navy focus ring.
+ */
+const FooterShell = ({ className, children }: { className?: string; children: ReactNode }) => (
+  <footer className={cn('relative isolate overflow-hidden bg-chrome text-chrome-muted-foreground [--ring:var(--ring-on-navy)]', className)}>
+    <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-secondary opacity-80" />
+    <span aria-hidden className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-40 w-[36rem] max-w-full -translate-x-1/2 rounded-full bg-gradient-secondary opacity-15 blur-3xl" />
+    {children}
+  </footer>
+);
+
+/**
+ * Navy footer. `compact` (the signed-in app) is a single row; `full` (visitors,
  * the landing page) shows the stacked logo and tagline beside `columns` of links
  * (or the flat `links` when no columns are given). `children` adds extra content.
  */
@@ -33,7 +45,7 @@ export const SiteFooter = ({ variant = 'compact', links, columns, className, chi
   const year = new Date().getFullYear();
   if (variant === 'compact') {
     return (
-      <footer className={cn('bg-chrome-deep text-chrome-muted-foreground', className)}>
+      <FooterShell className={className}>
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-6 text-center sm:px-6 md:flex-row md:gap-6 md:text-left">
           <Link to="/" aria-label="Aptric home" className="inline-flex min-h-11 items-center rounded-md">
             <AptricLogo size="sm" variant="onDark" />
@@ -42,11 +54,11 @@ export const SiteFooter = ({ variant = 'compact', links, columns, className, chi
           <FooterLinks links={links} className="justify-center" />
           <p className="text-xs">© {year} Aptric</p>
         </div>
-      </footer>
+      </FooterShell>
     );
   }
   return (
-    <footer className={cn('bg-chrome-deep text-chrome-muted-foreground', className)}>
+    <FooterShell className={className}>
       <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <div className="flex flex-col gap-10 md:flex-row md:justify-between">
           <div className="flex flex-col items-center gap-4 text-center md:items-start md:text-left">
@@ -73,6 +85,6 @@ export const SiteFooter = ({ variant = 'compact', links, columns, className, chi
         </div>
         <div className="mt-8 border-t border-white/10 pt-5 text-center text-xs sm:text-left">© {year} Aptric. Built for students who practise every day.</div>
       </div>
-    </footer>
+    </FooterShell>
   );
 };
