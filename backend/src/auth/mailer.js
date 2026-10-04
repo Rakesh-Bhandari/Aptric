@@ -64,6 +64,54 @@ const TEMPLATES = {
   },
 };
 
+// Brand colours (see prompts/frontend-redesign/BRAND.md). Email clients ignore
+// stylesheets and CSS variables, so everything is inline with solid fallbacks.
+const BRAND = {
+  navy: '#0A2540',
+  blue: '#2563EB',
+  violet: '#7C3AED',
+  sky: '#38BDF8',
+  text: '#0F172A',
+  muted: '#475569',
+  page: '#F8FAFC',
+  border: '#E2E8F0',
+  font: "'Plus Jakarta Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+};
+
+function renderHtml({ heading, body, action, link, footer }) {
+  const url = escapeHtml(link);
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>${heading}</title>
+</head>
+<body style="margin:0;padding:0;background:${BRAND.page};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BRAND.page};">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#FFFFFF;border:1px solid ${BRAND.border};border-radius:16px;overflow:hidden;font-family:${BRAND.font};">
+<tr><td bgcolor="${BRAND.navy}" style="background:${BRAND.navy};padding:22px 32px;font-size:20px;font-weight:800;letter-spacing:4px;color:#FFFFFF;">APTRIC</td></tr>
+<tr><td bgcolor="${BRAND.blue}" height="4" style="height:4px;line-height:4px;font-size:0;background:${BRAND.blue};background-image:linear-gradient(90deg,${BRAND.blue},${BRAND.violet});">&nbsp;</td></tr>
+<tr><td style="padding:32px;">
+<h1 style="margin:0 0 12px;font-size:24px;line-height:1.3;font-weight:800;color:${BRAND.navy};">${heading}</h1>
+<p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:${BRAND.text};">${body}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td align="center" bgcolor="${BRAND.blue}" style="border-radius:999px;background:${BRAND.blue};background-image:linear-gradient(135deg,${BRAND.blue},${BRAND.violet});">
+<a href="${url}" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:700;color:#FFFFFF;text-decoration:none;border-radius:999px;">${action}</a>
+</td></tr></table>
+<p style="margin:24px 0 4px;font-size:13px;line-height:1.5;color:${BRAND.muted};">Button not working? Paste this link into your browser:</p>
+<p style="margin:0;font-size:13px;line-height:1.5;word-break:break-all;"><a href="${url}" style="color:${BRAND.blue};">${url}</a></p>
+</td></tr>
+<tr><td style="padding:20px 32px;background:${BRAND.page};border-top:1px solid ${BRAND.border};font-size:13px;line-height:1.5;color:${BRAND.muted};">${footer}</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
 export function renderEmail(kind, link) {
   const t = TEMPLATES[kind];
   const minutes = config.emailLinkMinutes;
@@ -72,7 +120,7 @@ export function renderEmail(kind, link) {
   return {
     subject: t.subject,
     text: `${t.body}\n\n${t.action}: ${link}\n\n${footer}`,
-    html: `<h2>${t.heading}</h2>\n<p>${t.body}</p>\n<p><a href="${escapeHtml(link)}">${t.action}</a></p>\n<p>${footer}</p>`,
+    html: renderHtml({ ...t, link, footer }),
   };
 }
 
