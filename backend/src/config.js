@@ -54,6 +54,11 @@ export const config = {
   smtp: {
     host: env('SMTP_HOST', env('SMTP_USER') ? 'smtp.gmail.com' : undefined),
     port: intEnv('SMTP_PORT', 465, 1, 65535),
+    // Implicit TLS (port 465) by default; port 587 and friends use STARTTLS.
+    // SMTP_SECURE=true|false overrides the port-based guess.
+    secure: env('SMTP_SECURE') === undefined ? undefined : env('SMTP_SECURE').toLowerCase() === 'true',
+    // Fail fast instead of hanging until the serverless function is killed.
+    timeoutMs: intEnv('SMTP_TIMEOUT_MS', 10_000, 1000, 60_000),
     user: env('SMTP_USER'),
     // Google shows app passwords in groups of four; drop the spaces.
     pass: env('SMTP_PASS')?.replace(/\s+/g, ''),

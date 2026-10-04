@@ -40,6 +40,7 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sentMessage, setSentMessage] = useState('');
+  const [canResend, setCanResend] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
@@ -84,21 +85,26 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
       setError('Please choose a stronger password: at least 8 characters, mixing letters and numbers.');
       return;
     }
-    await createAccount({ email, password, displayName: name.trim() || undefined, next });
+    const { email_sent: emailSent } = await createAccount({ email, password, displayName: name.trim() || undefined, next });
     // The API answers the same way for registered emails, so the message
     // doesn't reveal which emails have accounts.
-    setSentMessage(`If ${email} can be registered, we've sent a confirmation link. Open it to finish creating your account.`);
+    setCanResend(true);
+    setSentMessage(emailSent === false
+      ? `Your account is created, but we couldn't send the confirmation email to ${email} right now. Try sending it again in a minute.`
+      : `If ${email} can be registered, we've sent a confirmation link. Open it to finish creating your account.`);
     setMode('sent');
   });
 
   const magicLink = run(async () => {
     await sendMagicLink(email, next);
+    setCanResend(false);
     setSentMessage(`We've sent a sign-in link to ${email}.`);
     setMode('sent');
   });
 
   const forgot = run(async () => {
     await requestPasswordReset(email);
+    setCanResend(false);
     setSentMessage(`If there's an account for ${email}, a password reset link is on its way.`);
     setMode('sent');
   });
@@ -258,6 +264,10 @@ const AuthDialog = ({ open, onClose, initialMode, next }: Props) => {
             </div>
             <p className="text-heading">{sentMessage}</p>
             <FieldHint>Nothing yet? Check your spam folder, or wait a minute and try again.</FieldHint>
+            {canResend && (
+              <Button variant="outline" className="w-full" loading={busy} onClick={() => void resend()}>Resend the confirmation email</Button>
+            )}
+            {errorNote}
             <Button variant="outline" className="w-full" onClick={() => switchMode('signin')}>Back to sign in</Button>
           </div>
         )}

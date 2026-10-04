@@ -57,6 +57,17 @@ async function sendLink(account, purpose, next) {
   await sendAuthEmail(account.email, purpose, callbackUrl({ token, type: purpose, next: safeNext(next) }));
 }
 
+// Like sendLink, but a mail failure is reported instead of thrown.
+async function trySendLink(account, purpose, next) {
+  try {
+    await sendLink(account, purpose, next);
+    return true;
+  } catch (err) {
+    if (err instanceof HttpError && err.code === 'email_unavailable') return false;
+    throw err;
+  }
+}
+
 // Sign-up with email + password; the account works once the email is confirmed.
 router.post('/signup', limitByIp('auth:signup', 3600, 20), async (req, res) => {
   const email = readEmail(req.body);
@@ -64,16 +75,19 @@ router.post('/signup', limitByIp('auth:signup', 3600, 20), async (req, res) => {
   if (problem) throw new HttpError(400, 'weak_password', problem);
   await limitEmail(email);
 
+  let emailSent = true;
   const existing = await findAccountByEmail(email);
   if (!existing) {
     const account = await createAccount({ email, passwordHash: await hashPassword(req.body.password), metadata: sanitiseMetadata(req.body) });
-    await sendLink(account, 'signup', req.body.next);
+    emailSent = await trySendLink(account, 'signup', req.body.next);
   } else if (!existing.email_verified_at && !isBanned(existing)) {
     // Signing up again before confirming replaces the password and resends.
     await query('update private.accounts set password_hash = $2 where id = $1', [existing.id, await hashPassword(req.body.password)]);
-    await sendLink(existing, 'signup', req.body.next);
+    emailSent = await trySendLink(existing, 'signup', req.body.next);
   }
-  res.json({ ok: true });
+  // email_sent is false only when the mail provider failed; the account exists
+  // and the client offers "resend" (rate limited) instead of dead-ending.
+  res.json({ ok: true, email_sent: emailSent });
 });
 
 router.post('/login', limitByIp('auth:login', 300, 30), async (req, res) => {

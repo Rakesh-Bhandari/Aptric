@@ -7,15 +7,39 @@ import { HttpError } from '../http.js';
 
 let transport;
 
+export const smtpSecure = () => config.smtp.secure ?? config.smtp.port === 465;
+
 const getTransport = () => {
   transport ??= nodemailer.createTransport({
     host: config.smtp.host,
     port: config.smtp.port,
-    secure: config.smtp.port === 465,
+    secure: smtpSecure(),
+    requireTLS: !smtpSecure(),
+    connectionTimeout: config.smtp.timeoutMs,
+    greetingTimeout: config.smtp.timeoutMs,
+    socketTimeout: config.smtp.timeoutMs * 2,
     auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.pass } : undefined,
   });
   return transport;
 };
+
+/** Tests inject a fake transport ({ sendMail }); pass undefined to reset. */
+export const setTransport = (t) => { transport = t; };
+
+/** A server-log hint for the usual reasons a send fails. Never goes to clients. */
+export function diagnose(err) {
+  const code = err?.code;
+  if (code === 'EAUTH' || err?.responseCode === 535) {
+    return 'authentication failed: check SMTP_USER and SMTP_PASS (Gmail needs a 16-character app password, not the account password)';
+  }
+  if (code === 'ETIMEDOUT' || code === 'ECONNECTION' || code === 'ESOCKET' || code === 'ECONNREFUSED' || code === 'ENOTFOUND') {
+    return `cannot reach ${config.smtp.host}:${config.smtp.port} (secure=${smtpSecure()}): check SMTP_HOST, SMTP_PORT and SMTP_SECURE (465 needs secure=true, 587 needs secure=false)`;
+  }
+  if (code === 'EENVELOPE' || err?.responseCode === 550 || err?.responseCode === 553) {
+    return 'sender or recipient rejected: SMTP_FROM must be SMTP_USER or an address verified with the provider';
+  }
+  return 'unclassified SMTP error';
+}
 
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -52,11 +76,14 @@ export function renderEmail(kind, link) {
   };
 }
 
+const unavailable = () =>
+  new HttpError(503, 'email_unavailable', "We couldn't send the email. Please try again in a minute.");
+
 export async function sendAuthEmail(to, kind, link) {
   const message = renderEmail(kind, link);
   if (!config.smtp.host) {
     if (config.isProd) {
-      console.error('[mail] SMTP_HOST is not set, so auth emails cannot be sent');
+      console.error('[mail] SMTP_HOST is not set (and SMTP_USER is empty), so auth emails cannot be sent. Set SMTP_* in the Vercel project, see backend/.env.example');
       throw new HttpError(503, 'email_unavailable', "We can't send emails right now. Please try again later.");
     }
     console.info(`[mail] (SMTP not configured) ${kind} for ${to}: ${link}`);
@@ -65,7 +92,11 @@ export async function sendAuthEmail(to, kind, link) {
   try {
     await getTransport().sendMail({ from: config.smtp.from, to, ...message });
   } catch (err) {
-    console.error('[mail] send failed', err.message);
-    throw new HttpError(503, 'email_unavailable', "We couldn't send the email. Please try again in a minute.");
+    // Drop the cached transport so the next attempt opens a fresh connection.
+    transport = undefined;
+    console.error(
+      `[mail] send failed (${kind}): ${err?.code ?? 'no code'} ${err?.responseCode ?? ''} ${err?.command ?? ''} ${err?.message}; ${diagnose(err)}`,
+    );
+    throw unavailable();
   }
 }
