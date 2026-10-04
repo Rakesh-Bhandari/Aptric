@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MasteryStars } from '@/components/ui/stars';
-import { sessionStars } from '@/lib/game';
+import { correctRatio, sessionStars } from '@/lib/game';
 import { cn } from '@/lib/utils';
 
 /** Where one question stands, for the segmented progress bar. */
@@ -25,10 +25,9 @@ const SEGMENT_CLASS: Record<SegmentState, string> = {
 /**
  * Slim sticky bar for a solving session: exit, one progress segment per
  * question, the count and the question timer (rendered by SolveScreen).
- * `results` gives the state of earlier questions. With it the fill and the
- * count show questions attempted out of the total (correct is a secondary
- * label) and the stars follow the correct-answer ratio; without it (no
- * grading yet) earlier questions read as answered.
+ * `results` gives the state of earlier questions. With it the fill, the count
+ * and the stars show correct answers (attempted is a secondary label);
+ * without it (no grading yet) earlier questions read as answered.
  */
 export const SessionHeader = ({ title, index, total, onExit, exitLabel = 'Exit', results }: {
   title: string; index: number; total: number; onExit: () => void; exitLabel?: string; results?: SegmentState[];
@@ -41,7 +40,7 @@ export const SessionHeader = ({ title, index, total, onExit, exitLabel = 'Exit',
   const wrong = states.filter((x) => x === 'wrong').length;
   const attempted = states.filter((x) => x === 'correct' || x === 'wrong' || x === 'answered').length;
   const valueText = graded
-    ? `${attempted} of ${total} attempted, ${right} correct`
+    ? `${right} of ${total} correct, ${attempted} attempted`
     : `Question ${position} of ${total}` + (right + wrong ? `, ${right} correct, ${wrong} wrong` : '');
 
   return (
@@ -56,13 +55,13 @@ export const SessionHeader = ({ title, index, total, onExit, exitLabel = 'Exit',
           aria-label="Session progress"
           aria-valuemin={0}
           aria-valuemax={total}
-          aria-valuenow={graded ? attempted : Math.min(index, total)}
+          aria-valuenow={graded ? right : Math.min(index, total)}
           aria-valuetext={valueText}
           className="flex h-2 min-w-0 flex-1 gap-[3px]"
         >
           {total > MAX_SEGMENTS ? (
             <div className="h-full w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-primary bg-gradient-primary transition-[width] duration-300 ease-out" style={{ width: `${(graded ? (total > 0 ? attempted / total : 0) : position / total) * 100}%` }} />
+              <div className="h-full rounded-full bg-primary bg-gradient-primary transition-[width] duration-300 ease-out" style={{ width: `${(graded ? correctRatio(right, total) : position / total) * 100}%` }} />
             </div>
           ) : (
             states.map((s, i) => (
@@ -79,8 +78,8 @@ export const SessionHeader = ({ title, index, total, onExit, exitLabel = 'Exit',
         </div>
         {graded && <MasteryStars stars={sessionStars(right, total)} className="hidden shrink-0 min-[400px]:inline-flex" />}
         <span className="shrink-0 text-sm font-semibold tabular-nums text-heading" aria-hidden>
-          {graded ? attempted : position}<span className="font-normal text-muted-foreground"> / {total}</span>
-          {graded && <span className="ml-1.5 hidden text-xs font-normal text-muted-foreground sm:inline">· correct {right} of {total}</span>}
+          {graded ? right : position}<span className="font-normal text-muted-foreground"> / {total}</span>
+          {graded && <span className="ml-1.5 hidden text-xs font-normal text-muted-foreground sm:inline">· attempted {attempted} of {total}</span>}
         </span>
         <div id={SESSION_TIMER_SLOT} className="shrink-0 empty:hidden" />
       </div>

@@ -9,29 +9,23 @@ const bar = () => screen.getByRole('progressbar', { name: 'Session progress' });
 const stars = () => screen.queryByRole('img', { name: /Mastery/ });
 
 describe('SessionHeader', () => {
-  it('fills by questions attempted out of the total', () => {
+  it('fills by correct answers, not attempts', () => {
     setup(3, 10, ['correct', 'wrong', 'wrong']);
-    expect(bar()).toHaveAttribute('aria-valuenow', '3');
-    expect(bar()).toHaveAttribute('aria-valuetext', '3 of 10 attempted, 1 correct');
+    expect(bar()).toHaveAttribute('aria-valuenow', '1');
+    expect(bar()).toHaveAttribute('aria-valuetext', '1 of 10 correct, 3 attempted');
     expect(stars()).toHaveAttribute('aria-label', expect.stringContaining('1 of 3'));
   });
 
-  it('fills for wrong answers but shows no stars with 0 correct', () => {
+  it('shows an empty bar and no stars with 0 correct', () => {
     setup(2, 10, ['wrong', 'answered']);
-    expect(bar()).toHaveAttribute('aria-valuenow', '2');
-    expect(stars()).toHaveAttribute('aria-label', expect.stringContaining('0 of 3'));
-  });
-
-  it('is empty before any question is attempted', () => {
-    setup(0, 5, []);
     expect(bar()).toHaveAttribute('aria-valuenow', '0');
     expect(stars()).toHaveAttribute('aria-label', expect.stringContaining('0 of 3'));
   });
 
   it('counts a skipped (unanswered) question as attempted but not correct', () => {
     setup(2, 4, ['correct', 'answered']);
-    expect(bar()).toHaveAttribute('aria-valuenow', '2');
-    expect(bar()).toHaveAttribute('aria-valuetext', '2 of 4 attempted, 1 correct');
+    expect(bar()).toHaveAttribute('aria-valuenow', '1');
+    expect(bar()).toHaveAttribute('aria-valuetext', '1 of 4 correct, 2 attempted');
   });
 
   it('gives three stars when everything is correct, for a variable session size', () => {
@@ -40,8 +34,8 @@ describe('SessionHeader', () => {
     expect(stars()).toHaveAttribute('aria-label', expect.stringContaining('3 of 3'));
   });
 
-  it('uses a continuous attempted fill for long sessions', () => {
-    const results: SegmentState[] = Array.from({ length: 20 }, (_, i) => (i % 2 ? 'wrong' : 'correct'));
+  it('uses a continuous correctness fill for long sessions', () => {
+    const results: SegmentState[] = Array.from({ length: 20 }, () => 'correct');
     const { container } = setup(20, 40, results);
     expect(bar()).toHaveAttribute('aria-valuenow', '20');
     expect((container.querySelector('[style*="width"]') as HTMLElement).style.width).toBe('50%');
