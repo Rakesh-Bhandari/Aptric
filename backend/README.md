@@ -114,7 +114,7 @@ All bodies are JSON. Errors are `{ "error": { "code", "message", ... } }`; datab
 | `GET` / `PATCH /me/preferences` | user | topics the daily set leans towards (`preferred_topic_ids`) and never uses unless nothing else is left (`excluded_topic_ids`); `PATCH` replaces both lists and rebuilds today's set if it has not been started |
 | `GET /catalog/exam-tags`, `GET /catalog/levels`, `GET /catalog/topics` | user | small catalogs (topics: active ones with published questions, by section) |
 | `GET /push/config`, `POST /push/subscribe`, `POST /push/unsubscribe`, `PATCH /push/preferences`, `POST /push/test` | user | [Web Push](#push-notifications): the VAPID public key and the player's switches, register / remove this browser, change `daily` / `streak` / `contests` / `league` (booleans), send a test (10 an hour) |
-| `GET /cron/push` | `CRON_SECRET` | sends the notifications that are due; called hourly by Vercel Cron |
+| `GET /cron/push` | `CRON_SECRET` | sends the notifications that are due; called hourly by a scheduler (GitHub Actions workflow) |
 | `GET /questions/:id/subtopic` | user | subtopic of a question the user can see |
 | `POST /tutor/chat` | user | one Aptric Tutor turn, streamed as server-sent events (see [Aptric Tutor](#aptric-tutor)) |
 | `GET /tutor/history?question_id&context` | user | `{ available, messages }`: the stored chat for one question, and whether the tutor is configured |
@@ -156,7 +156,7 @@ Web Push (VAPID) to browsers that opted in under **Settings → Notifications**;
 
 1. `npx web-push generate-vapid-keys`, then set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (and optionally `VAPID_SUBJECT`) and a `CRON_SECRET` in the API's environment. Without the keys push is off: the Settings section says so and `/cron/push` does nothing.
 2. Apply `20261010000001_push_notifications.sql` (`npx supabase db push`).
-3. `vercel.json` registers a Vercel Cron that calls `GET /cron/push` every hour (`0 * * * *`) with `Authorization: Bearer $CRON_SECRET`. Vercel's Hobby plan only allows daily crons, so there, call that URL hourly from any other scheduler. Every local-time window above is one hour wide, so an hourly run reaches every timezone, including `:30` and `:45` offsets.
+3. Something has to call `GET /cron/push` with `Authorization: Bearer $CRON_SECRET` every hour (Vercel's Hobby plan rejects hourly crons, so `vercel.json` has none). The free option is `.github/workflows/push-notifications.yml`: add the repository secrets `API_URL` and `CRON_SECRET`, and GitHub Actions makes the call hourly (runs can start a few minutes late; test it from the Actions tab with *Run workflow*). [cron-job.org](https://cron-job.org) works the same way, and on Vercel Pro you can add `"crons": [{ "path": "/cron/push", "schedule": "0 * * * *" }]` to `vercel.json` instead. Every local-time window above is one hour wide, so an hourly run reaches every timezone, including `:30` and `:45` offsets.
 
 **How it stays safe.** `src/push/jobs.js` finds who is due and claims a `private.push_log` row per (player, key) in the same statement (`on conflict do nothing`), so an overlapping or repeated run never sends twice. Subscriptions the push service reports gone (404/410) are deleted. The API only POSTs to https endpoints on the browsers' own push services (`PUSH_ENDPOINT_HOSTS`), so a subscription cannot aim the server at anything else. Signing out removes that browser's subscription. iOS shows web push only for the app added to the Home Screen.
 
