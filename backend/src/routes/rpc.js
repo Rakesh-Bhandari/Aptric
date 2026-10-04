@@ -6,9 +6,10 @@
 import { Router } from 'express';
 import { asUser } from '../db.js';
 import { badRequest, notFound } from '../http.js';
-import { requireUser } from '../middleware/auth.js';
+import { requireAdmin, requireUser } from '../middleware/auth.js';
 
-// name -> { args: { arg: sql type }, set: returns rows (setof / table), void: returns nothing }
+// name -> { args: { arg: sql type }, set: returns rows (setof / table), void: returns nothing,
+//           admin: the route itself refuses non-admins before the call }
 export const RPCS = {
   // Daily challenge and answering
   get_today_set: { args: {} },
@@ -54,6 +55,26 @@ export const RPCS = {
   },
   admin_set_user_role: { void: true, args: { target_user_id: 'uuid', new_role: 'public.user_role' } },
   admin_set_user_ban: { void: true, args: { target_user_id: 'uuid', banned: 'boolean', reason: 'text' } },
+  // Admin contests (audited by the contests / contest_items triggers)
+  admin_list_contests: { admin: true, args: {} },
+  admin_get_contest: { admin: true, args: { target_contest_id: 'uuid' } },
+  admin_save_contest: {
+    admin: true,
+    args: {
+      target_contest_id: 'uuid', title: 'text', description: 'text', starts_at: 'timestamptz', ends_at: 'timestamptz',
+      question_ids: 'uuid[]', is_published: 'boolean',
+    },
+  },
+  admin_set_contest_published: { admin: true, void: true, args: { target_contest_id: 'uuid', published: 'boolean' } },
+  admin_delete_contest: { admin: true, void: true, args: { target_contest_id: 'uuid' } },
+  admin_pick_contest_questions: {
+    admin: true,
+    args: {
+      section_id: 'uuid', topic_id: 'uuid', subtopic_id: 'uuid', difficulty: 'public.question_difficulty',
+      question_count: 'integer', exclude_ids: 'uuid[]',
+    },
+  },
+  admin_get_contest_results: { admin: true, args: { target_contest_id: 'uuid', page_size: 'integer', page_offset: 'integer' } },
 };
 
 /**
@@ -84,6 +105,7 @@ const router = Router();
 
 router.post('/:name', requireUser, async (req, res) => {
   const { text, params, shape } = buildCall(req.params.name, req.body ?? {});
+  if (RPCS[req.params.name].admin) await requireAdmin(req, res, () => {});
   const { rows } = await asUser(req.user.id, text, params);
   if (shape === 'rows') return res.json(rows);
   res.json(shape === 'void' ? null : (rows[0]?.result ?? null));

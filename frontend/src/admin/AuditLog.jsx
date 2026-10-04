@@ -9,7 +9,7 @@ const PAGE_SIZE = 50;
 const ENTITY_TYPES = [
     'questions', 'question_options', 'question_answers', 'question_tags', 'reports', 'profiles',
     'question_generation_jobs', 'feedback', 'sections', 'topics', 'subtopics', 'tags', 'tracks',
-    'daily_sets', 'daily_set_items', 'levels', 'league_tiers', 'track_sections', 'cron',
+    'daily_sets', 'daily_set_items', 'contests', 'contest_items', 'levels', 'league_tiers', 'track_sections', 'cron',
 ];
 const ACTIONS = ['insert', 'update', 'delete', 'approve', 'reject', 'set_status', 'set_role', 'ban', 'unban', 'create', 'cancel', 'finish'];
 const NOISE = new Set(['updated_at', 'created_at']);
@@ -17,6 +17,7 @@ const NOISE = new Set(['updated_at', 'created_at']);
 // Where an audit row's subject lives in the admin UI.
 const entityLink = (row) => {
     if (row.question_ref) return { to: `/admin/questions/${row.question_ref}`, text: 'question' };
+    if (row.entity_type === 'contests') return { to: `/admin/contests/${row.entity_id}`, text: 'contest' };
     if (row.entity_type === 'profiles') return { to: `/admin/users/${row.entity_id}`, text: 'user' };
     if (row.entity_type === 'question_generation_jobs') return { to: `/admin/jobs?job=${row.entity_id}`, text: 'job' };
     return null;
