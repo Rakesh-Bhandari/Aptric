@@ -140,6 +140,7 @@ An AI chat drawer for daily and practice sets (never in contests or placement). 
 ### 🛡️ For admins
 
 - Review queue for AI-generated questions, question search and editor, status changes (`draft` → `in review` → `published` → `retired`)
+- Contests: list with state (draft / upcoming / live / ended) and participants, create/edit with start, end, duration and questions (from the bank or auto-picked by topic and difficulty), publish/unpublish, delete (only while nobody has joined) and standings with submissions
 - User management (roles, bans), reports and feedback moderation, generation jobs and an audit log
 - Every write is audited in Postgres by triggers or the `admin_*` RPCs
 

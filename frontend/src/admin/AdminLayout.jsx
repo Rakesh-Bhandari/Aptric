@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Flag, ListChecks, ListTodo, ScrollText, Sparkles, Users } from 'lucide-react';
+import { Flag, ListChecks, ListTodo, ScrollText, Sparkles, Trophy, Users } from 'lucide-react';
 import { AptricMark } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/SessionContext';
@@ -11,6 +11,7 @@ const NAV = [
     { to: 'review', label: 'Review queue', icon: ListChecks, count: 'review' },
     { to: 'questions', label: 'Questions', icon: ListTodo },
     { to: 'reports', label: 'Reports', icon: Flag, count: 'reports' },
+    { to: 'contests', label: 'Contests', icon: Trophy },
     { to: 'users', label: 'Users', icon: Users },
     { to: 'jobs', label: 'Generation jobs', icon: Sparkles, count: 'jobs' },
     { to: 'audit', label: 'Audit log', icon: ScrollText },

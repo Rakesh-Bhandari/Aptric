@@ -106,6 +106,7 @@ All bodies are JSON. Errors are `{ "error": { "code", "message", ... } }`; datab
 | `GET /health` | – | database check |
 | `/auth/*` | – / user | see above; `GET /auth/user` returns the token's user |
 | `POST /rpc/:name` | user | runs a whitelisted SQL function as the user with named arguments (`src/routes/rpc.js`): `get_today_set`, `submit_answer`, `use_hint`, `give_up`, `get_daily_result`, `get_practice_tree`, `get_practice_questions`, `get_mistakes`, `get_activity`, `start_placement`, `finish_placement`, `get_my_league`, `get_leaderboard`, `get_player_profile`, contests, and the `admin_*` functions |
+| `POST /rpc/admin_*_contest*` | admin | `admin_list_contests`, `admin_get_contest`, `admin_save_contest`, `admin_set_contest_published`, `admin_delete_contest`, `admin_pick_contest_questions`, `admin_get_contest_results`. The route returns 403 to non-admins before the call, the SQL function checks again, and every change is audited by the `contests` / `contest_items` triggers. Questions are locked and deletion is refused (`55000`) once a player has joined. |
 | `GET` / `PATCH /me/profile` | user | own profile; editable: `handle`, `display_name`, `bio`, `timezone`, `exam_goal`, `daily_target`, `onboarded_at` |
 | `GET /me/placement` | user | last finished placement test |
 | `POST /reports`, `POST /feedback` | user | report a question / send feedback |

@@ -121,3 +121,46 @@ export const listAudit = (filters = {}, { page = 0, pageSize = 50 } = {}) =>
     api('GET', `/admin/audit${qs({
         ...filters, entityId: filters.entityId?.trim(), questionRef: filters.questionRef?.trim(), page, pageSize,
     })}`);
+
+// --- Contests ------------------------------------------------------------------
+
+export const CONTEST_STATES = ['draft', 'upcoming', 'live', 'ended'];
+
+// Every contest, drafts included: { id, slug, title, description, starts_at, ends_at,
+// is_published, state, question_count, participants }.
+export const listContests = () => rpc('admin_list_contests');
+
+// One contest plus its questions in order: [{ position, question_id, stem, difficulty, status }].
+export const getContest = (id) => rpc('admin_get_contest', { target_contest_id: id });
+
+// draft: { title, description, starts_at, ends_at (ISO), question_ids, is_published }. id null creates.
+export const saveContest = (id, draft) => rpc('admin_save_contest', {
+    target_contest_id: id,
+    title: draft.title,
+    description: draft.description || null,
+    starts_at: draft.starts_at,
+    ends_at: draft.ends_at,
+    question_ids: draft.question_ids,
+    is_published: !!draft.is_published,
+});
+
+export const setContestPublished = (id, published) =>
+    rpc('admin_set_contest_published', { target_contest_id: id, published });
+
+// Refused by the database once any player has joined.
+export const deleteContest = (id) => rpc('admin_delete_contest', { target_contest_id: id });
+
+// filters: { sectionId, topicId, subtopicId, difficulty }. Resolves to random servable
+// questions [{ id, stem, difficulty, subtopic }], skipping excludeIds.
+export const pickContestQuestions = (filters, count, excludeIds = []) => rpc('admin_pick_contest_questions', {
+    section_id: filters.sectionId || null,
+    topic_id: filters.topicId || null,
+    subtopic_id: filters.subtopicId || null,
+    difficulty: filters.difficulty || null,
+    question_count: count,
+    exclude_ids: excludeIds,
+});
+
+// Resolves to { total, entries: [{ rank, user_id, handle, banned, score, correct, answered, time_ms, answers }] }.
+export const getContestResults = (id, { page = 0, pageSize = 50 } = {}) =>
+    rpc('admin_get_contest_results', { target_contest_id: id, page_size: pageSize, page_offset: page * pageSize });

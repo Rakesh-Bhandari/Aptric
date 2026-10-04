@@ -35,6 +35,9 @@ const AdminLayout = lazy(() => import('@/admin/AdminLayout'));
 const ReviewQueue = lazy(() => import('@/admin/ReviewQueue'));
 const AdminQuestions = lazy(() => import('@/admin/Questions'));
 const AdminQuestionPage = lazy(() => import('@/admin/QuestionPage'));
+const AdminContests = lazy(() => import('@/admin/Contests'));
+const AdminContestEditor = lazy(() => import('@/admin/ContestEditor'));
+const AdminContestResults = lazy(() => import('@/admin/ContestResults'));
 const AdminUsers = lazy(() => import('@/admin/Users'));
 const AdminUserPage = lazy(() => import('@/admin/UserPage'));
 const AdminReports = lazy(() => import('@/admin/Reports'));
@@ -96,6 +99,10 @@ const router = createBrowserRouter([
                   { path: 'review', element: <ReviewQueue /> },
                   { path: 'questions', element: <AdminQuestions /> },
                   { path: 'questions/:id', element: <AdminQuestionPage /> },
+                  { path: 'contests', element: <AdminContests /> },
+                  { path: 'contests/new', element: <AdminContestEditor /> },
+                  { path: 'contests/:id', element: <AdminContestEditor /> },
+                  { path: 'contests/:id/results', element: <AdminContestResults /> },
                   { path: 'users', element: <AdminUsers /> },
                   { path: 'users/:id', element: <AdminUserPage /> },
                   { path: 'reports', element: <AdminReports /> },
