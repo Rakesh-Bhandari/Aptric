@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { asUser } from '../db.js';
 import { badRequest, notFound } from '../http.js';
 import { requireAdmin, requireUser } from '../middleware/auth.js';
+import { ensurePersonalSet } from '../personalSet.js';
 
 // name -> { args: { arg: sql type }, set: returns rows (setof / table), void: returns nothing,
 //           admin: the route itself refuses non-admins before the call }
@@ -78,6 +79,10 @@ export const RPCS = {
   admin_get_contest_results: { admin: true, args: { target_contest_id: 'uuid', page_size: 'integer', page_offset: 'integer' } },
 };
 
+// Calls that read or score today's daily set. The player's personal set is made
+// first (once a day, a cheap read after that), so they all see the same set.
+export const DAILY_RPCS = new Set(['get_today_set', 'get_daily_result', 'submit_answer', 'use_hint', 'give_up']);
+
 /**
  * SQL and parameters for one call, using named notation so omitted arguments
  * take their SQL defaults (as PostgREST did). Unknown names/arguments throw.
@@ -107,6 +112,12 @@ const router = Router();
 router.post('/:name', requireUser, async (req, res) => {
   const { text, params, shape } = buildCall(req.params.name, req.body ?? {});
   if (RPCS[req.params.name].admin) await requireAdmin(req, res, () => {});
+  // A past set (get_daily_result with target_set_id) needs no new set; context 'practice' neither.
+  const past = req.params.name === 'get_daily_result' && req.body?.target_set_id;
+  if (DAILY_RPCS.has(req.params.name) && !past && req.body?.context !== 'practice') {
+    // Never block playing: without a personal set the shared one applies.
+    await ensurePersonalSet(req.user.id).catch((err) => console.error('personal daily set:', err));
+  }
   const { rows } = await asUser(req.user.id, text, params);
   if (shape === 'rows') return res.json(rows);
   res.json(shape === 'void' ? null : (rows[0]?.result ?? null));

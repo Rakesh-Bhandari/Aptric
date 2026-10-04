@@ -385,3 +385,18 @@ export interface Profile {
   /** Practice only: Daily and contests always detect tab switches. */
   detect_tab_switches_practice: boolean;
 }
+
+/** An active topic with published questions, for the daily-set preferences. */
+export interface CatalogTopic {
+  id: string;
+  name: string;
+  section_id: string;
+  section: string;
+  questions: number;
+}
+
+/** Topics the daily set leans towards, and topics it never uses (unless nothing else is left). */
+export interface TopicPreferences {
+  preferred_topic_ids: string[];
+  excluded_topic_ids: string[];
+}

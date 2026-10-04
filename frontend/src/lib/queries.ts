@@ -28,6 +28,8 @@ export const keys = {
   standings: (id: string) => ['contest-standings', id] as const,
   examTags: ['exam-tags'] as const,
   levels: ['levels'] as const,
+  topics: ['topics'] as const,
+  topicPreferences: ['topic-preferences'] as const,
   lastPlacement: (userId: string) => ['last-placement', userId] as const,
 };
 
@@ -57,3 +59,5 @@ export const useContestStandings = (id: string, live: boolean) =>
   useQuery({ queryKey: keys.standings(id), queryFn: () => api.getContestStandings(id), refetchInterval: live ? 15_000 : false });
 export const useExamTags = () => useQuery({ queryKey: keys.examTags, queryFn: api.getExamTags, staleTime: Infinity });
 export const useLevels = () => useQuery({ queryKey: keys.levels, queryFn: api.getLevels, staleTime: Infinity });
+export const useTopics = () => useQuery({ queryKey: keys.topics, queryFn: api.getTopics, staleTime: Infinity });
+export const useTopicPreferences = () => useQuery({ queryKey: keys.topicPreferences, queryFn: api.getTopicPreferences });

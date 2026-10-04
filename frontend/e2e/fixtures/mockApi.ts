@@ -71,6 +71,8 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
   if (p === '/me/placement') return { completed_at: d.FIXED_NOW.toISOString(), placed_level: 3, correct: 7, score: 70 };
   if (p === '/catalog/exam-tags') return d.examTags();
   if (p === '/catalog/levels') return d.levels();
+  if (p === '/catalog/topics') return [];
+  if (p === '/me/preferences') return { preferred_topic_ids: [], excluded_topic_ids: [] };
   if (/^\/questions\/[^/]+\/subtopic$/.test(p)) return { subtopic_id: 'st000' };
   if (p === '/admin/taxonomy') return d.adminTaxonomy();
   if (p === '/admin/tags') return d.adminTags();
