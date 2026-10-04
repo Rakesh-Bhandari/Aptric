@@ -103,7 +103,7 @@ Skill radar, activity heatmap, recent daily sets and a mistakes-to-review list.
 <td valign="top">
 
 #### 👤 Profile
-Public profile at `/u/:handle`, badges, share card, time zone, theme (light / dark / device) and reduced motion.
+Public profile at `/u/:handle`, badges and share card. Time zone, theme (light / dark / device) and reduced motion are on `/settings`.
 
 </td>
 </tr>

@@ -24,7 +24,8 @@ Every game rule (grading, hints, XP, streaks, levels, placement, contests) lives
 | `/session/summary` | **Session summary**: score, XP, time, per-question outcomes, level-ups/badges/rating, share, follow-ups. |
 | `/compete` | **Compete**: weekly league (refreshed every 20 s), leaderboards (week / all time / rating), contests. `/compete/contests/:id` plays a contest. |
 | `/progress` | **Progress**: skill radar + table, activity heatmap and recent daily sets, mistakes to review with explanations. |
-| `/profile` | **Profile & settings**: profile, exam goal, daily target, time zone, placement retake, theme, reduced motion, feedback, sign out. `/u/:handle` is a public profile. |
+| `/profile` | **Profile**: your identity, level, stats and badges, with a link to Settings. `/u/:handle` is a public profile. |
+| `/settings` | **Settings**: profile details, exam goal, daily target, time zone, placement retake, theme, reduced motion, tab-switch detection, feedback, sign out. |
 | `/onboarding` | Username → exam goal + daily target → 10-question placement test → starting level. |
 | `/admin/*` | Admin area (JS, unchanged behaviour). |
 
@@ -35,7 +36,7 @@ Leaving the page is watched in every mode (`hooks/useExamGuard.ts`), differently
 | Mode | What happens | Can it be turned off? |
 | --- | --- | --- |
 | **Daily** (and placement) | The question is hidden while you are away; on return a warning shows and the count is kept per session. | No. |
-| **Practice** | Same as Daily. | Yes: "Detect tab switches in Practice" (default on), stored on the profile (`profiles.detect_tab_switches_practice`, `PATCH /me/profile`) and read through `usePreferences()`. It is in the profile settings for now and moves to the Settings page once that is merged. With it off there is no detection, count or warning. |
+| **Practice** | Same as Daily. | Yes: "Detect tab switches in Practice" (default on), stored on the profile (`profiles.detect_tab_switches_practice`, `PATCH /me/profile`) and read through `usePreferences()`. It is on the Settings page. With it off there is no detection, count or warning. |
 | **Contest** | The first of tab hidden, window blur or exiting fullscreen **ends the attempt**: the answers so far stay, `finish_contest` records the reason, and the contest page shows "Auto-submitted because of a tab switch". The server then refuses further answers, so a refresh or reopened tab cannot resume it. A warning (with a confirm) is shown before the contest starts. | No. The preference does not apply. |
 
 `SolveScreen` only lets the preference affect `kind="practice"`, and the profile API has no field for Daily or contests, so neither can be switched off from the UI or by calling the API.
