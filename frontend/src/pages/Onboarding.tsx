@@ -22,6 +22,7 @@ import { DAILY_TARGETS, DIFFICULTY_LABEL, HANDLE_RE } from '@/lib/game';
 import type { Difficulty } from '@/lib/types';
 import { invalidateProgress, keys, queryClient, useExamTags } from '@/lib/queries';
 import { safeNext } from '@/lib/auth';
+import { SETTINGS_PATH } from '@/lib/routes';
 import type { PlacementAnswer, PlacementResult, PlacementStart } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { SolveSkeleton } from './solve/SolveSkeleton';
@@ -538,10 +539,10 @@ export const PlacementRetake = () => {
       {step === 'intro' && (
         <>
           <PlacementIntro onStart={() => setStep('test')} retake />
-          <Button variant="ghost" className="mt-2 w-full" onClick={() => navigate('/profile#settings')}>Cancel</Button>
+          <Button variant="ghost" className="mt-2 w-full" onClick={() => navigate(SETTINGS_PATH)}>Cancel</Button>
         </>
       )}
-      {step === 'result' && result && <PlacementResultView result={result} onDone={() => navigate('/profile#settings')} doneLabel="Back to settings" />}
+      {step === 'result' && result && <PlacementResultView result={result} onDone={() => navigate(SETTINGS_PATH)} doneLabel="Back to settings" />}
     </StepFrame>
   );
 };

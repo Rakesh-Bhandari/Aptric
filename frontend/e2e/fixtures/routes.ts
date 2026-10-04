@@ -33,6 +33,7 @@ export const ROUTES: RouteCase[] = [
   { name: 'contest-upcoming', path: '/compete/contests/c-up' },
   { name: 'contest-ended', path: '/compete/contests/c-old' },
   { name: 'profile', path: '/profile', main: true },
+  { name: 'settings', path: '/settings', main: true },
   { name: 'public-profile', path: '/u/aarav_meht' },
   { name: 'onboarding', path: '/onboarding', mock: { profile: { handle: null, onboarded_at: null } } },
   { name: 'placement', path: '/onboarding/placement' },
