@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hintCost, leagueZone, levelXp, pointsFor } from './game';
+import { correctRatio, hintCost, leagueZone, levelXp, pointsFor, sessionStars } from './game';
 import type { MyLeague } from './types';
 
 describe('scoring mirrors private.score_points', () => {
@@ -34,5 +34,31 @@ describe('leagueZone', () => {
   });
   it('has no zones when the tier has none', () => {
     expect(leagueZone(league(5, 0, 0), 5)).toBe('safe');
+  });
+});
+
+describe('session stars follow the correct-answer ratio', () => {
+  it('handles empty, zero-correct and perfect sessions', () => {
+    expect(correctRatio(0, 0)).toBe(0);
+    expect(sessionStars(0, 0)).toBe(0);
+    expect(sessionStars(0, 10)).toBe(0);
+    expect(sessionStars(10, 10)).toBe(3);
+  });
+
+  it('applies the 1/2/3 star thresholds for any session size', () => {
+    expect(sessionStars(1, 10)).toBe(1);
+    expect(sessionStars(6, 10)).toBe(1);
+    expect(sessionStars(7, 10)).toBe(2);
+    expect(sessionStars(8, 10)).toBe(2);
+    expect(sessionStars(9, 10)).toBe(3);
+    expect(sessionStars(2, 3)).toBe(1);
+    expect(sessionStars(3, 3)).toBe(3);
+    expect(sessionStars(4, 5)).toBe(2);
+  });
+
+  it('counts skipped questions against the ratio and clamps', () => {
+    // 5 correct of 10 with 5 skipped is 50%, not 100% of the attempted.
+    expect(correctRatio(5, 10)).toBe(0.5);
+    expect(correctRatio(12, 10)).toBe(1);
   });
 });

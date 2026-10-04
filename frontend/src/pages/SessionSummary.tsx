@@ -13,7 +13,8 @@ import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/states';
 import { useToast } from '@/context/ToastContext';
 import { formatDay, formatDuration, formatPercent, plural } from '@/lib/format';
-import { DIFFICULTY_LABEL, OPTION_LETTERS } from '@/lib/game';
+import { MasteryStars } from '@/components/ui/stars';
+import { DIFFICULTY_LABEL, OPTION_LETTERS, sessionStars } from '@/lib/game';
 import { useDailyResult } from '@/lib/queries';
 import type { DailyResult, Outcome } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -140,6 +141,7 @@ const SessionSummary = () => {
                 {local?.title ?? (result ? `Daily challenge · ${formatDay(result.set_date)}` : 'Session')}
               </p>
               <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">{headline}</h1>
+              <MasteryStars stars={sessionStars(correct, total)} className="[&_svg]:size-5" />
               {incomplete && (
                 <p className="text-sm text-navy-muted-foreground">
                   You've answered {answered} of {total}. Come back any time today to finish. Unanswered questions count as misses at midnight.
