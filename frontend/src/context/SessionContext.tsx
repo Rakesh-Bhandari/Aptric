@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchProfile } from '@/lib/api';
 import { signOut as endSession } from '@/lib/auth';
 import { getSession, onAuthChange, type AuthUser, type Session } from '@/lib/http';
+import { disablePush } from '@/lib/push';
 import { queryClient } from '@/lib/queries';
 import type { Profile } from '@/lib/types';
 
@@ -48,8 +49,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const setProfile = useCallback((p: Profile) => queryClient.setQueryData(profileKey(p.id), p), []);
   const { refetch } = profileQuery;
   const refreshProfile = useCallback(() => refetch(), [refetch]);
-  // Ends this device's session only; other devices stay signed in.
-  const signOut = useCallback(() => endSession(), []);
+  // Ends this device's session only; other devices stay signed in. This browser
+  // stops getting this player's notifications first (it needs the session to say so).
+  const signOut = useCallback(async () => {
+    await disablePush().catch(() => {});
+    await endSession();
+  }, []);
 
   const value = useMemo<SessionValue>(() => {
     const profile = profileQuery.data && profileQuery.data.id === userId ? profileQuery.data : null;

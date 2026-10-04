@@ -1,0 +1,35 @@
+# Hourly trigger for push notifications (GET /cron/push on the API).
+# Vercel's Hobby plan only allows daily crons, so GitHub Actions calls it instead.
+#
+# Repository secrets (Settings > Secrets and variables > Actions):
+#   API_URL      the API's public URL, e.g. https://api.aptric.app
+#   CRON_SECRET  the same value as the API's CRON_SECRET
+#
+# Scheduled runs can start a few minutes late; the notification windows are an
+# hour wide, so that is harmless. Run it by hand from the Actions tab to test.
+name: Push notifications
+
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: push-notifications
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call /cron/push
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          test -n "$API_URL" && test -n "$CRON_SECRET" || { echo "Set the API_URL and CRON_SECRET repository secrets."; exit 1; }
+          curl --fail-with-body --silent --show-error --max-time 300 --retry 2 \
+            -H "Authorization: Bearer $CRON_SECRET" "${API_URL%/}/cron/push"

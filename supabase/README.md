@@ -215,6 +215,10 @@ Grounding and chat log for the AI tutor in the API ([backend/README.md](../backe
 
 `public.tutor_messages` (`id`, `user_id`, `question_id`, `context`, `role` `user|assistant`, `intent`, `content` 1–4000 characters, `model`, `created_at`): RLS on, players read their own rows; no insert/update/delete for `anon` or `authenticated` (writes go through `private.tutor_append_message`). Rows go away with the user or the question.
 
+## Push notifications (`20261010000001_push_notifications.sql`)
+
+Three tables in `private` (no access for anon/authenticated; only the API's secret key reads them): `push_subscriptions` (one row per browser endpoint, with its keys), `push_preferences` (the `daily` / `streak` / `contests` / `league` switches; no row means all on) and `push_log` (one row per notification sent, keyed `(user_id, dedupe_key)` so a send is claimed once). The sending is in the API (`backend/src/push`), not pg_cron, because it calls out to the browsers' push services.
+
 ## Admin area
 
 `frontend/src/admin` (`/admin/*`, lists and searches through the API's `/admin/*` routes), for `profiles.role = 'admin'` only. The UI's role check is cosmetic: reads go through RLS and writes through RLS or the `admin_*` functions (`20261001000013_admin.sql`), which check `private.is_admin()` themselves. Every write lands in `audit_log`.

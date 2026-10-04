@@ -68,6 +68,20 @@ export const config = {
   // Vercel Cron sends "Authorization: Bearer <CRON_SECRET>".
   cronSecret: env('CRON_SECRET'),
 
+  // Web Push (VAPID). Generate keys once with `npx web-push generate-vapid-keys`.
+  // Without both keys push is off: the app hides the switch and the cron job no-ops.
+  push: {
+    publicKey: env('VAPID_PUBLIC_KEY'),
+    privateKey: env('VAPID_PRIVATE_KEY'),
+    // A mailto: or https: contact the push services can reach.
+    subject: env('VAPID_SUBJECT', env('SMTP_USER') ? `mailto:${env('SMTP_USER')}` : 'mailto:no-reply@aptric.app'),
+    // Subscription endpoints the API will POST to (host suffixes). Browsers' own
+    // push services only, so a subscription can't point the server at anything else.
+    endpointHosts: listEnv('PUSH_ENDPOINT_HOSTS', [
+      'fcm.googleapis.com', 'push.services.mozilla.com', 'push.apple.com', 'notify.windows.com',
+    ]),
+  },
+
   generation: {
     llmBaseUrl: trimSlash(env('LLM_BASE_URL', 'https://openrouter.ai/api/v1')),
     llmApiKey: env('OPEN_ROUTER_API_KEY', env('OPENROUTER_API_KEY')),
