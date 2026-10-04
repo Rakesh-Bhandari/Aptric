@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthDialog } from '@/context/AuthDialogContext';
 import { useSession } from '@/context/SessionContext';
 import { displayName } from '@/lib/format';
+import { SETTINGS_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary';
 import { HeaderOverlayContext, type HeaderOverlayTone } from './headerOverlay';
@@ -67,7 +68,7 @@ const UserMenu = () => {
           </div>
           <Dropdown.Separator className="my-1 h-px bg-border" />
           <Dropdown.Item asChild className={item}><Link to="/profile"><User /> Profile</Link></Dropdown.Item>
-          <Dropdown.Item asChild className={item}><Link to="/profile#settings"><Settings /> Settings</Link></Dropdown.Item>
+          <Dropdown.Item asChild className={item}><Link to={SETTINGS_PATH}><Settings /> Settings</Link></Dropdown.Item>
           {isAdmin && <Dropdown.Item asChild className={item}><Link to="/admin"><Shield /> Admin</Link></Dropdown.Item>}
           <Dropdown.Separator className="my-1 h-px bg-border" />
           <Dropdown.Item className={item} onSelect={() => void signOut()}><LogOut /> Sign out</Dropdown.Item>

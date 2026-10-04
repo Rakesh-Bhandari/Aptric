@@ -22,6 +22,7 @@ const ContestPage = lazy(() => import('@/pages/ContestPage'));
 const Progress = lazy(() => import('@/pages/Progress'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const PublicProfile = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.PublicProfile })));
+const Settings = lazy(() => import('@/pages/Settings'));
 const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const PlacementRetake = lazy(() => import('@/pages/Onboarding').then((m) => ({ default: m.PlacementRetake })));
 const AuthCallback = lazy(() => import('@/pages/AuthCallback'));
@@ -89,6 +90,7 @@ const router = createBrowserRouter([
               { path: 'compete/contests/:id', element: <ContestPage /> },
               { path: 'progress', element: <Progress /> },
               { path: 'profile', element: <Profile /> },
+              { path: 'settings', element: <Settings /> },
               { path: 'u/:handle', element: <PublicProfile /> },
               { path: 'session/summary', element: <SessionSummary /> },
               { path: 'leaderboard', element: <Navigate to="/compete?tab=leaderboards" replace /> },

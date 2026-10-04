@@ -9,3 +9,6 @@ export const practiceHref = (p: { subtopics?: string[]; difficulty?: Difficulty 
   if (p.title) q.set('title', p.title);
   return `/practice/session?${q}`;
 };
+
+/** Account and preferences page. */
+export const SETTINGS_PATH = '/settings';
