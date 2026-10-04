@@ -35,5 +35,15 @@ export const leagueZone = (league: MyLeague, rank: number) => {
   return 'safe' as const;
 };
 
+/** Share of a session's questions answered correctly (0–1). Skipped and unanswered questions count against it. */
+export const correctRatio = (correct: number, total: number): number =>
+  total > 0 ? Math.min(1, Math.max(0, correct / total)) : 0;
+
+/** 0–3 stars for a session by correct-answer ratio: 3 at 90%+, 2 at 70%+, 1 for any correct answer. */
+export const sessionStars = (correct: number, total: number): number => {
+  const r = correctRatio(correct, total);
+  return r >= 0.9 ? 3 : r >= 0.7 ? 2 : r > 0 ? 1 : 0;
+};
+
 export const HANDLE_RE = /^[a-z0-9_]{3,24}$/;
 export const DAILY_TARGETS = [5, 10, 20, 30];
