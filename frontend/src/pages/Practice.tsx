@@ -15,6 +15,7 @@ import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { MasteryStars } from '@/components/ui/stars';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { formatPercent, plural } from '@/lib/format';
+import { nodeTotal } from '@/lib/game';
 import { usePracticeTree } from '@/lib/queries';
 import type { Difficulty, SectionNode, SubtopicNode, TopicNode } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -70,9 +71,9 @@ const SECTION_ICONS: [RegExp, LucideIcon][] = [
 const sectionIcon = (slug: string) => SECTION_ICONS.find(([re]) => re.test(slug))?.[1] ?? Shapes;
 const TINTS = ['bg-primary-soft text-primary-soft-foreground', 'bg-violet-soft text-violet-soft-foreground'];
 
-const MasteryBar = ({ node, label }: { node: { attempted: number; correct: number }; label: string }) => (
-  <Bar value={node.correct} max={Math.max(node.attempted, 1)} label={label} className="h-1.5"
-    valueText={node.attempted > 0 ? `${formatPercent(node.correct, node.attempted)} correct` : 'Not started'} />
+const MasteryBar = ({ node, label }: { node: { attempted: number; available: number }; label: string }) => (
+  <Bar value={node.attempted} max={Math.max(nodeTotal(node), 1)} label={label} className="h-1.5"
+    valueText={node.attempted > 0 ? `${node.attempted} of ${nodeTotal(node)} attempted` : 'Not started'} />
 );
 
 const SubtopicRow = ({ s, difficulty }: { s: SubtopicNode; difficulty: Difficulty | null }) => (
@@ -152,7 +153,7 @@ const SectionItem = ({ section, index, difficulty, filter }: { section: SectionN
               <span className="text-base font-bold tracking-tight text-heading sm:text-lg">{section.name}</span>
               <MasteryStars stars={section.stars} />
             </span>
-            <MasteryBar node={section} label={`${section.name} accuracy`} />
+            <MasteryBar node={section} label={`${section.name} progress`} />
             <span className="block text-xs text-muted-foreground">
               {accuracyText(section)} · {plural(section.available, 'new question')}
             </span>

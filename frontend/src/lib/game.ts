@@ -39,6 +39,9 @@ export const leagueZone = (league: MyLeague, rank: number) => {
 export const correctRatio = (correct: number, total: number): number =>
   total > 0 ? Math.min(1, Math.max(0, correct / total)) : 0;
 
+/** Questions in a practice node: those already attempted plus the ones still new. */
+export const nodeTotal = (n: { attempted: number; available: number }): number => n.attempted + n.available;
+
 /** 0–3 stars for a session by correct-answer ratio: 3 at 90%+, 2 at 70%+, 1 for any correct answer. */
 export const sessionStars = (correct: number, total: number): number => {
   const r = correctRatio(correct, total);

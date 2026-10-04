@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { correctRatio, hintCost, leagueZone, levelXp, pointsFor, sessionStars } from './game';
+import { correctRatio, hintCost, leagueZone, levelXp, nodeTotal, pointsFor, sessionStars } from './game';
 import type { MyLeague } from './types';
 
 describe('scoring mirrors private.score_points', () => {
@@ -60,5 +60,12 @@ describe('session stars follow the correct-answer ratio', () => {
     // 5 correct of 10 with 5 skipped is 50%, not 100% of the attempted.
     expect(correctRatio(5, 10)).toBe(0.5);
     expect(correctRatio(12, 10)).toBe(1);
+  });
+});
+
+describe('nodeTotal', () => {
+  it('adds attempted and still-new questions', () => {
+    expect(nodeTotal({ attempted: 15, available: 1552 })).toBe(1567);
+    expect(nodeTotal({ attempted: 0, available: 0 })).toBe(0);
   });
 });
