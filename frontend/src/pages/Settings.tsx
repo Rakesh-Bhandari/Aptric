@@ -1,7 +1,7 @@
-import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Check, LifeBuoy, ListFilter, LogOut, MessageSquare, Monitor, Moon, Palette, Settings as SettingsIcon, ShieldAlert, Sun, Target, UserRound } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Bell, Check, LifeBuoy, ListFilter, LogOut, MessageSquare, Monitor, Moon, Palette, Settings as SettingsIcon, ShieldAlert, Sun, Target, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -14,7 +14,8 @@ import * as api from '@/lib/api';
 import { errorCode, friendlyError } from '@/lib/errors';
 import { formatRelative } from '@/lib/format';
 import { DAILY_TARGETS, HANDLE_RE } from '@/lib/game';
-import { keys, queryClient, useExamTags, useLevels, useTopicPreferences, useTopics } from '@/lib/queries';
+import { currentSubscription, disablePush, enablePush, pushSupported } from '@/lib/push';
+import { keys, queryClient, useExamTags, useLevels, usePushConfig, useTopicPreferences, useTopics } from '@/lib/queries';
 import type { CatalogTopic } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -389,6 +390,126 @@ const ExamConditionsForm = () => {
   );
 };
 
+/** Label + description on the left, a switch on the right. */
+const SwitchRow = ({ label, hint, checked, disabled, onChange }: {
+  label: string; hint: string; checked: boolean; disabled?: boolean; onChange: (next: boolean) => void;
+}) => {
+  const ids = { label: useId(), hint: useId() };
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/40 p-4">
+      <div className="min-w-0 space-y-0.5">
+        <p id={ids.label} className="text-sm font-semibold text-heading">{label}</p>
+        <p id={ids.hint} className="text-sm text-muted-foreground">{hint}</p>
+      </div>
+      <button
+        type="button" role="switch" aria-checked={checked} aria-labelledby={ids.label} aria-describedby={ids.hint}
+        disabled={disabled} onClick={() => onChange(!checked)}
+        className={cn(
+          'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 before:absolute before:-inset-2 before:content-[""] disabled:opacity-60',
+          checked ? 'bg-primary bg-gradient-primary' : 'bg-input',
+        )}
+      >
+        <span className={cn('inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200', checked ? 'translate-x-6' : 'translate-x-1')} />
+      </button>
+    </div>
+  );
+};
+
+const PUSH_KINDS: { key: keyof api.PushPreferences; label: string; hint: string }[] = [
+  { key: 'daily', label: 'Daily set', hint: 'A morning note when your new daily set is ready.' },
+  { key: 'streak', label: 'Streak reminders', hint: 'An evening nudge if your streak is about to break.' },
+  { key: 'contests', label: 'Contests', hint: 'When a contest is about to start and when its results are in.' },
+  { key: 'league', label: 'League results', hint: 'Whether you were promoted or demoted after each week.' },
+];
+
+/** Web Push: this browser's on/off switch, then which kinds to receive. */
+const NotificationsForm = () => {
+  const config = usePushConfig();
+  const cache = useQueryClient();
+  const toast = useToast();
+  const [subscribed, setSubscribed] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const supported = pushSupported();
+  const blocked = supported && Notification.permission === 'denied';
+
+  useEffect(() => {
+    if (!supported) return undefined;
+    let live = true;
+    void currentSubscription().then((sub) => live && setSubscribed(Boolean(sub))).catch(() => live && setSubscribed(false));
+    return () => { live = false; };
+  }, [supported]);
+
+  if (!supported) {
+    return <p className="text-sm text-muted-foreground">This browser can't show notifications. On iPhone or iPad, add Aptric to your Home Screen first, then open it from there.</p>;
+  }
+  if (config.isError) return <p className="text-sm text-danger">We couldn't load your notification settings. Try again later.</p>;
+  if (!config.data || subscribed === null) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (!config.data.enabled || !config.data.publicKey) return <p className="text-sm text-muted-foreground">Notifications aren't set up on this server yet.</p>;
+  const { publicKey, preferences } = config.data;
+
+  const toggleDevice = async (next: boolean) => {
+    setBusy(true);
+    try {
+      if (next) {
+        if ((await enablePush(publicKey)) === 'denied') {
+          toast.error('Notifications are blocked for this site. Allow them in your browser settings, then try again.');
+          return;
+        }
+        setSubscribed(true);
+        toast.success('Notifications are on for this device.');
+      } else {
+        await disablePush();
+        setSubscribed(false);
+        toast.success('Notifications are off for this device.');
+      }
+    } catch (err) {
+      toast.error(friendlyError(err, "We couldn't change notifications."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setPreference = async (key: keyof api.PushPreferences, value: boolean) => {
+    const previous = preferences;
+    cache.setQueryData(keys.pushConfig, { ...config.data, preferences: { ...preferences, [key]: value } });
+    try {
+      cache.setQueryData(keys.pushConfig, { ...config.data, preferences: await api.savePushPreferences({ [key]: value }) });
+    } catch (err) {
+      cache.setQueryData(keys.pushConfig, { ...config.data, preferences: previous });
+      toast.error(friendlyError(err, "We couldn't save that."));
+    }
+  };
+
+  const sendTest = async () => {
+    setBusy(true);
+    try {
+      await api.sendTestPush();
+      toast.success('Test sent. It should arrive in a moment.');
+    } catch (err) {
+      toast.error(friendlyError(err, "We couldn't send a test."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <SwitchRow
+        label="Notifications on this device" checked={subscribed} disabled={busy || (blocked && !subscribed)} onChange={(next) => void toggleDevice(next)}
+        hint={blocked && !subscribed ? 'Blocked in your browser settings. Allow notifications for this site to turn them on.' : 'Your browser will ask for permission the first time.'}
+      />
+      {subscribed && (
+        <>
+          {PUSH_KINDS.map((k) => (
+            <SwitchRow key={k.key} label={k.label} hint={k.hint} checked={preferences[k.key]} onChange={(v) => void setPreference(k.key, v)} />
+          ))}
+          <Button type="button" variant="outline" size="sm" loading={busy} onClick={() => void sendTest()}><Bell /> Send a test notification</Button>
+        </>
+      )}
+    </div>
+  );
+};
+
 const FeedbackButton = () => {
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<api.FeedbackCategory>('general');
@@ -451,6 +572,7 @@ const Settings = () => {
       <Section title="Goals and level" description="We use these to pick your daily challenge and track your progress." icon={<Target />}><GoalsForm /></Section>
       <Section title="Daily topics" description="Choose what your daily challenge leans towards and what it leaves out. Skipped topics are never used unless nothing else is left." icon={<ListFilter />}><TopicsForm /></Section>
       <Section title="Appearance" description="Pick a theme and how much things move." icon={<Palette />}><AppearanceForm /></Section>
+      <Section title="Notifications" description="Reminders and results, sent to this device even when Aptric is closed." icon={<Bell />}><NotificationsForm /></Section>
       <Section title="Exam conditions" description="How strictly practice mimics a real exam." icon={<ShieldAlert />}><ExamConditionsForm /></Section>
       <Section title="Help and account" description="Tell us what you think, or sign out." icon={<LifeBuoy />}>
         <div className="flex flex-wrap gap-2">

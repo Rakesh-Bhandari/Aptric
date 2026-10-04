@@ -11,5 +11,11 @@
     "api/index.js": {
       "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/cron/push",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

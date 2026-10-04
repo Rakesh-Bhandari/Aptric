@@ -46,7 +46,7 @@ Then point the frontend at it: `VITE_API_URL=http://localhost:5000` in `frontend
    | `NODE_ENV` | `production` |
    | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Google SMTP: `smtp.gmail.com`, `465`, the Gmail / Workspace address, a 16-character [app password](https://myaccount.google.com/apppasswords) (needs 2-Step Verification), `Aptric <that address>` |
 
-   Optional: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, `OPEN_ROUTER_API_KEY` (+ the `QUESTION_*`, `EMBEDDING_*`, `GENERATE_*` settings, and the `TUTOR_*` settings for [Aptric Tutor](#aptric-tutor)), `CORS_ORIGINS`.
+   Optional: `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `CRON_SECRET` for [push notifications](#push-notifications), `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, `OPEN_ROUTER_API_KEY` (+ the `QUESTION_*`, `EMBEDDING_*`, `GENERATE_*` settings, and the `TUTOR_*` settings for [Aptric Tutor](#aptric-tutor)), `CORS_ORIGINS`.
 3. Deploy, check `GET <API_URL>/health` → `{"status":"ok","database":"ok","migrations":"ok","tutor":"configured"}` (`"tutor":"no_api_key"` means Aptric Tutor has no model key and falls back to stored hints). A 503 names the problem: missing or wrong environment variables (`server_misconfigured`, e.g. a publishable key in `SUPABASE_SECRET_KEY`), Supabase unreachable or the key rejected, or migrations not yet applied (`npx supabase db push`; `public.backend_sql` comes from `20261002000002_backend_gateway.sql`).
 4. In the frontend's Vercel project set `VITE_API_URL=<API_URL>` and redeploy it.
 
@@ -113,6 +113,8 @@ All bodies are JSON. Errors are `{ "error": { "code", "message", ... } }`; datab
 | `POST /reports`, `POST /feedback` | user | report a question / send feedback |
 | `GET` / `PATCH /me/preferences` | user | topics the daily set leans towards (`preferred_topic_ids`) and never uses unless nothing else is left (`excluded_topic_ids`); `PATCH` replaces both lists and rebuilds today's set if it has not been started |
 | `GET /catalog/exam-tags`, `GET /catalog/levels`, `GET /catalog/topics` | user | small catalogs (topics: active ones with published questions, by section) |
+| `GET /push/config`, `POST /push/subscribe`, `POST /push/unsubscribe`, `PATCH /push/preferences`, `POST /push/test` | user | [Web Push](#push-notifications): the VAPID public key and the player's switches, register / remove this browser, change `daily` / `streak` / `contests` / `league` (booleans), send a test (10 an hour) |
+| `GET /cron/push` | `CRON_SECRET` | sends the notifications that are due; called hourly by Vercel Cron |
 | `GET /questions/:id/subtopic` | user | subtopic of a question the user can see |
 | `POST /tutor/chat` | user | one Aptric Tutor turn, streamed as server-sent events (see [Aptric Tutor](#aptric-tutor)) |
 | `GET /tutor/history?question_id&context` | user | `{ available, messages }`: the stored chat for one question, and whether the tutor is configured |
@@ -131,12 +133,32 @@ backend/
 │   ├── http.js             # HttpError, error → JSON (SQLSTATE codes)
 │   ├── auth/               # accounts + sessions, tokens, mailer, Google
 │   ├── middleware/         # requireUser / requireAdmin, Postgres-backed rate limits
-│   ├── routes/             # auth, rpc, me (profile, catalogs, reports), admin, tutor
+│   ├── routes/             # auth, rpc, me (profile, catalogs, reports), admin, tutor, push, cron
+│   ├── push/               # Web Push: due-notification queries, wording, VAPID sender
 │   ├── generation/         # AI question pipeline, OpenAI-compatible LLM + embeddings, pg store
 │   └── tutor/              # Aptric Tutor: streaming chat client + model fallback, prompt, leak guard
 ├── test/                   # node --test
 └── vercel.json
 ```
+
+## Push notifications
+
+Web Push (VAPID) to browsers that opted in under **Settings → Notifications**; the frontend's `public/sw.js` shows them and opens the right page on click. Four kinds, each its own switch:
+
+| Kind | When | Sent to |
+| --- | --- | --- |
+| `daily` | 08:00-09:00 local time | players who have not earned XP yet that day |
+| `streak` | 20:00-21:00 local time | players with a live streak (played yesterday) and nothing yet today |
+| `contests` | within an hour of a published contest starting; within 3 hours of it ending | everyone opted in (start); players who entered (results, with their rank) |
+| `league` | within 3 hours of the weekly rollover | league members: promoted, stayed or demoted |
+
+**Setup**
+
+1. `npx web-push generate-vapid-keys`, then set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (and optionally `VAPID_SUBJECT`) and a `CRON_SECRET` in the API's environment. Without the keys push is off: the Settings section says so and `/cron/push` does nothing.
+2. Apply `20261010000001_push_notifications.sql` (`npx supabase db push`).
+3. `vercel.json` registers a Vercel Cron that calls `GET /cron/push` every hour (`0 * * * *`) with `Authorization: Bearer $CRON_SECRET`. Vercel's Hobby plan only allows daily crons, so there, call that URL hourly from any other scheduler. Every local-time window above is one hour wide, so an hourly run reaches every timezone, including `:30` and `:45` offsets.
+
+**How it stays safe.** `src/push/jobs.js` finds who is due and claims a `private.push_log` row per (player, key) in the same statement (`on conflict do nothing`), so an overlapping or repeated run never sends twice. Subscriptions the push service reports gone (404/410) are deleted. The API only POSTs to https endpoints on the browsers' own push services (`PUSH_ENDPOINT_HOSTS`), so a subscription cannot aim the server at anything else. Signing out removes that browser's subscription. iOS shows web push only for the app added to the Home Screen.
 
 ## Aptric Tutor
 

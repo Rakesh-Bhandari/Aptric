@@ -10,7 +10,9 @@ import { query } from './db.js';
 import { errorHandler, notFoundHandler } from './http.js';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
+import cronRoutes from './routes/cron.js';
 import meRoutes from './routes/me.js';
+import pushRoutes from './routes/push.js';
 import rpcRoutes from './routes/rpc.js';
 import tutorRoutes from './routes/tutor.js';
 
@@ -124,6 +126,8 @@ export function createApp() {
   app.use('/rpc', rpcRoutes);
   app.use('/tutor', tutorRoutes);
   app.use('/admin', adminRoutes);
+  app.use('/push', pushRoutes);
+  app.use('/cron', cronRoutes);
   app.use('/', meRoutes);
 
   app.use(notFoundHandler);

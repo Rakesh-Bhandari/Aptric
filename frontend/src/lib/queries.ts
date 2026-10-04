@@ -30,6 +30,7 @@ export const keys = {
   levels: ['levels'] as const,
   topics: ['topics'] as const,
   topicPreferences: ['topic-preferences'] as const,
+  pushConfig: ['push-config'] as const,
   lastPlacement: (userId: string) => ['last-placement', userId] as const,
 };
 
@@ -60,4 +61,5 @@ export const useContestStandings = (id: string, live: boolean) =>
 export const useExamTags = () => useQuery({ queryKey: keys.examTags, queryFn: api.getExamTags, staleTime: Infinity });
 export const useLevels = () => useQuery({ queryKey: keys.levels, queryFn: api.getLevels, staleTime: Infinity });
 export const useTopics = () => useQuery({ queryKey: keys.topics, queryFn: api.getTopics, staleTime: Infinity });
+export const usePushConfig = () => useQuery({ queryKey: keys.pushConfig, queryFn: api.getPushConfig });
 export const useTopicPreferences = () => useQuery({ queryKey: keys.topicPreferences, queryFn: api.getTopicPreferences });

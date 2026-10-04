@@ -98,6 +98,17 @@ export const getTopicPreferences = () => api<TopicPreferences>('GET', '/me/prefe
 
 export const saveTopicPreferences = (prefs: TopicPreferences) => api<TopicPreferences>('PATCH', '/me/preferences', prefs);
 
+// Push notifications ---------------------------------------------------------
+export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean };
+export type PushConfig = { enabled: boolean; publicKey: string | null; preferences: PushPreferences };
+export type PushSubscriptionJSON = { endpoint: string; keys: { p256dh: string; auth: string } };
+
+export const getPushConfig = () => api<PushConfig>('GET', '/push/config');
+export const subscribePush = (sub: PushSubscriptionJSON) => api<null>('POST', '/push/subscribe', sub);
+export const unsubscribePush = (endpoint: string) => api<null>('POST', '/push/unsubscribe', { endpoint });
+export const savePushPreferences = (prefs: Partial<PushPreferences>) => api<PushPreferences>('PATCH', '/push/preferences', prefs);
+export const sendTestPush = () => api<{ sent: number }>('POST', '/push/test', {});
+
 export const getLevels = () => api<{ level: number; name: string; slug: string }[]>('GET', '/catalog/levels');
 
 export type ReportReason = Database['public']['Enums']['report_reason'];
