@@ -28,6 +28,24 @@ Every game rule (grading, hints, XP, streaks, levels, placement, contests) lives
 | `/onboarding` | Username → exam goal + daily target → 10-question placement test → starting level. |
 | `/admin/*` | Admin area (JS, unchanged behaviour). |
 
+## Tab-switch detection and contest fair play
+
+Leaving the page is watched in every mode (`hooks/useExamGuard.ts`), differently per mode:
+
+| Mode | What happens | Can it be turned off? |
+| --- | --- | --- |
+| **Daily** (and placement) | The question is hidden while you are away; on return a warning shows and the count is kept per session. | No. |
+| **Practice** | Same as Daily. | Yes: "Detect tab switches in Practice" (default on), stored on the profile (`profiles.detect_tab_switches_practice`, `PATCH /me/profile`) and read through `usePreferences()`. It is in the profile settings for now and moves to the Settings page once that is merged. With it off there is no detection, count or warning. |
+| **Contest** | The first of tab hidden, window blur or exiting fullscreen **ends the attempt**: the answers so far stay, `finish_contest` records the reason, and the contest page shows "Auto-submitted because of a tab switch". The server then refuses further answers, so a refresh or reopened tab cannot resume it. A warning (with a confirm) is shown before the contest starts. | No. The preference does not apply. |
+
+`SolveScreen` only lets the preference affect `kind="practice"`, and the profile API has no field for Daily or contests, so neither can be switched off from the UI or by calling the API.
+
+**Known limits.** These are browser signals, not proctoring: someone using a second device, a second monitor with the contest window kept focused, or a modified client is not caught, and the server can only enforce what the client reports.
+- Fullscreen is never requested; "exiting fullscreen" only applies to players who entered it themselves.
+- A blur shorter than 400 ms (focus flicker, tooltips, autofill) is ignored, and so is focus moving into an iframe. A browser permission prompt or native dialog (file picker, print, `alert`) that holds focus longer can still read as a window blur. Aptric doesn't ask for any permissions during a contest, and a prompt from the browser or an extension isn't something it can tell apart.
+- Reloading counts as leaving. The violation is written to `localStorage` before it is sent; if the page goes away before the request lands, the contest page sends it on the next visit. If that storage is blocked and the request never lands, the attempt stays open.
+- On phones, notification shades, incoming calls and app switchers hide the page and end the attempt. Players are warned to silence notifications before starting.
+
 ## Conventions
 
 - **Wording**: plain and friendly ("Check answer", "Give up & see answer"); errors go through `friendlyError()` / `authErrorMessage()`.

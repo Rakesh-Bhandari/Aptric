@@ -6,6 +6,7 @@ import { SessionHeader } from '@/components/solve/SessionHeader';
 import { SolveScreen, type Reveal } from '@/components/solve/SolveScreen';
 import { outcomeOf, saveSummary, segmentOf, type SessionItem } from '@/components/solve/session';
 import { Button } from '@/components/ui/button';
+import { usePreferences } from '@/context/PreferencesContext';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import * as api from '@/lib/api';
 import { hintCost, pointsFor } from '@/lib/game';
@@ -20,6 +21,7 @@ const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 
 const Runner = ({ batch, title, againHref }: { batch: PracticeBatch; title: string; againHref: string }) => {
   const navigate = useNavigate();
+  const { detectTabSwitchesInPractice } = usePreferences();
   const [index, setIndex] = useState(0);
   const [lastResult, setLastResult] = useState<AnswerResult | null>(null);
   const items = useRef<SessionItem[]>([]);
@@ -72,6 +74,7 @@ const Runner = ({ batch, title, againHref }: { batch: PracticeBatch; title: stri
         key={question.id}
         question={question}
         kind="practice"
+        detectTabSwitches={detectTabSwitchesInPractice}
         worth={`${pointsFor(question.difficulty, 'practice')} XP`}
         hintCost={hintCost(question.difficulty, 'practice')}
         onSubmit={async (optionId, timeMs) =>

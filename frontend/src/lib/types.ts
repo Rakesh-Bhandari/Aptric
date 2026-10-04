@@ -309,6 +309,9 @@ export interface ContestEntry {
   rank: number;
 }
 
+/** Why a contest attempt was ended automatically (recorded server-side). */
+export type ContestViolation = 'tab_hidden' | 'window_blur' | 'fullscreen_exit' | 'page_left';
+
 export interface ContestSummary {
   id: string;
   slug: string;
@@ -320,6 +323,9 @@ export interface ContestSummary {
   question_count: number;
   participants: number;
   my_entry: ContestEntry | null;
+  /** Set once the attempt is closed; answers are refused after that. */
+  finished_at: string | null;
+  violation: ContestViolation | null;
 }
 
 export interface ContestQuestion extends QuestionCard {
@@ -376,4 +382,6 @@ export interface Profile {
   onboarded_at: string | null;
   placement_level: number | null;
   placed_at: string | null;
+  /** Practice only: Daily and contests always detect tab switches. */
+  detect_tab_switches_practice: boolean;
 }

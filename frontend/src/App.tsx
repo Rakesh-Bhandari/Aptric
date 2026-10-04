@@ -44,12 +44,14 @@ const AdminReports = lazy(() => import('@/admin/Reports'));
 const AdminJobs = lazy(() => import('@/admin/Jobs'));
 const AdminAuditLog = lazy(() => import('@/admin/AuditLog'));
 
-/** Providers that need the router (navigation on auth events). */
+/** Providers that need the router (navigation on auth events) or the signed-in profile (server-side preferences). */
 const Root = () => (
   <SessionProvider>
-    <AuthDialogProvider>
-      <Outlet />
-    </AuthDialogProvider>
+    <PreferencesProvider>
+      <AuthDialogProvider>
+        <Outlet />
+      </AuthDialogProvider>
+    </PreferencesProvider>
   </SessionProvider>
 );
 
@@ -140,13 +142,11 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => (
-  <PreferencesProvider>
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
-    </QueryClientProvider>
-  </PreferencesProvider>
+  <QueryClientProvider client={queryClient}>
+    <ToastProvider>
+      <RouterProvider router={router} />
+    </ToastProvider>
+  </QueryClientProvider>
 );
 
 export default App;

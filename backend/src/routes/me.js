@@ -13,10 +13,26 @@ const router = Router();
 router.use(requireUser);
 
 const PROFILE_COLUMNS =
-  'id, handle, display_name, avatar_url, bio, role, timezone, exam_goal, daily_target, onboarded_at, placement_level, placed_at';
+  'id, handle, display_name, avatar_url, bio, role, timezone, exam_goal, daily_target, onboarded_at, placement_level, placed_at, detect_tab_switches_practice';
 
 // Columns a player may change (the profiles column grants allow these).
-const EDITABLE = ['handle', 'display_name', 'bio', 'timezone', 'exam_goal', 'daily_target', 'onboarded_at'];
+// detect_tab_switches_practice only affects Practice: Daily and contests always detect tab switches,
+// and there is no column (so no way to PATCH one) that could turn that off.
+const EDITABLE = [
+  'handle', 'display_name', 'bio', 'timezone', 'exam_goal', 'daily_target', 'onboarded_at', 'detect_tab_switches_practice',
+];
+
+/** The columns of a PATCH /me/profile body, or 400. */
+export function validateProfilePatch(patch) {
+  const keys = Object.keys(patch);
+  const unknown = keys.filter((k) => !EDITABLE.includes(k));
+  if (unknown.length) throw badRequest(`Cannot change ${unknown.join(', ')}`);
+  if (!keys.length) throw badRequest('Nothing to change.');
+  if ('detect_tab_switches_practice' in patch && typeof patch.detect_tab_switches_practice !== 'boolean') {
+    throw badRequest('detect_tab_switches_practice must be true or false.');
+  }
+  return keys;
+}
 
 // The "questions: read published, attempted, or admin" policy, for alias q.
 const VISIBLE_QUESTION = `q.status = 'published'
@@ -31,10 +47,7 @@ router.get('/me/profile', async (req, res) => {
 
 router.patch('/me/profile', async (req, res) => {
   const patch = req.body ?? {};
-  const keys = Object.keys(patch);
-  const unknown = keys.filter((k) => !EDITABLE.includes(k));
-  if (unknown.length) throw badRequest(`Cannot change ${unknown.join(', ')}`);
-  if (!keys.length) throw badRequest('Nothing to change.');
+  const keys = validateProfilePatch(patch);
 
   const sets = keys.map((k, i) => `${k} = $${i + 1}`);
   const { rows } = await asUser(

@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarClock, Check, ListChecks, Play, Timer, Trophy, Users, X } from 'lucide-react';
+import { ArrowLeft, CalendarClock, Check, ListChecks, Play, ShieldAlert, Timer, Trophy, Users, X } from 'lucide-react';
 import { NotFound } from '@/components/layout/ErrorBoundary';
 import { Markdown } from '@/components/markdown/Markdown';
 import { SessionHeader } from '@/components/solve/SessionHeader';
 import { SolveScreen } from '@/components/solve/SolveScreen';
 import { ContestStateBadge } from '@/components/compete/ContestStateBadge';
 import { LiveIndicator, PlayerLink, StandingRow } from '@/components/compete/standings';
+import { clearPendingViolation, pendingViolation, setPendingViolation, VIOLATION_TEXT } from '@/components/compete/attempt';
 import { countdownParts, formatSpan, useNow } from '@/components/compete/time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,12 +16,13 @@ import { Page } from '@/components/ui/page';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { useToast } from '@/context/ToastContext';
+import { useContestGuard } from '@/hooks/useExamGuard';
 import * as api from '@/lib/api';
 import { errorCode, friendlyError } from '@/lib/errors';
 import { displayName, formatClock, formatDateTime, formatRelative, plural } from '@/lib/format';
 import { contestPoints, DIFFICULTY_LABEL, OPTION_LETTERS } from '@/lib/game';
 import { keys, queryClient, useContest, useContestStandings } from '@/lib/queries';
-import type { ContestDetail, ContestQuestion } from '@/lib/types';
+import type { ContestDetail, ContestQuestion, ContestViolation } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { fromCard } from './solve/news';
 
@@ -95,10 +97,47 @@ const Review = ({ questions }: { questions: ContestQuestion[] }) => (
   </Card>
 );
 
+/**
+ * Leaving the tab or window ends the attempt: the answers so far stay, the server closes the
+ * attempt (and refuses further answers), and the contest page shows it as auto-submitted.
+ */
 const ContestRunner = ({ contest, onDone }: { contest: ContestDetail; onDone: () => void }) => {
   const [queue] = useState(() => (contest.questions ?? []).filter((q) => !q.answer));
   const [index, setIndex] = useState(0);
+  const [ended, setEnded] = useState<{ reason: ContestViolation; failed: boolean } | null>(null);
+
+  const end = useCallback(async (reason: ContestViolation) => {
+    // Written down first, so a page that goes away mid-request still gets it to the server later.
+    setPendingViolation(contest.id, reason);
+    setEnded({ reason, failed: false });
+    try {
+      await api.finishContest(contest.id, reason);
+      clearPendingViolation(contest.id);
+      await refresh(contest.id);
+      onDone();
+    } catch {
+      setEnded({ reason, failed: true });
+    }
+  }, [contest.id, onDone]);
+  useContestGuard(!ended, (reason) => void end(reason));
+
   const question = queue[index];
+  if (ended) {
+    return (
+      <div role="alert" className="grid min-h-dvh place-items-center p-6 text-center">
+        <div className="max-w-sm space-y-3">
+          <ShieldAlert className="mx-auto size-10 text-danger" aria-hidden />
+          <h1 className="font-display text-xl font-extrabold text-heading">Your attempt has ended</h1>
+          <p className="text-sm text-muted-foreground">
+            Because {VIOLATION_TEXT[ended.reason]}, your answers so far are being submitted automatically.
+          </p>
+          {ended.failed
+            ? <><p className="text-sm text-danger-soft-foreground">We couldn't reach the server. Your attempt will still be closed.</p><Button onClick={() => void end(ended.reason)}>Try again</Button></>
+            : <p className="text-sm font-semibold text-heading">Submitting…</p>}
+        </div>
+      </div>
+    );
+  }
   if (!question) return null;
   const answeredBefore = (contest.questions?.length ?? 0) - queue.length;
   const last = index === queue.length - 1;
@@ -131,6 +170,19 @@ const ContestPage = () => {
   const [playing, setPlaying] = useState(false);
   const [joining, setJoining] = useState(false);
 
+  // A violation the server never heard about (the page went away first) is sent now, so a
+  // reload or a reopened tab cannot resume the attempt.
+  const data = contest.data;
+  useEffect(() => {
+    if (!data) return;
+    if (data.finished_at || data.state !== 'live') return clearPendingViolation(data.id);
+    const reason = data.joined ? pendingViolation(data.id) : null;
+    if (!reason) return;
+    api.finishContest(data.id, reason)
+      .then(() => { clearPendingViolation(data.id); return refresh(data.id); })
+      .catch(() => { /* still stored: tried again on the next visit */ });
+  }, [data]);
+
   if (contest.isError) {
     if (['P0002', '22P02'].includes(errorCode(contest.error) ?? '')) return <NotFound title="Contest not found" message="It may have been removed, or the link is wrong." />;
     return <Page><ErrorState error={contest.error} onRetry={() => void contest.refetch()} /></Page>;
@@ -148,7 +200,18 @@ const ContestPage = () => {
     );
   }
 
+  const confirmRules = () => toast.confirm({
+    title: 'Switching tabs ends your attempt',
+    message: "Once you start, leaving this tab or window, switching apps, or exiting fullscreen immediately submits the answers you've given so far, and you can't continue. Close other windows and turn off notifications first.",
+    confirmText: 'I understand, start',
+    cancelText: 'Not yet',
+  });
+  const start = async () => {
+    if (await confirmRules()) setPlaying(true);
+  };
+
   const join = async (thenPlay: boolean) => {
+    if (thenPlay && !(await confirmRules())) return;
     setJoining(true);
     try {
       await api.joinContest(c.id);
@@ -168,6 +231,22 @@ const ContestPage = () => {
   return (
     <Page className="max-w-3xl space-y-5">
       <Button variant="ghost" size="sm" asChild className="-ml-2"><Link to="/compete?tab=contests"><ArrowLeft /> All contests</Link></Button>
+
+      {c.joined && c.finished_at && c.violation && (
+        <Card role="alert" className="border-danger/40 bg-danger-soft text-danger-soft-foreground">
+          <CardContent className="flex items-start gap-3 p-4 sm:p-5">
+            <ShieldAlert className="mt-0.5 size-6 shrink-0" aria-hidden />
+            <div className="space-y-1">
+              <h2 className="text-lg font-extrabold">Auto-submitted because of a tab switch</h2>
+              <p className="text-sm">
+                Your attempt ended because {VIOLATION_TEXT[c.violation]}. {answered > 0
+                  ? <>Your {plural(answered, 'answer')} so far {answered === 1 ? 'was' : 'were'} submitted and scored; the rest stay unanswered.</>
+                  : 'You had not answered any question yet.'} The attempt can't be resumed.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card variant="navy" className="relative overflow-hidden shadow-md">
         <span aria-hidden className="pointer-events-none absolute inset-0 bg-dots" />
@@ -198,6 +277,7 @@ const ContestPage = () => {
                   'Each answer is final, and there are no hints.',
                   `Points by difficulty: easy ${contestPoints('easy')}, medium ${contestPoints('medium')}, hard ${contestPoints('hard')}.`,
                   'Most points wins; ties go to whoever was faster.',
+                  'Leaving this tab or window ends your attempt and submits your answers so far.',
                 ].map((rule) => (
                   <li key={rule} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-chrome-accent" aria-hidden /> {rule}</li>
                 ))}
@@ -211,7 +291,8 @@ const ContestPage = () => {
                 ? <p>You're registered. The contest opens {formatRelative(c.starts_at)}.</p>
                 : <p>Register now and we'll keep your spot. Questions open {formatRelative(c.starts_at)}.</p>)}
               {c.state === 'live' && !c.joined && <p>Ready? Take your time: each answer is final.</p>}
-              {c.state === 'live' && c.joined && (remaining > 0
+              {c.state === 'live' && c.joined && c.finished_at && <p>Your attempt is closed. Final results and explanations appear {formatRelative(c.ends_at)}.</p>}
+              {c.state === 'live' && c.joined && !c.finished_at && (remaining > 0
                 ? <p>{answered > 0 ? <>You've answered <strong>{answered} of {c.question_count}</strong>.</> : 'Ready when you are.'} The contest closes {formatRelative(c.ends_at)}.</p>
                 : <p>You've answered every question. Final results and explanations appear {formatRelative(c.ends_at)}.</p>)}
               {c.state === 'ended' && (c.my_entry
@@ -225,7 +306,7 @@ const ContestPage = () => {
             </div>
             {c.state === 'upcoming' && !c.joined && <Button size="lg" className="shrink-0" onClick={() => void join(false)} loading={joining}>Register</Button>}
             {c.state === 'live' && !c.joined && <Button size="lg" className="shrink-0" onClick={() => void join(true)} loading={joining}><Play /> Enter and start</Button>}
-            {c.state === 'live' && c.joined && remaining > 0 && <Button size="lg" className="shrink-0" onClick={() => setPlaying(true)}><Play /> {answered > 0 ? 'Continue' : 'Start'}</Button>}
+            {c.state === 'live' && c.joined && !c.finished_at && remaining > 0 && <Button size="lg" className="shrink-0" onClick={() => void start()}><Play /> {answered > 0 ? 'Continue' : 'Start'}</Button>}
           </div>
         </div>
       </Card>

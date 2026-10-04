@@ -75,6 +75,43 @@ describe('SolveScreen', () => {
     expect(screen.getByText(/the right answer is/i)).toHaveTextContent('option B');
   });
 
+  describe('tab-switch detection by mode', () => {
+    const leave = () => act(() => { window.dispatchEvent(new Event('blur')); });
+    const hidden = () => screen.queryByText('Question hidden');
+    beforeEach(() => {
+      sessionStorage.clear();
+      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    });
+
+    it('practice detects by default and shows the warning on return', async () => {
+      setup({ kind: 'practice' });
+      leave();
+      expect(hidden()).toBeInTheDocument();
+      act(() => { window.dispatchEvent(new Event('focus')); });
+      expect(await screen.findByRole('dialog')).toHaveTextContent('Tab switch detected');
+      expect(screen.getByRole('dialog')).toHaveTextContent('1 tab switch');
+    });
+
+    it('practice does nothing when the preference is off', () => {
+      setup({ kind: 'practice', detectTabSwitches: false });
+      leave();
+      expect(hidden()).not.toBeInTheDocument();
+      expect(screen.queryByText(/tab switch/i)).not.toBeInTheDocument();
+    });
+
+    it('daily always detects, whatever the preference says', () => {
+      setup({ kind: 'daily', detectTabSwitches: false });
+      leave();
+      expect(hidden()).toBeInTheDocument();
+    });
+
+    it('contests leave detection to the contest runner (no soft warning here)', () => {
+      setup({ kind: 'contest', detectTabSwitches: false });
+      leave();
+      expect(hidden()).not.toBeInTheDocument();
+    });
+  });
+
   describe('Aptric Tutor', () => {
     beforeEach(() => {
       history.mockResolvedValue({ available: true, messages: [] });

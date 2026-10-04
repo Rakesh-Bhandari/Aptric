@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Check, CheckCheck, Flame, LifeBuoy, LogOut, MessageSquare, Monitor, Moon, Palette, Settings, Share2, Sparkles, Sun, Target, Trophy, UserRound } from 'lucide-react';
+import { Calendar, Check, CheckCheck, Flame, LifeBuoy, LogOut, MessageSquare, Monitor, Moon, Palette, Settings, Share2, ShieldAlert, Sparkles, Sun, Target, Trophy, UserRound } from 'lucide-react';
 import { AptricLogo } from '@/components/brand';
 import { TierEmblem } from '@/components/compete/TierEmblem';
 import { BadgeGrid } from '@/components/profile/BadgeGrid';
@@ -397,6 +397,47 @@ const AppearanceForm = () => {
   );
 };
 
+/**
+ * TODO: moves to the Settings page once that is merged. It lives here until then.
+ * Practice only: Daily and contests always detect tab switches, so there is nothing to switch off there.
+ */
+const ExamConditionsForm = () => {
+  const { detectTabSwitchesInPractice, setDetectTabSwitchesInPractice } = usePreferences();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const ids = { label: useId(), hint: useId() };
+  const toggle = async () => {
+    setBusy(true);
+    try {
+      await setDetectTabSwitchesInPractice(!detectTabSwitchesInPractice);
+    } catch (err) {
+      toast.error(friendlyError(err, "We couldn't save that."));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/40 p-4">
+      <div className="min-w-0 space-y-0.5">
+        <p id={ids.label} className="text-sm font-semibold text-heading">Detect tab switches in Practice</p>
+        <p id={ids.hint} className="text-sm text-muted-foreground">
+          Hides the question and warns you when you leave the page, like a real exam. Daily challenges and contests always detect tab switches.
+        </p>
+      </div>
+      <button
+        type="button" role="switch" aria-checked={detectTabSwitchesInPractice} aria-labelledby={ids.label} aria-describedby={ids.hint}
+        disabled={busy} onClick={() => void toggle()}
+        className={cn(
+          'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 before:absolute before:-inset-2 before:content-[""] disabled:opacity-60',
+          detectTabSwitchesInPractice ? 'bg-primary bg-gradient-primary' : 'bg-input',
+        )}
+      >
+        <span className={cn('inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200', detectTabSwitchesInPractice ? 'translate-x-6' : 'translate-x-1')} />
+      </button>
+    </div>
+  );
+};
+
 const FeedbackButton = () => {
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<api.FeedbackCategory>('general');
@@ -469,6 +510,7 @@ const Profile = () => {
       <Section title="Profile" description="How you appear on leaderboards and your public page." icon={<UserRound />}><ProfileForm /></Section>
       <Section title="Goals and level" description="We use these to pick your daily challenge and track your progress." icon={<Target />}><GoalsForm /></Section>
       <Section title="Appearance" description="Pick a theme and how much things move." icon={<Palette />}><AppearanceForm /></Section>
+      <Section title="Exam conditions" description="How strictly practice mimics a real exam." icon={<ShieldAlert />}><ExamConditionsForm /></Section>
       <Section title="Help and account" description="Tell us what you think, or sign out." icon={<LifeBuoy />}>
         <div className="flex flex-wrap gap-2">
           <FeedbackButton />
