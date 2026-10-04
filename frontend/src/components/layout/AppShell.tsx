@@ -49,7 +49,7 @@ const UserMenu = () => {
   return (
     <Dropdown.Root>
       <Dropdown.Trigger
-        className="rounded-full p-1 ring-2 ring-transparent transition-shadow hover:ring-primary/40 data-[state=open]:ring-primary dark:hover:ring-accent-text/50 dark:data-[state=open]:ring-accent-text"
+        className="inline-flex aspect-square size-11 shrink-0 items-center justify-center rounded-full ring-2 ring-transparent transition-shadow focus-visible:outline-offset-0 hover:ring-primary/40 data-[state=open]:ring-primary dark:hover:ring-accent-text/50 dark:data-[state=open]:ring-accent-text"
         aria-label="Account menu"
       >
         <Avatar src={profile.avatar_url} name={name} className="ring-header" />
