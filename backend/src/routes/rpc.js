@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { asUser } from '../db.js';
-import { badRequest, notFound } from '../http.js';
+import { badRequest, DbError, HttpError, notFound } from '../http.js';
 import { requireAdmin, requireUser } from '../middleware/auth.js';
 
 // name -> { args: { arg: sql type }, set: returns rows (setof / table), void: returns nothing,
@@ -106,7 +106,13 @@ const router = Router();
 router.post('/:name', requireUser, async (req, res) => {
   const { text, params, shape } = buildCall(req.params.name, req.body ?? {});
   if (RPCS[req.params.name].admin) await requireAdmin(req, res, () => {});
-  const { rows } = await asUser(req.user.id, text, params);
+  const { rows } = await asUser(req.user.id, text, params).catch((err) => {
+    // 42883: the function is not in the database yet, i.e. a migration has not been applied.
+    if (err instanceof DbError && err.code === '42883') {
+      throw new HttpError(503, 'migration_missing', `${req.params.name} is not in the database. Apply the latest supabase/migrations.`);
+    }
+    throw err;
+  });
   if (shape === 'rows') return res.json(rows);
   res.json(shape === 'void' ? null : (rows[0]?.result ?? null));
 });

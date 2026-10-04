@@ -9,12 +9,18 @@ const PLAYER = '00000000-0000-0000-0000-0000000000b1';
 const BANNED_ADMIN = '00000000-0000-0000-0000-0000000000c1';
 const CONTEST = '70000000-0000-0000-0000-000000000001';
 const calls = [];
+let missingFunction = false;
 
 const fake = createServer((req, res) => {
   let body = '';
   req.on('data', (c) => { body += c; });
   req.on('end', () => {
     const { statements, as_user: asUser } = JSON.parse(body);
+    if (statements.some((s) => s.sql.includes('admin_delete_contest')) && missingFunction) {
+      res.statusCode = 404;
+      res.setHeader('content-type', 'application/json');
+      return res.end(JSON.stringify({ code: '42883', message: 'function public.admin_delete_contest(target_contest_id => uuid) does not exist' }));
+    }
     calls.push({ asUser, sql: statements.map((s) => s.sql) });
     const out = statements.map(({ sql }) => {
       if (sql.includes('public.profiles')) {
@@ -110,4 +116,17 @@ test('contest arguments are whitelisted and cast to their SQL types', async () =
   assert.match(sql, /starts_at => '2026-10-10T10:00:00Z'::timestamptz/);
   assert.match(sql, /question_ids => '\{\}'::uuid\[\]/);
   assert.equal((await post('admin_save_contest', { question_ids: 'abc' }, ADMIN)).status, 400);
+});
+
+test('a function missing from the database (unapplied migration) answers a clear 503, not a bare 500', async () => {
+  missingFunction = true;
+  try {
+    const res = await post('admin_delete_contest', { target_contest_id: CONTEST }, ADMIN);
+    assert.equal(res.status, 503);
+    const { error } = await res.json();
+    assert.equal(error.code, 'migration_missing');
+    assert.match(error.message, /Apply the latest supabase\/migrations/);
+  } finally {
+    missingFunction = false;
+  }
 });
