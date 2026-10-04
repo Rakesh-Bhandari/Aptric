@@ -1,10 +1,10 @@
 import type { Database } from '@db/database.types';
 import { api } from './http';
 import type {
-  Activity, AnswerResult, AttemptContext, Board, ContestAnswerResult, ContestDetail, ContestStandings,
+  Activity, AnswerResult, AttemptContext, Board, CatalogTopic, ContestAnswerResult, ContestDetail, ContestStandings,
   ContestSummary, ContestViolation, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
   PlacementAnswer, PlacementResult, PlacementStart, PlayerProfile, PracticeBatch, PracticeMode, Profile,
-  SectionNode, TodaySet,
+  SectionNode, TodaySet, TopicPreferences,
 } from './types';
 
 type Functions = Database['public']['Functions'];
@@ -91,6 +91,12 @@ export const getLastPlacement = () =>
   api<{ completed_at: string | null; placed_level: number | null; correct: number | null; score: number | null } | null>(
     'GET', '/me/placement',
   );
+
+export const getTopics = () => api<CatalogTopic[]>('GET', '/catalog/topics');
+
+export const getTopicPreferences = () => api<TopicPreferences>('GET', '/me/preferences');
+
+export const saveTopicPreferences = (prefs: TopicPreferences) => api<TopicPreferences>('PATCH', '/me/preferences', prefs);
 
 export const getLevels = () => api<{ level: number; name: string; slug: string }[]>('GET', '/catalog/levels');
 

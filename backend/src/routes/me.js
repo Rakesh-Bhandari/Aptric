@@ -5,7 +5,7 @@
 // columns the player was granted are read or written.
 
 import { Router } from 'express';
-import { asUser } from '../db.js';
+import { asUser, asUserBatch } from '../db.js';
 import { badRequest, forbidden } from '../http.js';
 import { requireUser } from '../middleware/auth.js';
 
@@ -34,6 +34,25 @@ export function validateProfilePatch(patch) {
   return keys;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_TOPICS = 200;
+
+/** The topic ids of a PATCH /me/preferences body ({ preferred_topic_ids, excluded_topic_ids }), or 400. */
+export function validatePreferences(body) {
+  const lists = {};
+  for (const field of ['preferred_topic_ids', 'excluded_topic_ids']) {
+    const ids = body?.[field] ?? [];
+    if (!Array.isArray(ids) || ids.length > MAX_TOPICS || !ids.every((id) => typeof id === 'string' && UUID_RE.test(id))) {
+      throw badRequest(`${field} must be a list of topic ids.`);
+    }
+    lists[field] = [...new Set(ids.map((id) => id.toLowerCase()))];
+  }
+  if (lists.preferred_topic_ids.some((id) => lists.excluded_topic_ids.includes(id))) {
+    throw badRequest('A topic cannot be both preferred and excluded.');
+  }
+  return lists;
+}
+
 // The "questions: read published, attempted, or admin" policy, for alias q.
 const VISIBLE_QUESTION = `q.status = 'published'
   or private.is_admin()
@@ -59,6 +78,38 @@ router.patch('/me/profile', async (req, res) => {
   );
   // Banned players can't edit (the "banned users cannot edit" policy).
   if (!rows[0]) throw forbidden('Your profile cannot be changed right now.');
+  res.json(rows[0]);
+});
+
+const PREFERENCES_SQL = `
+  select coalesce(array_agg(topic_id) filter (where preference = 'prefer'), '{}') as preferred_topic_ids,
+         coalesce(array_agg(topic_id) filter (where preference = 'exclude'), '{}') as excluded_topic_ids
+  from public.user_topic_preferences
+  where user_id = auth.uid()`;
+
+router.get('/me/preferences', async (req, res) => {
+  const { rows } = await asUser(req.user.id, PREFERENCES_SQL);
+  res.json(rows[0]);
+});
+
+// Replaces the whole list. Unknown or retired topics are dropped. A set the player has not
+// started yet is rebuilt from the new topics; one in progress stays until tomorrow.
+router.patch('/me/preferences', async (req, res) => {
+  const { preferred_topic_ids: preferred, excluded_topic_ids: excluded } = validatePreferences(req.body);
+  const [, , , { rows }] = await asUserBatch(req.user.id, [
+    ['delete from public.user_topic_preferences where user_id = auth.uid()'],
+    [`insert into public.user_topic_preferences (user_id, topic_id, preference)
+      select auth.uid(), t.id, x.preference
+      from (select unnest($1::uuid[]) as id, 'prefer' as preference
+            union all select unnest($2::uuid[]), 'exclude') x
+      join public.topics t on t.id = x.id and t.is_active
+      where not private.is_banned()`, [preferred, excluded]],
+    [`delete from public.daily_sets s
+      where s.user_id = auth.uid()
+        and not exists (select 1 from public.attempts a where a.daily_set_id = s.id)
+        and not exists (select 1 from public.hint_uses h where h.daily_set_id = s.id)`],
+    [PREFERENCES_SQL],
+  ]);
   res.json(rows[0]);
 });
 
@@ -113,6 +164,21 @@ router.get('/catalog/exam-tags', async (req, res) => {
      order by sort_order`,
   );
   res.json(rows);
+});
+
+// Active topics by section, for the daily-set preferences. Only topics with a published question.
+router.get('/catalog/topics', async (req, res) => {
+  const { rows } = await asUser(
+    req.user.id,
+    `select sec.id as section_id, sec.name as section, t.id, t.name,
+            (select count(*) from public.questions q join public.subtopics st on st.id = q.subtopic_id
+             where st.topic_id = t.id and q.status = 'published') as questions
+     from public.topics t
+     join public.sections sec on sec.id = t.section_id and sec.is_active
+     where t.is_active
+     order by sec.sort_order, sec.name, t.sort_order, t.name`,
+  );
+  res.json(rows.filter((r) => r.questions > 0));
 });
 
 router.get('/catalog/levels', async (req, res) => {

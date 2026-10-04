@@ -69,7 +69,7 @@ Earn XP, keep your streak and move up each week, from Bronze all the way to Diam
 <td width="50%" valign="top">
 
 #### 🔥 Today
-A daily set per track and level, released at local midnight, with streak, daily goal ring, level and league position.
+A daily set per player, built from your level, league and topic preferences and released at local midnight, with streak, daily goal ring, level and league position.
 
 </td>
 <td width="50%" valign="top">
@@ -103,7 +103,7 @@ Skill radar, activity heatmap, recent daily sets and a mistakes-to-review list.
 <td valign="top">
 
 #### 👤 Profile
-Public profile at `/u/:handle`, badges and share card. Time zone, theme (light / dark / device) and reduced motion are on `/settings`.
+Public profile at `/u/:handle`, badges and share card. Time zone, daily-challenge topics, theme (light / dark / device) and reduced motion are on `/settings`.
 
 </td>
 </tr>

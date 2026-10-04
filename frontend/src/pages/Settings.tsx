@@ -1,7 +1,7 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Check, LifeBuoy, LogOut, MessageSquare, Monitor, Moon, Palette, Settings as SettingsIcon, ShieldAlert, Sun, Target, UserRound } from 'lucide-react';
+import { Check, LifeBuoy, ListFilter, LogOut, MessageSquare, Monitor, Moon, Palette, Settings as SettingsIcon, ShieldAlert, Sun, Target, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -14,7 +14,8 @@ import * as api from '@/lib/api';
 import { errorCode, friendlyError } from '@/lib/errors';
 import { formatRelative } from '@/lib/format';
 import { DAILY_TARGETS, HANDLE_RE } from '@/lib/game';
-import { keys, queryClient, useExamTags, useLevels } from '@/lib/queries';
+import { keys, queryClient, useExamTags, useLevels, useTopicPreferences, useTopics } from '@/lib/queries';
+import type { CatalogTopic } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const timezones = (() => {
@@ -173,6 +174,97 @@ const GoalsForm = () => {
         {canRetake
           ? <Button variant="outline" size="sm" asChild><Link to="/onboarding/placement">{placedName ? 'Retake test' : 'Take the test'}</Link></Button>
           : <span className="text-sm text-muted-foreground">You can retake it {formatRelative(retakeAt!.toISOString())}</span>}
+      </div>
+    </div>
+  );
+};
+
+type TopicChoice = 'prefer' | 'auto' | 'exclude';
+
+const TOPIC_CHOICES: { value: TopicChoice; label: string }[] = [
+  { value: 'prefer', label: 'More' },
+  { value: 'auto', label: 'Auto' },
+  { value: 'exclude', label: 'Skip' },
+];
+
+/** Daily challenge topics: lean towards some, skip others. The bank's topics, by section. */
+const TopicsForm = () => {
+  const topics = useTopics();
+  const saved = useTopicPreferences();
+  const toast = useToast();
+  const [draft, setDraft] = useState<Record<string, TopicChoice> | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (topics.isError || saved.isError) return <p className="text-sm text-danger">We couldn't load the topics. Try again later.</p>;
+  if (!topics.data || !saved.data) return <p className="text-sm text-muted-foreground">Loading topics…</p>;
+
+  const initial: Record<string, TopicChoice> = {};
+  for (const id of saved.data.preferred_topic_ids) initial[id] = 'prefer';
+  for (const id of saved.data.excluded_topic_ids) initial[id] = 'exclude';
+  const choices = draft ?? initial;
+  const choiceOf = (id: string): TopicChoice => choices[id] ?? 'auto';
+  const set = (ids: string[], value: TopicChoice) => setDraft({ ...choices, ...Object.fromEntries(ids.map((id) => [id, value])) });
+
+  const bySection = new Map<string, CatalogTopic[]>();
+  for (const t of topics.data) bySection.set(t.section_id, [...(bySection.get(t.section_id) ?? []), t]);
+  const sections = [...bySection.values()];
+  const ids = (value: TopicChoice) => topics.data.filter((t) => choiceOf(t.id) === value).map((t) => t.id);
+  const allSkipped = ids('exclude').length === topics.data.length;
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const next = await api.saveTopicPreferences({ preferred_topic_ids: ids('prefer'), excluded_topic_ids: ids('exclude') });
+      queryClient.setQueryData(keys.topicPreferences, next);
+      void queryClient.invalidateQueries({ queryKey: keys.today });
+      setDraft(null);
+      toast.success('Topics saved. They apply to your next daily challenge, or today\'s if you have not started it.');
+    } catch (err) {
+      toast.error(friendlyError(err, "We couldn't save your topics."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      {sections.map((list) => {
+        const sectionIds = list.map((t) => t.id);
+        const skipped = sectionIds.every((id) => choiceOf(id) === 'exclude');
+        return (
+          <fieldset key={list[0].section_id} className="space-y-2">
+            <legend className="flex w-full items-center justify-between gap-3 text-sm font-semibold text-heading">
+              {list[0].section}
+              <Button type="button" variant="ghost" size="sm" aria-label={`${skipped ? 'Include' : 'Skip'} ${list[0].section}`} onClick={() => set(sectionIds, skipped ? 'auto' : 'exclude')}>
+                {skipped ? 'Include section' : 'Skip section'}
+              </Button>
+            </legend>
+            <ul className="divide-y rounded-lg border">
+              {list.map((t: CatalogTopic) => (
+                <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                  <span className="text-sm">{t.name}</span>
+                  <div role="radiogroup" aria-label={t.name} className="inline-grid grid-flow-col gap-1 rounded-full border bg-muted p-0.5">
+                    {TOPIC_CHOICES.map((c) => (
+                      <label key={c.value} className={cn(
+                        'flex min-h-8 cursor-pointer items-center rounded-full px-3 text-xs font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring',
+                        choiceOf(t.id) === c.value ? 'bg-primary bg-gradient-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                      )}
+                      >
+                        <input type="radio" className="sr-only" name={`topic-${t.id}`} checked={choiceOf(t.id) === c.value} onChange={() => set([t.id], c.value)} />
+                        {c.label}<span className="sr-only"> {c.value === 'auto' ? '(no preference)' : c.value === 'prefer' ? '(see more)' : '(never)'}</span>
+                      </label>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+        );
+      })}
+      {allSkipped && <FieldHint>Every topic is skipped, so we will ignore this and pick from all of them.</FieldHint>}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" loading={busy} disabled={!draft} onClick={() => void save()}>Save topics</Button>
+        {draft && <Button type="button" variant="ghost" onClick={() => setDraft(null)}>Reset</Button>}
       </div>
     </div>
   );
@@ -357,6 +449,7 @@ const Settings = () => {
       </div>
       <Section title="Profile" description="How you appear on leaderboards and your public page." icon={<UserRound />}><ProfileForm /></Section>
       <Section title="Goals and level" description="We use these to pick your daily challenge and track your progress." icon={<Target />}><GoalsForm /></Section>
+      <Section title="Daily topics" description="Choose what your daily challenge leans towards and what it leaves out. Skipped topics are never used unless nothing else is left." icon={<ListFilter />}><TopicsForm /></Section>
       <Section title="Appearance" description="Pick a theme and how much things move." icon={<Palette />}><AppearanceForm /></Section>
       <Section title="Exam conditions" description="How strictly practice mimics a real exam." icon={<ShieldAlert />}><ExamConditionsForm /></Section>
       <Section title="Help and account" description="Tell us what you think, or sign out." icon={<LifeBuoy />}>

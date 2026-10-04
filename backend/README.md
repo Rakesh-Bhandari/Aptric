@@ -111,7 +111,8 @@ All bodies are JSON. Errors are `{ "error": { "code", "message", ... } }`; datab
 | `GET` / `PATCH /me/profile` | user | own profile; editable: `handle`, `display_name`, `bio`, `timezone`, `exam_goal`, `daily_target`, `onboarded_at`, `detect_tab_switches_practice` (boolean, default true). The setting is for Practice only; Daily and contests always detect tab switches, and there is no field that could turn that off |
 | `GET /me/placement` | user | last finished placement test |
 | `POST /reports`, `POST /feedback` | user | report a question / send feedback |
-| `GET /catalog/exam-tags`, `GET /catalog/levels` | user | small catalogs |
+| `GET` / `PATCH /me/preferences` | user | topics the daily set leans towards (`preferred_topic_ids`) and never uses unless nothing else is left (`excluded_topic_ids`); `PATCH` replaces both lists and rebuilds today's set if it has not been started |
+| `GET /catalog/exam-tags`, `GET /catalog/levels`, `GET /catalog/topics` | user | small catalogs (topics: active ones with published questions, by section) |
 | `GET /questions/:id/subtopic` | user | subtopic of a question the user can see |
 | `POST /tutor/chat` | user | one Aptric Tutor turn, streamed as server-sent events (see [Aptric Tutor](#aptric-tutor)) |
 | `GET /tutor/history?question_id&context` | user | `{ available, messages }`: the stored chat for one question, and whether the tutor is configured |
@@ -187,3 +188,12 @@ Response: `text/event-stream` with
 | `error` | `{ error: { code, message, user_message_id? } }`, the same shape as other errors (`tutor_unavailable` when every model failed) |
 
 Errors before the stream are ordinary JSON: `400` bad body, `401`, `403 tutor_locked` / `42501`, `409 tutor_requires_give_up`, `429 over_request_rate_limit`, `503 tutor_unavailable` (no model key), `503 tutor_not_ready` (the database lacks `20261003000001_tutor.sql`; `/health` then lists `tutor` under `missing`). The app falls back to the stored hint and explanation for both 503s.
+
+### Personal daily sets
+
+`get_today_set`, `get_daily_result`, `submit_answer`, `use_hint` and `give_up` first call `ensurePersonalSet` (`src/personalSet.js`). Once per player and local day it picks a set and stores it as a `daily_sets` row with `user_id` set (migration `20261008000001`), so refreshes return the same set; `private.today_set_for` prefers it and falls back to the shared set if none could be made.
+
+- **Difficulty**: the player's level band (profile level, floored by the placement level) gives the easy / medium / hard counts from `levels`; each league step above Bronze (two at most) turns one easy into a medium, or a medium into a hard.
+- **Seed**: `userId:date` drives a seeded random generator, so the same inputs always give the same set.
+- **Topics**: excluded topics are never used (unless that would leave no question at all, then they are ignored); preferred topics are three times as likely to be picked; questions from the player's own sets in the last 60 days are avoided while enough others remain. A bank too small for the mix gives a shorter set, not an empty one.
+- Results, streaks, XP, ratings and leagues work per `daily_set_id`, so they are unaffected by sets differing between players. `get_daily_result(target_set_id)` only returns sets the caller has played.
