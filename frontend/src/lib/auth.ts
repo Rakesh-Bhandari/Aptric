@@ -21,7 +21,7 @@ export async function signInWithPassword(email: string, password: string) {
 
 /** Sends a confirmation link; the answer is the same for registered emails. */
 export const signUp = (p: { email: string; password: string; displayName?: string; next: string }) =>
-  publicApi('POST', '/auth/signup', {
+  publicApi<{ ok: boolean; email_sent: boolean }>('POST', '/auth/signup', {
     email: p.email, password: p.password, display_name: p.displayName, timezone: timezone(), next: safeNext(p.next),
   });
 
