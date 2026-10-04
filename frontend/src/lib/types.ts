@@ -223,6 +223,8 @@ export interface PlacementResult {
   total: number;
   score: number;
   level: { level: number; slug: string; name: string };
+  /** The XP level (profiles.level) after placement; placement lifts it to the band's floor. */
+  profile_level?: number;
   results: {
     question_id: string;
     difficulty: Difficulty;

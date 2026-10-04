@@ -401,7 +401,7 @@ const PlacementResultView = ({ result, onDone, doneLabel }: { result: PlacementR
         <div className="grid size-28 place-items-center rounded-full bg-violet text-violet-foreground shadow-lg ring-8 ring-violet-soft motion-safe:animate-pop-in">
           <span className="leading-none">
             <span className="block text-[11px] font-bold uppercase tracking-[0.16em]">Level</span>
-            <span className="block text-5xl font-extrabold tabular-nums">{result.level.level}</span>
+            <span className="block text-5xl font-extrabold tabular-nums">{result.profile_level ?? result.level.level}</span>
           </span>
         </div>
         <div>
