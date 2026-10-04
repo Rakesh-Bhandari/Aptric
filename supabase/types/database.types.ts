@@ -1978,6 +1978,7 @@ export type Database = {
         Args: { context?: Database["public"]["Enums"]["attempt_context"]; question_id: string };
         Returns: Json;
       };
+      finish_contest: { Args: { contest_id: string; violation?: string }; Returns: Json };
       join_contest: { Args: { contest_id: string }; Returns: Json };
       list_contests: { Args: Record<PropertyKey, never>; Returns: Json };
       start_placement: { Args: Record<PropertyKey, never>; Returns: Json };

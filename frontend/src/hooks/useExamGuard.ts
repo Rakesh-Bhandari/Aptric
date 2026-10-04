@@ -145,3 +145,75 @@ export const useTabSwitchGuard = (active: boolean) => {
   const acknowledge = useCallback(() => setWarning(null), []);
   return { count, away, warning, acknowledge };
 };
+
+export type ContestGuardReason = 'tab_hidden' | 'window_blur' | 'fullscreen_exit';
+
+/** A blur that ends within this long (focus flicker, a tooltip, autofill) is not a departure. */
+export const BLUR_GRACE_MS = 400;
+
+/**
+ * Contest integrity while `active`: the first of these calls `onViolation(reason)`, once.
+ *
+ * - `tab_hidden`: the page became hidden (other tab, minimised window, screen lock, reload).
+ * - `window_blur`: the window lost focus (another app or window, browser UI) and still
+ *   hadn't it back after `blurGraceMs`, so focus flicker doesn't count. Focus moving to an
+ *   iframe inside the page doesn't count either.
+ * - `fullscreen_exit`: leaving fullscreen that the player was in. Fullscreen is never
+ *   requested, so this only applies to players who entered it themselves.
+ *
+ * Known limits: a browser prompt or native dialog that holds focus longer than the grace
+ * period can still read as a blur, and the checks are client-side signals; the server only
+ * records and enforces what the client reports. See "Contest fair play" in the README.
+ */
+export const useContestGuard = (
+  active: boolean,
+  onViolation: (reason: ContestGuardReason) => void,
+  blurGraceMs = BLUR_GRACE_MS,
+) => {
+  const handler = useRef(onViolation);
+  useEffect(() => {
+    handler.current = onViolation;
+  });
+
+  useEffect(() => {
+    if (!active) return;
+    let fired = false;
+    let blurTimer: ReturnType<typeof setTimeout> | undefined;
+    let wasFullscreen = !!document.fullscreenElement;
+
+    const fire = (reason: ContestGuardReason) => {
+      if (fired) return;
+      fired = true;
+      clearTimeout(blurTimer);
+      handler.current(reason);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') fire('tab_hidden');
+    };
+    const onBlur = () => {
+      clearTimeout(blurTimer);
+      blurTimer = setTimeout(() => {
+        if (document.activeElement instanceof HTMLIFrameElement || document.hasFocus()) return;
+        fire('window_blur');
+      }, blurGraceMs);
+    };
+    const onFocus = () => clearTimeout(blurTimer);
+    const onFullscreen = () => {
+      if (document.fullscreenElement) wasFullscreen = true;
+      else if (wasFullscreen) fire('fullscreen_exit');
+    };
+
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('fullscreenchange', onFullscreen);
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearTimeout(blurTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('fullscreenchange', onFullscreen);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [active, blurGraceMs]);
+};

@@ -33,6 +33,7 @@ export const RPCS = {
   list_contests: { args: {} },
   get_contest: { args: { contest_id: 'uuid' } },
   join_contest: { args: { contest_id: 'uuid' } },
+  finish_contest: { args: { contest_id: 'uuid', violation: 'text' } },
   submit_contest_answer: { args: { contest_id: 'uuid', question_id: 'uuid', option_id: 'uuid', time_ms: 'integer' } },
   get_contest_standings: { args: { contest_id: 'uuid', page_size: 'integer', page_offset: 'integer' } },
   // Admin (each checks private.is_admin() itself)

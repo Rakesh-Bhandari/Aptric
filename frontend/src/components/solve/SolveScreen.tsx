@@ -78,6 +78,11 @@ interface Props {
   onPracticeSimilar?: () => void;
   /** Extra content under the result (e.g. level-up news). */
   resultExtras?: ReactNode;
+  /**
+   * The "Detect tab switches in Practice" setting. It only ever applies to practice: daily and
+   * placement always detect, and contests are guarded by the contest runner, which ends the attempt.
+   */
+  detectTabSwitches?: boolean;
 }
 
 /** The SessionHeader's timer slot, once it's on the page (null without a header, e.g. in tests). */
@@ -98,7 +103,7 @@ const menuItem =
 
 export const SolveScreen = ({
   question, kind, worth, initialHint = null, onSubmit, onHint, hintCost, onGiveUp, onSkip, onNext, nextLabel,
-  onPracticeSimilar, resultExtras, tutor = false,
+  onPracticeSimilar, resultExtras, tutor = false, detectTabSwitches = true,
 }: Props) => {
   const [picked, setPicked] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | 'submit' | 'giveup'>(null);
@@ -121,8 +126,9 @@ export const SolveScreen = ({
 
   const answered = !!reveal;
   useCopyProtection();
+  const detect = kind === 'practice' ? detectTabSwitches : kind !== 'contest';
   // Leaving the page only matters while the question is still open.
-  const guard = useTabSwitchGuard(!answered);
+  const guard = useTabSwitchGuard(detect && !answered);
   const overTime = elapsed > question.est_seconds * 1000;
 
   // Move focus to the result so keyboard and screen-reader users land on it.
@@ -246,7 +252,7 @@ export const SolveScreen = ({
         <Badge variant={DIFFICULTY_BADGE[question.difficulty]}>{DIFFICULTY_LABEL[question.difficulty]}</Badge>
         <Badge variant="default">{KIND_LABEL[kind]}</Badge>
         {worth && <span className="text-xs font-medium text-muted-foreground">Worth {worth}</span>}
-        {guard.count > 0 && (
+        {detect && guard.count > 0 && (
           <Badge variant="danger" title="Times you left this page during a question">
             <ShieldAlert /> {plural(guard.count, 'tab switch', 'tab switches')}
           </Badge>

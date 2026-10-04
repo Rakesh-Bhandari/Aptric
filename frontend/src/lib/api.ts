@@ -2,7 +2,7 @@ import type { Database } from '@db/database.types';
 import { api } from './http';
 import type {
   Activity, AnswerResult, AttemptContext, Board, ContestAnswerResult, ContestDetail, ContestStandings,
-  ContestSummary, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
+  ContestSummary, ContestViolation, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
   PlacementAnswer, PlacementResult, PlacementStart, PlayerProfile, PracticeBatch, PracticeMode, Profile,
   SectionNode, TodaySet,
 } from './types';
@@ -70,6 +70,9 @@ export const submitContestAnswer = (p: { contestId: string; questionId: string; 
   rpc<ContestAnswerResult>('submit_contest_answer', {
     contest_id: p.contestId, question_id: p.questionId, option_id: p.optionId, time_ms: p.timeMs ?? undefined,
   });
+/** Closes the attempt (idempotent): the first call records the reason, later ones change nothing. */
+export const finishContest = (contestId: string, violation?: ContestViolation) =>
+  rpc<ContestSummary>('finish_contest', { contest_id: contestId, violation });
 export const getContestStandings = (id: string, pageSize = 50, offset = 0) =>
   rpc<ContestStandings>('get_contest_standings', { contest_id: id, page_size: pageSize, page_offset: offset });
 
@@ -77,7 +80,7 @@ export const getContestStandings = (id: string, pageSize = 50, offset = 0) =>
 export const fetchProfile = (): Promise<Profile> => api<Profile>('GET', '/me/profile');
 
 export type ProfilePatch = Partial<
-  Pick<Profile, 'handle' | 'display_name' | 'bio' | 'timezone' | 'exam_goal' | 'daily_target' | 'onboarded_at'>
+  Pick<Profile, 'handle' | 'display_name' | 'bio' | 'timezone' | 'exam_goal' | 'daily_target' | 'onboarded_at' | 'detect_tab_switches_practice'>
 >;
 
 export const updateProfile = (patch: ProfilePatch): Promise<Profile> => api<Profile>('PATCH', '/me/profile', patch);

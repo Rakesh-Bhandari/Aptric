@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useSession } from '@/context/SessionContext';
+import { updateProfile } from '@/lib/api';
 
 export type ThemeSetting = 'system' | 'light' | 'dark';
 export type MotionSetting = 'system' | 'reduce';
@@ -11,6 +13,13 @@ interface Preferences {
   setMotion: (m: MotionSetting) => void;
   /** True when animations should be skipped (OS setting or the in-app switch). */
   reduceMotion: boolean;
+  /**
+   * "Detect tab switches in Practice" (default on), stored with the profile on the server.
+   * Practice only: Daily and contests always detect tab switches, whatever this says.
+   */
+  detectTabSwitchesInPractice: boolean;
+  /** Saves the setting; rejects (and keeps the old value) if the server refuses. */
+  setDetectTabSwitchesInPractice: (on: boolean) => Promise<void>;
 }
 
 const PreferencesContext = createContext<Preferences | null>(null);
@@ -48,6 +57,8 @@ const useMediaQuery = (query: string) => {
 export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<ThemeSetting>(() => read('aptric.theme', ['system', 'light', 'dark'], 'system'));
   const [motion, setMotionState] = useState<MotionSetting>(() => read('aptric.motion', ['system', 'reduce'], 'system'));
+  const { profile, setProfile } = useSession();
+  const detectTabSwitchesInPractice = profile?.detect_tab_switches_practice ?? true;
   const systemDark = useMediaQuery('(prefers-color-scheme: dark)');
   const systemReduce = useMediaQuery('(prefers-reduced-motion: reduce)');
 
@@ -78,9 +89,17 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
     write('aptric.motion', m);
   }, []);
 
+  const setDetectTabSwitchesInPractice = useCallback(async (on: boolean) => {
+    if (!profile) return;
+    setProfile(await updateProfile({ detect_tab_switches_practice: on }));
+  }, [profile, setProfile]);
+
   const value = useMemo(
-    () => ({ theme, resolvedTheme, setTheme, motion, setMotion, reduceMotion }) satisfies Preferences,
-    [theme, resolvedTheme, setTheme, motion, setMotion, reduceMotion],
+    () => ({
+      theme, resolvedTheme, setTheme, motion, setMotion, reduceMotion,
+      detectTabSwitchesInPractice, setDetectTabSwitchesInPractice,
+    }) satisfies Preferences,
+    [theme, resolvedTheme, setTheme, motion, setMotion, reduceMotion, detectTabSwitchesInPractice, setDetectTabSwitchesInPractice],
   );
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 };
