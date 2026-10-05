@@ -4,7 +4,7 @@ import type {
   Activity, AnswerResult, AttemptContext, Board, CatalogTopic, ContestAnswerResult, ContestDetail, ContestStandings,
   ContestSummary, ContestViolation, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
   PlacementAnswer, PlacementResult, PlacementStart, PlayerProfile, PracticeBatch, PracticeMode, Profile,
-  SectionNode, TodaySet, TopicPreferences,
+  SectionNode, TodaySet, TopicPreferences, Entitlements,
 } from './types';
 
 type Functions = Database['public']['Functions'];
@@ -108,6 +108,8 @@ export const subscribePush = (sub: PushSubscriptionJSON) => api<null>('POST', '/
 export const unsubscribePush = (endpoint: string) => api<null>('POST', '/push/unsubscribe', { endpoint });
 export const savePushPreferences = (prefs: Partial<PushPreferences>) => api<PushPreferences>('PATCH', '/push/preferences', prefs);
 export const sendTestPush = () => api<{ sent: number }>('POST', '/push/test', {});
+
+export const getEntitlements = () => api<Entitlements>('GET', '/me/entitlements');
 
 export const getLevels = () => api<{ level: number; name: string; slug: string }[]>('GET', '/catalog/levels');
 

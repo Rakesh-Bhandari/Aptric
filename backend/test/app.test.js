@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createMisconfiguredApp, originMatcher } from '../src/app.js';
+import { createMisconfiguredApp, originMatcher, securityHeaders } from '../src/app.js';
 import { supabaseProblems } from '../src/config.js';
 
 const jwtKey = (role) => `x.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.y`;
@@ -43,4 +43,21 @@ test('misconfigured app answers JSON 503 with CORS instead of crashing', async (
   } finally {
     server.close();
   }
+});
+
+test('every API response carries the security headers and is never cached', async () => {
+  const server = createMisconfiguredApp(['x']).listen(0);
+  try {
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/anything`);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(res.headers.get('x-frame-options'), 'DENY');
+    assert.equal(res.headers.get('referrer-policy'), 'no-referrer');
+    assert.match(res.headers.get('content-security-policy'), /default-src 'none'/);
+    assert.match(res.headers.get('strict-transport-security'), /max-age=\d+/);
+    assert.equal(res.headers.get('x-powered-by'), null);
+  } finally {
+    server.close();
+  }
+  assert.equal(typeof securityHeaders, 'function');
 });

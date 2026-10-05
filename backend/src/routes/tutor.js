@@ -17,6 +17,7 @@ import { asUser, query } from '../db.js';
 import { badRequest, HttpError } from '../http.js';
 import { requireUser } from '../middleware/auth.js';
 import { hit } from '../middleware/rateLimit.js';
+import { getEntitlements, limitFor } from '../entitlements.js';
 import { createLeakGuard } from '../tutor/guard.js';
 import { chatClient, completeWithFallback, LlmError, openStream, tutorAvailable, tutorModels } from '../tutor/llm.js';
 import {
@@ -73,6 +74,7 @@ export const notReady = () =>
 export function createTutorRouter({
   db = { query, asUser },
   hitLimit = hit,
+  entitlements = getEntitlements,
   llm = null,
   settings = config.tutor,
   log = console,
@@ -141,8 +143,10 @@ export function createTutorRouter({
     const uid = req.user.id;
 
     await hitLimit('tutor:burst', uid, 2, 1);
-    await hitLimit('tutor:hour', uid, 3600, settings.messagesPerHour);
-    await hitLimit('tutor:day', uid, 86400, settings.messagesPerDay);
+    // Hourly and daily budgets come from the player's plan; the settings are the default.
+    const plan = await entitlements(uid);
+    await hitLimit('tutor:hour', uid, 3600, limitFor(plan, 'tutor_messages_per_hour', settings.messagesPerHour));
+    await hitLimit('tutor:day', uid, 86400, limitFor(plan, 'tutor_messages_per_day', settings.messagesPerDay));
 
     const ctx = await loadContext(uid, body.question_id, body.context);
     if (ctx.phase === 'locked') {

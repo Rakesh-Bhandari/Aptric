@@ -33,6 +33,23 @@ export function originMatcher(origins) {
   return (origin) => !origin || exact.has(origin) || patterns.some((re) => re.test(origin));
 }
 
+/**
+ * Headers for a JSON-only API: nothing it returns is ever meant to be rendered,
+ * framed or sniffed, and responses (tokens, answers) must never be cached.
+ */
+export function securityHeaders(req, res, next) {
+  res.set({
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
+  });
+  next();
+}
+
 function baseApp() {
   const app = express();
   // Behind Vercel's proxy: req.ip is the caller from X-Forwarded-For.
@@ -46,10 +63,7 @@ function baseApp() {
     methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
     maxAge: 600,
   }));
-  app.use((req, res, next) => {
-    res.set('Cache-Control', 'no-store');
-    next();
-  });
+  app.use(securityHeaders);
   return app;
 }
 

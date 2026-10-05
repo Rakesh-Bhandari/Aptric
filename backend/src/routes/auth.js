@@ -135,7 +135,7 @@ router.post('/refresh', limitByIp('auth:refresh', 300, 120), async (req, res) =>
   res.json({ session: await refreshSession(req.body?.refresh_token) });
 });
 
-router.post('/logout', async (req, res) => {
+router.post('/logout', limitByIp('auth:logout', 300, 120), async (req, res) => {
   await endSession(req.body?.refresh_token);
   res.status(204).end();
 });
@@ -147,6 +147,10 @@ router.get('/user', requireUser, (req, res) => {
 // New password. Needs the current password unless the session is fresh
 // (just signed in, or opened from a recovery link).
 router.post('/password', requireUser, async (req, res) => {
+  // The current-password check is a password oracle for anyone holding a stolen
+  // access token, so it is limited per account (and per IP).
+  await hit('auth:password-change', req.user.id, 3600, 10);
+  await hit('auth:password-change-ip', req.ip ?? 'unknown', 3600, 30);
   const problem = passwordProblem(req.body?.password);
   if (problem) throw new HttpError(400, 'weak_password', problem);
   const { rows } = await query('select password_hash, email from private.accounts where id = $1', [req.user.id]);
