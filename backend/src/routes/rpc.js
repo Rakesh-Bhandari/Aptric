@@ -5,12 +5,26 @@
 
 import { Router } from 'express';
 import { asUser } from '../db.js';
-import { badRequest, notFound } from '../http.js';
+import { badRequest, HttpError, notFound } from '../http.js';
 import { requireAdmin, requireUser } from '../middleware/auth.js';
+import { hit } from '../middleware/rateLimit.js';
 import { ensurePersonalSet } from '../personalSet.js';
+import { getEntitlements, hasFeature } from '../entitlements.js';
+
+// Argument shapes checked before any SQL runs (the functions validate again).
+const HANDLE = /^[A-Za-z0-9_]{1,24}$/;
+const SEARCH_TERM = /^@?[A-Za-z0-9_]{0,24}$/;
+// "<timestamptz>|<uuid or id>" or a handle, as the paging functions return them.
+const CURSOR = /^[0-9A-Za-z:+.| _-]{1,80}$/;
+const WORD = /^[a-z_]{1,24}$/;
 
 // name -> { args: { arg: sql type }, set: returns rows (setof / table), void: returns nothing,
-//           admin: the route itself refuses non-admins before the call }
+//           admin: the route itself refuses non-admins before the call,
+//           limit: [bucket, window seconds, max calls] per player, counted before the call (429 when spent),
+//           flag: the plan feature that switches it on (plans.features; dark until set),
+//           flagArgs: { arg: flag } a truthy argument needs that feature too,
+//           check: { arg: RegExp } a string argument must match (400 otherwise),
+//           max: { arg: n } a string argument has at most n characters }
 export const RPCS = {
   // Daily challenge and answering
   get_today_set: { args: {} },
@@ -29,14 +43,42 @@ export const RPCS = {
   finish_placement: { args: { test_id: 'uuid', answers: 'jsonb' } },
   // Standings and contests
   get_my_league: { args: {} },
-  get_leaderboard: { args: { board: 'text', page_size: 'integer', page_offset: 'integer' } },
+  get_leaderboard: { args: { board: 'text', page_size: 'integer', page_offset: 'integer', friends_only: 'boolean' } },
   get_player_profile: { args: { target_handle: 'text' } },
   list_contests: { args: {} },
   get_contest: { args: { contest_id: 'uuid' } },
   join_contest: { args: { contest_id: 'uuid' } },
   finish_contest: { args: { contest_id: 'uuid', violation: 'text' } },
   submit_contest_answer: { args: { contest_id: 'uuid', question_id: 'uuid', option_id: 'uuid', time_ms: 'integer' } },
-  get_contest_standings: { args: { contest_id: 'uuid', page_size: 'integer', page_offset: 'integer' } },
+  get_contest_standings: { args: { contest_id: 'uuid', page_size: 'integer', page_offset: 'integer', friends_only: 'boolean' } },
+  // Community: follow / friends. Each checks the caller, blocks and its own caps in SQL;
+  // the limit here is the outer flood guard.
+  follow_user: { limit: ['rpc_follow', 60, 120], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
+  unfollow_user: { limit: ['rpc_follow', 60, 120], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
+  remove_follower: { limit: ['rpc_follow', 60, 120], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
+  respond_follow_request: { limit: ['rpc_follow', 60, 120], args: { request_id: 'uuid', accept: 'boolean' } },
+  get_follow_requests: { args: {} },
+  block_user: { limit: ['rpc_block', 60, 20], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
+  unblock_user: { limit: ['rpc_block', 60, 20], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
+  get_blocks: { args: {} },
+  report_user: {
+    limit: ['rpc_report', 3600, 20], check: { target_handle: HANDLE, reason: WORD }, max: { details: 500 },
+    args: { target_handle: 'text', reason: 'text', details: 'text' },
+  },
+  get_followers: { check: { target_handle: HANDLE, cursor: CURSOR }, args: { target_handle: 'text', cursor: 'text' } },
+  get_following: { check: { target_handle: HANDLE, cursor: CURSOR }, args: { target_handle: 'text', cursor: 'text' } },
+  search_users: { limit: ['rpc_search', 60, 40], check: { q: SEARCH_TERM, cursor: CURSOR }, args: { q: 'text', cursor: 'text' } },
+  get_suggested_users: { args: {} },
+  get_friend_activity: { check: { cursor: CURSOR }, args: { cursor: 'text' } },
+  get_privacy: { args: {} },
+  set_privacy: {
+    limit: ['rpc_privacy', 3600, 60],
+    args: {
+      is_private: 'boolean', stats_visibility: 'public.visibility_level', exam_visibility: 'public.visibility_level',
+      college_visibility: 'public.visibility_level', name_visibility: 'public.visibility_level',
+      share_activity: 'boolean', discoverable: 'boolean',
+    },
+  },
   // Admin (each checks private.is_admin() itself)
   admin_get_question: { args: { target_question_id: 'uuid' } },
   admin_save_question: {
@@ -79,6 +121,26 @@ export const RPCS = {
   admin_get_contest_results: { admin: true, args: { target_contest_id: 'uuid', page_size: 'integer', page_offset: 'integer' } },
 };
 
+// Community functions stay dark until the player's plan carries the switch (plans.features).
+export const COMMUNITY_FLAG = 'community_follow';
+for (const name of [
+  'follow_user', 'unfollow_user', 'remove_follower', 'respond_follow_request', 'get_follow_requests', 'block_user',
+  'unblock_user', 'get_blocks', 'report_user', 'get_followers', 'get_following', 'search_users', 'get_suggested_users',
+  'get_friend_activity', 'get_privacy', 'set_privacy',
+]) RPCS[name].flag = COMMUNITY_FLAG;
+// The Friends filter is the part of two older functions that belongs to the community feature.
+RPCS.get_leaderboard.flagArgs = { friends_only: COMMUNITY_FLAG };
+RPCS.get_contest_standings.flagArgs = { friends_only: COMMUNITY_FLAG };
+
+/** The plan features a call needs: the function's own flag, plus those of any flagged argument that is set. */
+export function requiredFlags(name, body = {}) {
+  const spec = Object.hasOwn(RPCS, name) ? RPCS[name] : null;
+  if (!spec) return [];
+  const flags = new Set(spec.flag ? [spec.flag] : []);
+  for (const [arg, flag] of Object.entries(spec.flagArgs ?? {})) if (body?.[arg]) flags.add(flag);
+  return [...flags];
+}
+
 // Calls that read or score today's daily set. The player's personal set is made
 // first (once a day, a cheap read after that), so they all see the same set.
 export const DAILY_RPCS = new Set(['get_today_set', 'get_daily_result', 'submit_answer', 'use_hint', 'give_up']);
@@ -99,6 +161,10 @@ export function buildCall(name, body = {}) {
     if (!type) throw badRequest(`Unknown argument ${arg} for ${name}`);
     if (value === undefined) continue;
     if (type.endsWith('[]') && value !== null && !Array.isArray(value)) throw badRequest(`${arg} must be an array`);
+    const pattern = spec.check?.[arg];
+    if (pattern && value !== null && !(typeof value === 'string' && pattern.test(value))) throw badRequest(`${arg} is not valid`);
+    const max = spec.max?.[arg];
+    if (max && value !== null && (typeof value !== 'string' || value.length > max)) throw badRequest(`${arg} must be at most ${max} characters`);
     params.push(type === 'jsonb' && value !== null ? JSON.stringify(value) : value);
     named.push(`${arg} => $${params.length}::${type}`);
   }
@@ -111,7 +177,16 @@ const router = Router();
 
 router.post('/:name', requireUser, async (req, res) => {
   const { text, params, shape } = buildCall(req.params.name, req.body ?? {});
-  if (RPCS[req.params.name].admin) await requireAdmin(req, res, () => {});
+  const { admin, limit } = RPCS[req.params.name];
+  const flags = requiredFlags(req.params.name, req.body);
+  if (flags.length) {
+    const ent = await getEntitlements(req.user.id);
+    if (!flags.every((f) => hasFeature(ent, f))) {
+      throw new HttpError(403, 'feature_disabled', 'This feature is not available to you yet.', { feature: flags[0] });
+    }
+  }
+  if (admin) await requireAdmin(req, res, () => {});
+  if (limit) await hit(limit[0], req.user.id, limit[1], limit[2]);
   // A past set (get_daily_result with target_set_id) needs no new set; context 'practice' neither.
   const past = req.params.name === 'get_daily_result' && req.body?.target_set_id;
   if (DAILY_RPCS.has(req.params.name) && !past && req.body?.context !== 'practice') {

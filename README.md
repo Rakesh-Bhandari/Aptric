@@ -91,7 +91,7 @@ Section → topic → subtopic with mastery stars, search, preferred difficulty 
 <td valign="top">
 
 #### ⚔️ Compete
-Weekly leagues (Bronze → Diamond, standings refresh every 20 s), weekly / all-time / rating leaderboards and live contests.
+Weekly leagues (Bronze → Diamond, standings refresh every 20 s), weekly / all-time / rating leaderboards and live contests. With [Community](#-community--safety) on, follow friends and filter boards and contest standings to them.
 
 </td>
 </tr>
@@ -320,6 +320,17 @@ update public.profiles set role = 'admin' where handle = '<your-handle>';
 </details>
 
 <img src=".github/readme/divider.svg" width="100%" alt="">
+
+## 🤝 Community & safety
+
+Aptric's social layer exists to keep learners accountable to each other, not to be a social network: everything is tied to practice, and it ships dark (`plans.features.community_follow`, see `backend/README.md`) so it can open for a pilot college first.
+
+- **Follow, don't friend-request.** Following is one-way; friends are people who follow each other. Private accounts approve followers, and a declined request is silent. Lists of a private account are for its followers only.
+- **Privacy defaults.** A profile shows handle, avatar, level, league, streak and rating. Accuracy is for followers, the exam target and college are for nobody, and your name appears in search and lists only if you allow it (Settings → Privacy and friends). You can leave search and the activity feed.
+- **Search finds handles only**: never an email address or a real name, 30 searches a minute, and players who opted out are not listed.
+- **Activity is facts, not text.** The friends feed only shows things that happened ("finished today's set (9/10)", "reached Gold league", "7-day streak") for 14 days; nobody can write into it.
+- **Blocking** removes follows both ways and hides each of you from the other everywhere (search, lists, leaderboards, league, standings); a blocked player cannot tell they were blocked. **Reporting** a person files a report that only admins can read (never shown to the reported player); the admin queue for them arrives with the posts slice.
+- **The 48-hour rule, challenges, private leagues and hosted contests** arrive in the next slices of this feature; their rules are in the same section when they ship.
 
 ## 🧪 Tests and checks
 

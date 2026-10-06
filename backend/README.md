@@ -113,7 +113,8 @@ All bodies are JSON. Errors are `{ "error": { "code", "message", ... } }`; datab
 | `POST /reports`, `POST /feedback` | user | report a question / send feedback |
 | `GET` / `PATCH /me/preferences` | user | topics the daily set leans towards (`preferred_topic_ids`) and never uses unless nothing else is left (`excluded_topic_ids`); `PATCH` replaces both lists and rebuilds today's set if it has not been started |
 | `GET /catalog/exam-tags`, `GET /catalog/levels`, `GET /catalog/topics` | user | small catalogs (topics: active ones with published questions, by section) |
-| `GET /push/config`, `POST /push/subscribe`, `POST /push/unsubscribe`, `PATCH /push/preferences`, `POST /push/test` | user | [Web Push](#push-notifications): the VAPID public key and the player's switches, register / remove this browser, change `daily` / `streak` / `contests` / `league` (booleans), send a test (10 an hour) |
+| `GET /push/config`, `POST /push/subscribe`, `POST /push/unsubscribe`, `PATCH /push/preferences`, `POST /push/test` | user | [Web Push](#push-notifications): the VAPID public key and the player's switches, register / remove this browser, change `daily` / `streak` / `contests` / `league` / `social` (booleans), send a test (10 an hour) |
+| `POST /rpc/<community function>` | user + plan feature | Follow / friends ([Community](#community)): `follow_user`, `unfollow_user`, `remove_follower`, `respond_follow_request`, `get_follow_requests`, `block_user`, `unblock_user`, `get_blocks`, `report_user`, `get_followers`, `get_following`, `search_users`, `get_suggested_users`, `get_friend_activity`, `get_privacy`, `set_privacy`; plus the `friends_only` argument of `get_leaderboard` / `get_contest_standings`. 403 `feature_disabled` unless the player's plan has `community_follow` |
 | `GET /cron/push` | `CRON_SECRET` | sends the notifications that are due; called hourly by a scheduler (GitHub Actions workflow) |
 | `GET /questions/:id/subtopic` | user | subtopic of a question the user can see |
 | `POST /tutor/chat` | user | one Aptric Tutor turn, streamed as server-sent events (see [Aptric Tutor](#aptric-tutor)) |
@@ -141,9 +142,19 @@ backend/
 └── vercel.json
 ```
 
+## Community
+
+Slice 1: follow / friends (`supabase/migrations/20261012000001_follow_friends.sql`). The API stays a thin gateway: every rule (blocks, privacy, caps, paging) is in the SQL functions, which all start with `private.require_uid()` and answer "user not found" identically for a missing user, a banned user and a block in either direction.
+
+- **Dark by default.** `src/routes/rpc.js` refuses the community calls (403 `feature_disabled`) unless the player's plan has `community_follow` in `plans.features`, and the app hides the screens. Turn it on for everyone with `update public.plans set features = features || '{"community_follow": true}';`, or for a pilot college by granting the `pilot` plan: `insert into public.subscriptions (user_id, plan_id, status, provider) select id, 'pilot', 'active', 'manual' from public.profiles where ...;` (entitlements are cached for 60 s).
+- **Limits.** Following up to 1,000 people; 60 follows / unfollows an hour and 300 a day; 100 pending requests; 30 searches a minute; 100 blocks a day; 10 user reports a day. Each community call also has a flood limit in `RPCS[...].limit` (`hit()`), and a SQL limit raises `RL429`, which the API answers as 429 `over_request_rate_limit` with `Retry-After`. Reaching a cap is `54000` (409).
+- **Argument checks.** `RPCS[...].check` / `.max` validate handles, search terms, cursors and report reasons before any SQL runs.
+- **Paging.** Lists are cursor-paged (`"<timestamptz>|<id>"`, 30 per page; search and the feed 20) and the page size is fixed server-side.
+- **Cleanup.** Activity events older than 14 days are never returned and are deleted daily by the pg_cron job `aptric-friend-events-prune`.
+
 ## Push notifications
 
-Web Push (VAPID) to browsers that opted in under **Settings → Notifications**; the frontend's `public/sw.js` shows them and opens the right page on click. Four kinds, each its own switch:
+Web Push (VAPID) to browsers that opted in under **Settings → Notifications**; the frontend's `public/sw.js` shows them and opens the right page on click. Five kinds, each its own switch:
 
 | Kind | When | Sent to |
 | --- | --- | --- |
@@ -151,6 +162,7 @@ Web Push (VAPID) to browsers that opted in under **Settings → Notifications**;
 | `streak` | 20:00-21:00 local time | players with a live streak (played yesterday) and nothing yet today |
 | `contests` | within an hour of a published contest starting; within 3 hours of it ending | everyone opted in (start); players who entered (results, with their rank) |
 | `league` | within 3 hours of the weekly rollover | league members: promoted, stayed or demoted |
+| `social` | within 3 hours of a follow, a follow request, or an accepted request | the followed player / the requested player / the requester. One notification per (recipient, person), ever: follow / unfollow / follow-back loops cannot repeat it. Follows that came from an approved request are not announced to the approver |
 
 **Setup**
 

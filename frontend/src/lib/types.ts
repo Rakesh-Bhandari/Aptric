@@ -168,6 +168,8 @@ export interface LeaderboardEntry {
   current_streak: number;
   league_tier: number;
   is_me?: boolean;
+  /** Whether you follow this player (the Follow button). */
+  following?: boolean;
 }
 
 export interface Leaderboard {
@@ -198,11 +200,19 @@ export interface PlayerProfile {
   max_streak_freezes: number | null;
   next_freeze_xp: number | null;
   league_tier: { tier: number; slug: string; name: string } | null;
-  solved: number;
-  attempts: number;
-  correct: number;
+  /** null when the player's accuracy is hidden from you (stats_hidden). */
+  solved: number | null;
+  attempts: number | null;
+  correct: number | null;
   sections: { name: string; attempted: number; correct: number }[];
   badges: Badge[];
+  stats_hidden: boolean;
+  /** Only when the player lets you see their exam target. */
+  exam_goal: string | null;
+  is_private: boolean;
+  follower_count: number;
+  following_count: number;
+  relationship: Relationship;
 }
 
 export interface PlacementStart {
@@ -358,12 +368,14 @@ export interface ContestStanding {
   answered: number;
   time_ms: number;
   is_me: boolean;
+  /** Whether you follow this player. */
+  following?: boolean;
 }
 
 export interface ContestStandings {
   total: number;
   entries: ContestStanding[];
-  me: Omit<ContestStanding, 'user_id' | 'handle' | 'display_name' | 'avatar_url' | 'is_me'> | null;
+  me: Omit<ContestStanding, 'user_id' | 'handle' | 'display_name' | 'avatar_url' | 'is_me' | 'following'> | null;
 }
 
 export interface ExamTag {
@@ -412,3 +424,77 @@ export interface Entitlements {
   /** Free plans show ads; paid plans don't. */
   show_ads: boolean;
 }
+
+// Community: follow / friends ------------------------------------------------
+
+export type VisibilityLevel = 'everyone' | 'followers' | 'friends' | 'nobody';
+
+/** How the signed-in player relates to someone else. */
+export interface Relationship {
+  is_me: boolean;
+  following: boolean;
+  followed_by: boolean;
+  /** Mutual follows. */
+  friend: boolean;
+  /** A follow request is waiting (or was declined, which reads the same). */
+  requested: boolean;
+}
+
+/** The small public card used by search, follower lists and the activity feed. */
+export interface UserCard {
+  handle: string;
+  /** Only when the player chose to show their name. */
+  display_name: string | null;
+  avatar_url: string | null;
+  level: number;
+  current_streak: number;
+  is_private: boolean;
+  league_tier: { tier: number; slug: string; name: string } | null;
+  relationship: Relationship;
+}
+
+export interface UserPage {
+  restricted?: boolean;
+  items: UserCard[];
+  next_cursor: string | null;
+}
+
+export interface FollowRequest extends UserCard {
+  id: string;
+  requested_at: string;
+}
+
+export type FollowStatus = 'following' | 'requested' | 'none';
+
+export type ActivityKind = 'daily_set' | 'league_up' | 'streak' | 'challenge_won';
+
+export interface ActivityItem {
+  id: number;
+  kind: ActivityKind;
+  data: Record<string, unknown>;
+  created_at: string;
+  user: UserCard;
+}
+
+export interface ActivityPage {
+  items: ActivityItem[];
+  next_cursor: string | null;
+}
+
+export interface BlockedUser {
+  handle: string;
+  avatar_url: string | null;
+  blocked_at: string;
+}
+
+export interface Privacy {
+  is_private: boolean;
+  stats_visibility: VisibilityLevel;
+  exam_visibility: VisibilityLevel;
+  college_visibility: VisibilityLevel;
+  name_visibility: VisibilityLevel;
+  share_activity: boolean;
+  discoverable: boolean;
+}
+
+export type UserReportReason = 'spam' | 'abuse' | 'impersonation' | 'personal_info' | 'other';

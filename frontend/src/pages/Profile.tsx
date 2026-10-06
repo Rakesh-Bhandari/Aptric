@@ -1,7 +1,9 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Calendar, CheckCheck, Flame, Settings, Share2, Sparkles, Target, Trophy } from 'lucide-react';
+import { Calendar, CheckCheck, Flame, Lock, Settings, Share2, Sparkles, Target, Trophy } from 'lucide-react';
 import { AptricLogo } from '@/components/brand';
+import { FollowButton } from '@/components/community/FollowButton';
+import { ProfileMenu } from '@/components/community/ProfileMenu';
 import { TierEmblem } from '@/components/compete/TierEmblem';
 import { BadgeGrid } from '@/components/profile/BadgeGrid';
 import { NotFound } from '@/components/layout/ErrorBoundary';
@@ -16,8 +18,8 @@ import { ErrorState } from '@/components/ui/states';
 import { useToast } from '@/context/ToastContext';
 import { errorCode } from '@/lib/errors';
 import { displayName, formatPercent, formatRelative, plural } from '@/lib/format';
-import { usePlayer } from '@/lib/queries';
-import { SETTINGS_PATH } from '@/lib/routes';
+import { useCommunityEnabled, usePlayer } from '@/lib/queries';
+import { followListHref, FRIENDS_PATH, SETTINGS_PATH } from '@/lib/routes';
 import type { PlayerProfile } from '@/lib/types';
 
 
@@ -28,7 +30,23 @@ const Chip = ({ variant, children }: { variant: BadgeProps['variant']; children:
   <Badge variant={variant} className="gap-1.5 px-3 py-1">{children}</Badge>
 );
 
-const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) => {
+/** "12 followers · 8 following", linking to the lists (own lists live on /friends). */
+const FollowCounts = ({ p }: { p: PlayerProfile }) => {
+  if (!p.handle) return null;
+  const link = 'rounded-md font-semibold text-heading underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring';
+  return (
+    <p className="flex flex-wrap justify-center gap-x-4 text-sm text-muted-foreground sm:justify-start">
+      <Link className={link} to={p.is_me ? `${FRIENDS_PATH}?tab=followers` : followListHref(p.handle, 'followers')}>
+        {plural(p.follower_count, 'follower')}
+      </Link>
+      <Link className={link} to={p.is_me ? `${FRIENDS_PATH}?tab=following` : followListHref(p.handle, 'following')}>
+        {p.following_count.toLocaleString()} following
+      </Link>
+    </p>
+  );
+};
+
+const ProfileHeader = ({ p, action, community = false }: { p: PlayerProfile; action?: ReactNode; community?: boolean }) => {
   const into = p.xp - p.level_xp;
   const span = Math.max(1, p.next_level_xp - p.level_xp);
   return (
@@ -61,7 +79,9 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
             )}
             <Chip variant="blue"><Flame aria-hidden className="text-streak" /> {p.current_streak}-day streak</Chip>
             <Chip variant="muted"><Calendar aria-hidden /> Joined {formatRelative(p.joined_at)}</Chip>
+            {community && p.is_private && <Chip variant="muted"><Lock aria-hidden /> Private account</Chip>}
           </div>
+          {community && <div className="mt-3"><FollowCounts p={p} /></div>}
           <div className="mt-5 space-y-1.5">
             <div className="flex justify-between text-sm">
               <span className="font-semibold text-heading">Level {p.level}</span>
@@ -73,8 +93,14 @@ const ProfileHeader = ({ p, action }: { p: PlayerProfile; action?: ReactNode }) 
       </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile icon={<CheckCheck />} tone="blue" label="Solved" value={p.solved.toLocaleString()} hint={plural(p.attempts, 'attempt')} />
-        <StatTile icon={<Target />} tone="blue" label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
+        <StatTile
+          icon={<CheckCheck />} tone="blue" label="Solved" value={p.stats_hidden ? '–' : (p.solved ?? 0).toLocaleString()}
+          hint={p.stats_hidden ? 'Hidden by this player' : plural(p.attempts ?? 0, 'attempt')}
+        />
+        <StatTile
+          icon={<Target />} tone="blue" label="Accuracy" value={p.stats_hidden ? '–' : formatPercent(p.correct ?? 0, p.attempts ?? 0)}
+          hint={p.stats_hidden ? 'Hidden by this player' : `${(p.correct ?? 0).toLocaleString()} correct`}
+        />
         <StatTile icon={<Flame />} tone="violet" label="Best streak" value={plural(p.longest_streak, 'day')} hint={`Now ${p.current_streak}`} />
         <StatTile icon={<Trophy />} tone="violet" label="Rating" value={p.rating} hint={plural(p.rated_sets, 'rated set')} />
       </div>
@@ -159,11 +185,12 @@ const HeaderSkeleton = () => (
 /** /profile: your identity and achievements. Settings live at /settings. */
 const Profile = () => {
   const player = usePlayer(null);
+  const community = useCommunityEnabled();
 
   return (
     <Page className="max-w-3xl space-y-6">
       {player.isError ? <ErrorState error={player.error} onRetry={() => void player.refetch()} />
-        : player.data ? <ProfileHeader p={player.data} action={<SettingsLink />} /> : <HeaderSkeleton />}
+        : player.data ? <ProfileHeader p={player.data} community={community} action={<SettingsLink />} /> : <HeaderSkeleton />}
       {player.data && <ShareCard p={player.data} />}
     </Page>
   );
@@ -174,6 +201,7 @@ export const PublicProfile = () => {
   const { handle = '' } = useParams();
   const player = usePlayer(handle.toLowerCase());
   const isMe = useMemo(() => player.data?.is_me, [player.data]);
+  const community = useCommunityEnabled();
   if (player.isError) {
     if (errorCode(player.error) === 'P0002') return <NotFound title="Player not found" message={`There's no player called @${handle}.`} />;
     return <Page><ErrorState error={player.error} onRetry={() => void player.refetch()} /></Page>;
@@ -181,7 +209,19 @@ export const PublicProfile = () => {
   return (
     <Page className="max-w-3xl space-y-4">
       {player.data
-        ? <ProfileHeader p={player.data} action={isMe && <Button variant="outline" size="sm" asChild><Link to={SETTINGS_PATH}>Edit your profile</Link></Button>} />
+        ? (
+          <ProfileHeader
+            p={player.data} community={community}
+            action={isMe
+              ? <Button variant="outline" size="sm" asChild><Link to={SETTINGS_PATH}>Edit your profile</Link></Button>
+              : community && player.data.handle && (
+                <span className="inline-flex items-center gap-1">
+                  <FollowButton handle={player.data.handle} relationship={player.data.relationship} isPrivate={player.data.is_private} />
+                  <ProfileMenu handle={player.data.handle} />
+                </span>
+              )}
+          />
+        )
         : <HeaderSkeleton />}
     </Page>
   );

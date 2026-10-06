@@ -1,6 +1,7 @@
 import type { Database } from '@db/database.types';
 import { api } from './http';
 import type {
+  ActivityPage, BlockedUser, FollowRequest, FollowStatus, Privacy, UserPage, UserReportReason, VisibilityLevel,
   Activity, AnswerResult, AttemptContext, Board, CatalogTopic, ContestAnswerResult, ContestDetail, ContestStandings,
   ContestSummary, ContestViolation, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
   PlacementAnswer, PlacementResult, PlacementStart, PlayerProfile, PracticeBatch, PracticeMode, Profile,
@@ -57,8 +58,8 @@ export const finishPlacement = (testId: string, answers: PlacementAnswer[]) =>
 
 // Standings ------------------------------------------------------------------
 export const getMyLeague = () => rpc<MyLeague>('get_my_league');
-export const getLeaderboard = (board: Board, pageSize = 50, offset = 0) =>
-  rpc<Leaderboard>('get_leaderboard', { board, page_size: pageSize, page_offset: offset });
+export const getLeaderboard = (board: Board, pageSize = 50, offset = 0, friendsOnly = false) =>
+  rpc<Leaderboard>('get_leaderboard', { board, page_size: pageSize, page_offset: offset, friends_only: friendsOnly || undefined });
 export const getPlayerProfile = (handle: string | null = null) =>
   rpc<PlayerProfile>('get_player_profile', handle ? { target_handle: handle } : {});
 
@@ -73,8 +74,36 @@ export const submitContestAnswer = (p: { contestId: string; questionId: string; 
 /** Closes the attempt (idempotent): the first call records the reason, later ones change nothing. */
 export const finishContest = (contestId: string, violation?: ContestViolation) =>
   rpc<ContestSummary>('finish_contest', { contest_id: contestId, violation });
-export const getContestStandings = (id: string, pageSize = 50, offset = 0) =>
-  rpc<ContestStandings>('get_contest_standings', { contest_id: id, page_size: pageSize, page_offset: offset });
+export const getContestStandings = (id: string, pageSize = 50, offset = 0, friendsOnly = false) =>
+  rpc<ContestStandings>('get_contest_standings', {
+    contest_id: id, page_size: pageSize, page_offset: offset, friends_only: friendsOnly || undefined,
+  });
+
+// Community: follow / friends --------------------------------------------------
+export const followUser = (handle: string) => rpc<{ status: FollowStatus }>('follow_user', { target_handle: handle });
+export const unfollowUser = (handle: string) => rpc<{ status: FollowStatus }>('unfollow_user', { target_handle: handle });
+export const removeFollower = (handle: string) => rpc<{ status: 'removed' }>('remove_follower', { target_handle: handle });
+export const respondFollowRequest = (id: string, accept: boolean) =>
+  rpc<{ status: 'accepted' | 'declined' }>('respond_follow_request', { request_id: id, accept });
+export const getFollowRequests = () => rpc<{ items: FollowRequest[] }>('get_follow_requests');
+export const blockUser = (handle: string) => rpc<{ blocked: true }>('block_user', { target_handle: handle });
+export const unblockUser = (handle: string) => rpc<{ blocked: false }>('unblock_user', { target_handle: handle });
+export const getBlocks = () => rpc<{ items: BlockedUser[] }>('get_blocks');
+export const reportUser = (handle: string, reason: UserReportReason, details?: string) =>
+  rpc<{ ok: true }>('report_user', { target_handle: handle, reason, details: details?.trim() || undefined });
+export const getFollowers = (handle: string, cursor: string | null = null) =>
+  rpc<UserPage>('get_followers', { target_handle: handle, cursor: cursor ?? undefined });
+export const getFollowing = (handle: string, cursor: string | null = null) =>
+  rpc<UserPage>('get_following', { target_handle: handle, cursor: cursor ?? undefined });
+export const searchUsers = (q: string, cursor: string | null = null) =>
+  rpc<UserPage>('search_users', { q, cursor: cursor ?? undefined });
+export const getSuggestedUsers = () => rpc<{ items: UserPage['items'] }>('get_suggested_users');
+export const getFriendActivity = (cursor: string | null = null) =>
+  rpc<ActivityPage>('get_friend_activity', { cursor: cursor ?? undefined });
+export const getPrivacy = () => rpc<Privacy>('get_privacy');
+export const setPrivacy = (patch: Partial<Privacy>) =>
+  rpc<Privacy>('set_privacy', patch as Functions['set_privacy']['Args']);
+export type { VisibilityLevel };
 
 // Profile and settings -------------------------------------------------------
 export const fetchProfile = (): Promise<Profile> => api<Profile>('GET', '/me/profile');
@@ -99,7 +128,7 @@ export const getTopicPreferences = () => api<TopicPreferences>('GET', '/me/prefe
 export const saveTopicPreferences = (prefs: TopicPreferences) => api<TopicPreferences>('PATCH', '/me/preferences', prefs);
 
 // Push notifications ---------------------------------------------------------
-export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean };
+export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean; social: boolean };
 export type PushConfig = { enabled: boolean; publicKey: string | null; preferences: PushPreferences };
 export type PushSubscriptionJSON = { endpoint: string; keys: { p256dh: string; auth: string } };
 

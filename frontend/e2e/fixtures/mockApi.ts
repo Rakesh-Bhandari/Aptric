@@ -17,6 +17,8 @@ export interface MockOptions {
   hang?: boolean;
   /** Your rank in the weekly league (1–3 promotion, 10–12 demotion; default 4). */
   leagueRank?: number;
+  /** Turns on the follow / friends feature (plans.features.community_follow). */
+  community?: boolean;
   /** Fields merged into the signed-in profile (e.g. onboarded_at: null for onboarding). */
   profile?: Record<string, unknown>;
 }
@@ -47,7 +49,21 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
       case 'get_today_set': return d.todaySet(opts.answered ?? 4);
       case 'get_daily_result': return d.dailyResult();
       case 'get_my_league': return d.myLeague(opts.leagueRank);
-      case 'get_leaderboard': return d.leaderboard(String(body.board ?? 'weekly'));
+      case 'get_leaderboard': {
+        const board = d.leaderboard(String(body.board ?? 'weekly'));
+        return body.friends_only
+          ? { ...board, total: 2, entries: board.entries.filter((e) => e.is_me || e.following).map((e, i) => ({ ...e, rank: i + 1 })) }
+          : board;
+      }
+      case 'get_follow_requests': return { items: [] };
+      case 'get_followers': return d.followingPage();
+      case 'get_following': return d.followingPage();
+      case 'get_friend_activity': return d.friendActivity();
+      case 'get_suggested_users': return { items: [d.userCard('kabir_r')] };
+      case 'search_users': return { items: [d.userCard('asha_k')], next_cursor: null };
+      case 'get_blocks': return { items: [] };
+      case 'get_privacy':
+        return { is_private: false, stats_visibility: 'followers', exam_visibility: 'nobody', college_visibility: 'nobody', name_visibility: 'nobody', share_activity: true, discoverable: true };
       case 'get_player_profile': return d.playerProfile((body.target_handle as string) ?? null);
       case 'get_practice_tree': return d.practiceTree();
       case 'get_practice_questions': return { mode: body.mode ?? 'normal', subtopics: [{ id: 'st000', name: 'Basics' }], questions: Array.from({ length: 10 }, (_, i) => d.questionCard(i)) };
@@ -66,6 +82,10 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
     }
   }
 
+  if (p === '/me/entitlements') {
+    return { plan: 'free', name: 'Free', features: { ads: true, community_follow: opts.community === true }, limits: {}, show_ads: true };
+  }
+  if (p === '/push/config') return { enabled: false, publicKey: null, preferences: { daily: true, streak: true, contests: true, league: true, social: true } };
   if (p === '/tutor/history') return { available: true, messages: [] };
   if (p === '/me/profile') return method === 'PATCH' ? { ...d.profile(opts.profile), ...body } : d.profile(opts.profile);
   if (p === '/me/placement') return { completed_at: d.FIXED_NOW.toISOString(), placed_level: 3, correct: 7, score: 70 };

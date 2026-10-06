@@ -20,6 +20,9 @@ const Practice = lazy(() => import('@/pages/Practice'));
 const Compete = lazy(() => import('@/pages/Compete'));
 const ContestPage = lazy(() => import('@/pages/ContestPage'));
 const Progress = lazy(() => import('@/pages/Progress'));
+const Friends = lazy(() => import('@/pages/Friends'));
+const FollowersPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="followers" /> })));
+const FollowingPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="following" /> })));
 const Profile = lazy(() => import('@/pages/Profile'));
 const PublicProfile = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.PublicProfile })));
 const Settings = lazy(() => import('@/pages/Settings'));
@@ -92,6 +95,9 @@ const router = createBrowserRouter([
               { path: 'profile', element: <Profile /> },
               { path: 'settings', element: <Settings /> },
               { path: 'u/:handle', element: <PublicProfile /> },
+              { path: 'u/:handle/followers', element: <FollowersPage /> },
+              { path: 'u/:handle/following', element: <FollowingPage /> },
+              { path: 'friends', element: <Friends /> },
               { path: 'session/summary', element: <SessionSummary /> },
               { path: 'leaderboard', element: <Navigate to="/compete?tab=leaderboards" replace /> },
               { path: 'topics', element: <Navigate to="/practice" replace /> },

@@ -219,6 +219,14 @@ Grounding and chat log for the AI tutor in the API ([backend/README.md](../backe
 
 Three tables in `private` (no access for anon/authenticated; only the API's secret key reads them): `push_subscriptions` (one row per browser endpoint, with its keys), `push_preferences` (the `daily` / `streak` / `contests` / `league` switches; no row means all on) and `push_log` (one row per notification sent, keyed `(user_id, dedupe_key)` so a send is claimed once). The sending is in the API (`backend/src/push`), not pg_cron, because it calls out to the browsers' push services.
 
+## Community: follow / friends (`20261012000001_follow_friends.sql`)
+
+`follows` (asymmetric; friends are mutual follows), `follow_requests` (for `profiles.is_private` accounts: pending, accepted, declined), `blocks`, `profile_privacy` (per field group: `stats_visibility`, `exam_visibility`, `college_visibility`, `name_visibility` as `everyone | followers | friends | nobody`, plus the `share_activity` and `discoverable` opt-outs), `friend_events` (the activity feed: `daily_set`, `league_up`, `streak`, `challenge_won`, facts only, written by triggers on `xp_events` / `profiles`, 14-day window, pruned by the `aptric-friend-events-prune` job) and `user_reports`.
+
+RLS is on for every table and nobody gets write grants: all writes go through `SECURITY DEFINER` functions (`follow_user`, `unfollow_user`, `remove_follower`, `respond_follow_request`, `block_user`, `unblock_user`, `report_user`, `set_privacy`). Reads: your own follow edges and requests, only the blocks you made (the blocked player learns nothing), your own privacy row, activity events of people you follow (not opted out, not blocked, last 14 days), reports for admins. `get_followers`, `get_following`, `search_users`, `get_suggested_users`, `get_friend_activity`, `get_privacy` and the wrapped `get_player_profile` (the original is `private.player_profile_base`) apply the same rules; `get_leaderboard`, `get_my_league` and `get_contest_standings` leave out blocked players, and the first and last take `friends_only`.
+
+The slice ships dark behind `plans.features.community_follow`; a `pilot` plan carries it for pilot groups (see `backend/README.md`, Community). `private.push_preferences.social` is the new notification switch.
+
 ## Admin area
 
 `frontend/src/admin` (`/admin/*`, lists and searches through the API's `/admin/*` routes), for `profiles.role = 'admin'` only. The UI's role check is cosmetic: reads go through RLS and writes through RLS or the `admin_*` functions (`20261001000013_admin.sql`), which check `private.is_admin()` themselves. Every write lands in `audit_log`.

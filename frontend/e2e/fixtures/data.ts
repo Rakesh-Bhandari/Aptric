@@ -148,7 +148,7 @@ export const leaderboard = (board: string) => {
   const entries = NAMES.map((n, i) => ({
     rank: i + 1, user_id: n === 'Priya Sharma' ? ME : `u${i}`, handle: handleOf(n), display_name: n, avatar_url: null,
     level: 9 - Math.floor(i / 2), xp: 15_400 - i * 900, weekly_xp: 980 - i * 63, rating: 1620 - i * 31,
-    current_streak: 30 - i * 2, league_tier: 5 - Math.floor(i / 3), is_me: n === 'Priya Sharma',
+    current_streak: 30 - i * 2, league_tier: 5 - Math.floor(i / 3), is_me: n === 'Priya Sharma', following: i === 1,
   }));
   return { board, refreshed_at: iso(-0.2), total: 2_431, entries, me: entries[3] };
 };
@@ -189,6 +189,39 @@ export const playerProfile = (handle: string | null) => ({
     { name: 'Verbal Ability', attempted: 68, correct: 44 },
   ],
   badges,
+  stats_hidden: false,
+  exam_goal: null,
+  is_private: false,
+  follower_count: 18,
+  following_count: 24,
+  relationship: { is_me: !handle || handle === 'priya_s', following: false, followed_by: true, friend: false, requested: false },
+});
+
+// Community: follow / friends ----------------------------------------------------
+
+export const relationship = (over: Record<string, boolean> = {}) => ({
+  is_me: false, following: false, followed_by: false, friend: false, requested: false, ...over,
+});
+
+export const userCard = (handle: string, over: Record<string, unknown> = {}) => ({
+  handle, display_name: null, avatar_url: null, level: 4, current_streak: 6, is_private: false,
+  league_tier: { tier: 3, slug: 'gold', name: 'Gold' }, relationship: relationship(), ...over,
+});
+
+export const followingPage = () => ({
+  restricted: false,
+  items: [userCard('aarav_meht', { relationship: relationship({ following: true, followed_by: true, friend: true }) }),
+    userCard('diya_n', { relationship: relationship({ following: true }) })],
+  next_cursor: null,
+});
+
+export const friendActivity = () => ({
+  items: [
+    { id: 3, kind: 'daily_set', data: { correct: 9, total: 10 }, created_at: iso(-1), user: userCard('aarav_meht', { relationship: relationship({ following: true }) }) },
+    { id: 2, kind: 'streak', data: { days: 7 }, created_at: iso(-5), user: userCard('diya_n', { relationship: relationship({ following: true }) }) },
+    { id: 1, kind: 'league_up', data: { tier: 3, slug: 'gold', name: 'Gold' }, created_at: iso(-30), user: userCard('aarav_meht', { relationship: relationship({ following: true }) }) },
+  ],
+  next_cursor: null,
 });
 
 const node = (id: string, name: string, available: number, attempted: number, correct: number, stars: number) =>

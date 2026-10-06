@@ -39,6 +39,17 @@ export function messageFor(type, data = {}) {
         tag: 'league',
       };
     }
+    case 'follow':
+      return { title: `@${data.handle} followed you`, body: 'See their profile and follow back if you like.', url: `/u/${data.handle}`, tag: `follow-${data.handle}` };
+    case 'follow_request':
+      return {
+        title: `@${data.handle} asked to follow you`,
+        body: 'Approve or decline the request.',
+        url: '/friends?tab=requests',
+        tag: `follow-request-${data.handle}`,
+      };
+    case 'follow_accepted':
+      return { title: `@${data.handle} accepted your follow request`, body: 'You can see their activity now.', url: `/u/${data.handle}`, tag: `follow-accepted-${data.handle}` };
     default:
       return null;
   }

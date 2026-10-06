@@ -6,6 +6,8 @@ import { Markdown } from '@/components/markdown/Markdown';
 import { SessionHeader } from '@/components/solve/SessionHeader';
 import { SolveScreen } from '@/components/solve/SolveScreen';
 import { ContestStateBadge } from '@/components/compete/ContestStateBadge';
+import { FollowButton } from '@/components/community/FollowButton';
+import { ScopeSwitch, type Scope } from '@/components/community/ScopeSwitch';
 import { LiveIndicator, PlayerLink, StandingRow } from '@/components/compete/standings';
 import { clearPendingViolation, pendingViolation, setPendingViolation, VIOLATION_TEXT } from '@/components/compete/attempt';
 import { countdownParts, formatSpan, useNow } from '@/components/compete/time';
@@ -18,22 +20,26 @@ import { EmptyState, ErrorState } from '@/components/ui/states';
 import { useToast } from '@/context/ToastContext';
 import { useContestGuard } from '@/hooks/useExamGuard';
 import * as api from '@/lib/api';
+import { entryRelationship } from '@/lib/community';
 import { errorCode, friendlyError } from '@/lib/errors';
 import { displayName, formatClock, formatDateTime, formatRelative, plural } from '@/lib/format';
 import { contestPoints, DIFFICULTY_LABEL, OPTION_LETTERS } from '@/lib/game';
-import { keys, queryClient, useContest, useContestStandings } from '@/lib/queries';
+import { keys, queryClient, useCommunityEnabled, useContest, useContestStandings } from '@/lib/queries';
 import type { ContestDetail, ContestQuestion, ContestViolation } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { fromCard } from './solve/news';
 
 const refresh = (id: string) => Promise.all([
   queryClient.invalidateQueries({ queryKey: keys.contest(id) }),
-  queryClient.invalidateQueries({ queryKey: keys.standings(id) }),
+  queryClient.invalidateQueries({ queryKey: ['contest-standings', id] }),
   queryClient.invalidateQueries({ queryKey: keys.contests }),
 ]);
 
 const Standings = ({ contest }: { contest: ContestDetail }) => {
-  const standings = useContestStandings(contest.id, contest.state === 'live');
+  const community = useCommunityEnabled();
+  const [scope, setScope] = useState<Scope>('all');
+  const friends = community && scope === 'friends';
+  const standings = useContestStandings(contest.id, contest.state === 'live', friends);
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
@@ -42,16 +48,24 @@ const Standings = ({ contest }: { contest: ContestDetail }) => {
           {contest.state === 'live' && <LiveIndicator every="few seconds" />}
         </div>
         <CardDescription>Most points wins; ties go to whoever was faster.</CardDescription>
+        {community && <div><ScopeSwitch label="Who to show" value={scope} onChange={setScope} /></div>}
       </CardHeader>
       {standings.isError && <div className="px-4 pb-4"><ErrorState error={standings.error} onRetry={() => void standings.refetch()} /></div>}
       {!standings.data && !standings.isError && <LoadingRegion className="space-y-2 px-4 pb-4"><Skeleton className="h-14" /><Skeleton className="h-14" /></LoadingRegion>}
-      {standings.data && standings.data.entries.length === 0 && <div className="px-4 pb-5 sm:px-5"><EmptyState icon={<Users />} title="No entries yet">Standings appear once players start answering.</EmptyState></div>}
+      {standings.data && standings.data.entries.length === 0 && (
+        <div className="px-4 pb-5 sm:px-5">
+          {friends
+            ? <EmptyState icon={<Users />} title="None of your friends entered">Follow people from the Friends page to compare with them here.</EmptyState>
+            : <EmptyState icon={<Users />} title="No entries yet">Standings appear once players start answering.</EmptyState>}
+        </div>
+      )}
       {standings.data && standings.data.entries.length > 0 && (
         <ol className="divide-y border-t" aria-label="Contest standings">
           {standings.data.entries.map((e) => (
             <StandingRow key={e.user_id} rank={e.rank} me={e.is_me} player={<PlayerLink handle={e.handle} name={displayName(e)} avatar={e.avatar_url} />}>
               <span className="block font-bold tabular-nums text-heading">{e.score} pts</span>
               <span className="text-xs tabular-nums text-muted-foreground">{e.correct}/{contest.question_count} · {formatClock(e.time_ms)}</span>
+              {community && !e.is_me && e.handle && <span className="mt-1 block"><FollowButton handle={e.handle} relationship={entryRelationship(e)} /></span>}
             </StandingRow>
           ))}
         </ol>

@@ -8,7 +8,7 @@ import { ROUTES } from './fixtures/routes';
 const main = ROUTES.filter((r) => r.main);
 
 test.describe('axe: no serious or critical issues', () => {
-  for (const route of [...main, ...ROUTES.filter((r) => ['contest', 'onboarding', 'admin-review', 'admin-question'].includes(r.name))]) {
+  for (const route of [...main, ...ROUTES.filter((r) => ['contest', 'onboarding', 'admin-review', 'admin-question', 'friends', 'followers', 'public-profile-community', 'compete-friends', 'settings-community'].includes(r.name))]) {
     for (const theme of ['light', 'dark'] as const) {
       test(`${route.name} ${theme}`, async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 });

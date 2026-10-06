@@ -31,6 +31,7 @@ test('validateSubscription wants an allowed endpoint and both keys', () => {
 
 test('validatePushPreferences takes known booleans only', () => {
   assert.deepEqual(validatePushPreferences({ daily: false, league: true }), ['daily', 'league']);
+  assert.deepEqual(validatePushPreferences({ social: false }), ['social']);
   assert.throws(() => validatePushPreferences({}), /Nothing/);
   assert.throws(() => validatePushPreferences({ marketing: true }), /Cannot change marketing/);
   assert.throws(() => validatePushPreferences({ daily: 'no' }), /true or false/);
@@ -54,11 +55,17 @@ test('messageFor words each notification and links into the app', () => {
   assert.equal(messageFor('league', { outcome: 'promoted', tier: 'Gold', final_rank: 2 }).title, 'Promoted to Gold!');
   assert.equal(messageFor('league', { outcome: 'demoted', tier: 'Silver', final_rank: 29 }).title, 'Moved down to Silver');
   assert.equal(messageFor('league', { outcome: null }), null);
+  assert.equal(messageFor('follow', { handle: 'asha' }).url, '/u/asha');
+  assert.equal(messageFor('follow', { handle: 'asha' }).title, '@asha followed you');
+  assert.equal(messageFor('follow_request', { handle: 'asha' }).url, '/friends?tab=requests');
+  assert.equal(messageFor('follow_accepted', { handle: 'asha' }).tag, 'follow-accepted-asha');
   assert.equal(messageFor('nope'), null);
 });
 
 test('every job claims its rows in push_log before returning subscriptions', () => {
-  assert.deepEqual(JOBS.map((j) => j.type), ['daily', 'streak', 'contest_start', 'contest_end', 'league']);
+  assert.deepEqual(JOBS.map((j) => j.type), [
+    'daily', 'streak', 'contest_start', 'contest_end', 'league', 'follow', 'follow_request', 'follow_accepted',
+  ]);
   for (const job of JOBS) {
     assert.match(job.sql, /insert into private\.push_log/);
     assert.match(job.sql, /on conflict do nothing/);

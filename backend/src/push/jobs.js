@@ -94,6 +94,48 @@ export const JOBS = [
       where l.finalized_at > now() - interval '3 hours' and m.outcome is not null
         and ${ELIGIBLE} and ${WANTS('league')}`),
   },
+  // Follows. The dedupe key names the other person, never a date, so follow / unfollow / follow
+  // loops (and follow-back spam) notify once per pair while the log keeps the key (60 days).
+  {
+    type: 'follow',
+    // New followers in the last 3 hours who are still followers. Follows that came from an
+    // approved request are the followee's own doing, so they are skipped.
+    sql: claim(`
+      select f.followee_id as user_id, 'follow:' || f.follower_id as dedupe_key, jsonb_build_object('handle', fp.handle) as data
+      from public.follows f
+      join public.profiles p  on p.id  = f.followee_id
+      join public.profiles fp on fp.id = f.follower_id and fp.banned_at is null
+      where f.created_at > now() - interval '3 hours'
+        and not exists (select 1 from public.follow_requests r
+                        where r.follower_id = f.follower_id and r.followee_id = f.followee_id and r.status = 'accepted')
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker_id = p.id and b.blocked_id = fp.id) or (b.blocker_id = fp.id and b.blocked_id = p.id))
+        and ${ELIGIBLE} and ${WANTS('social')}`),
+  },
+  {
+    type: 'follow_request',
+    sql: claim(`
+      select r.followee_id as user_id, 'follow-request:' || r.follower_id as dedupe_key, jsonb_build_object('handle', fp.handle) as data
+      from public.follow_requests r
+      join public.profiles p  on p.id  = r.followee_id
+      join public.profiles fp on fp.id = r.follower_id and fp.banned_at is null
+      where r.status = 'pending' and r.created_at > now() - interval '3 hours'
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker_id = p.id and b.blocked_id = fp.id) or (b.blocker_id = fp.id and b.blocked_id = p.id))
+        and ${ELIGIBLE} and ${WANTS('social')}`),
+  },
+  {
+    type: 'follow_accepted',
+    // The requester hears about an accepted request, if the follow is still there.
+    sql: claim(`
+      select r.follower_id as user_id, 'follow-accepted:' || r.followee_id as dedupe_key, jsonb_build_object('handle', tp.handle) as data
+      from public.follow_requests r
+      join public.profiles p  on p.id  = r.follower_id
+      join public.profiles tp on tp.id = r.followee_id and tp.banned_at is null
+      where r.status = 'accepted' and r.responded_at > now() - interval '3 hours'
+        and exists (select 1 from public.follows f where f.follower_id = r.follower_id and f.followee_id = r.followee_id)
+        and ${ELIGIBLE} and ${WANTS('social')}`),
+  },
 ];
 
 const CHUNK = 25;

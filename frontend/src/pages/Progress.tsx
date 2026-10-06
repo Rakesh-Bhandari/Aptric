@@ -47,8 +47,8 @@ const Overview = () => {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatTile icon={<CheckCheck />} tone="blue" label="Questions solved" value={p.solved.toLocaleString()} hint={`${plural(p.attempts, 'answer')} in total`} />
-        <StatTile icon={<Target />} tone="blue" label="Accuracy" value={formatPercent(p.correct, p.attempts)} hint={`${p.correct.toLocaleString()} correct`} />
+        <StatTile icon={<CheckCheck />} tone="blue" label="Questions solved" value={(p.solved ?? 0).toLocaleString()} hint={`${plural(p.attempts ?? 0, 'answer')} in total`} />
+        <StatTile icon={<Target />} tone="blue" label="Accuracy" value={formatPercent(p.correct ?? 0, p.attempts ?? 0)} hint={`${(p.correct ?? 0).toLocaleString()} correct`} />
         <StatTile icon={<Flame />} tone="violet" label="Best streak" value={plural(p.longest_streak, 'day')} hint={p.current_streak > 0 ? `Current: ${plural(p.current_streak, 'day')}` : 'Play today to start one'} />
         <StatTile icon={<Sparkles />} tone="violet" label="Level" value={p.level}
           hint={<>Rating <strong className="font-semibold text-foreground">{p.rating}</strong> · {p.rated_sets > 0 ? plural(p.rated_sets, 'rated set') : 'unrated'}</>} />

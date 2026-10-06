@@ -1,12 +1,14 @@
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Check, LifeBuoy, ListFilter, LogOut, MessageSquare, Monitor, Moon, Palette, Settings as SettingsIcon, ShieldAlert, Sun, Target, UserRound } from 'lucide-react';
+import { Bell, Check, LifeBuoy, Lock, ListFilter, LogOut, MessageSquare, Monitor, Moon, Palette, Settings as SettingsIcon, ShieldAlert, Sun, Target, UserRound } from 'lucide-react';
+import { PrivacySettings } from '@/components/community/PrivacySettings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FieldHint, Input, Label, Select, Textarea } from '@/components/ui/input';
 import { Page } from '@/components/ui/page';
+import { SwitchRow } from '@/components/ui/switch-row';
 import { usePreferences, type ThemeSetting } from '@/context/PreferencesContext';
 import { useProfile, useSession } from '@/context/SessionContext';
 import { useToast } from '@/context/ToastContext';
@@ -15,7 +17,7 @@ import { errorCode, friendlyError } from '@/lib/errors';
 import { formatRelative } from '@/lib/format';
 import { DAILY_TARGETS, HANDLE_RE } from '@/lib/game';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '@/lib/push';
-import { keys, queryClient, useExamTags, useLevels, usePushConfig, useTopicPreferences, useTopics } from '@/lib/queries';
+import { keys, queryClient, useCommunityEnabled, useExamTags, useLevels, usePushConfig, useTopicPreferences, useTopics } from '@/lib/queries';
 import type { CatalogTopic } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -390,41 +392,18 @@ const ExamConditionsForm = () => {
   );
 };
 
-/** Label + description on the left, a switch on the right. */
-const SwitchRow = ({ label, hint, checked, disabled, onChange }: {
-  label: string; hint: string; checked: boolean; disabled?: boolean; onChange: (next: boolean) => void;
-}) => {
-  const ids = { label: useId(), hint: useId() };
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/40 p-4">
-      <div className="min-w-0 space-y-0.5">
-        <p id={ids.label} className="text-sm font-semibold text-heading">{label}</p>
-        <p id={ids.hint} className="text-sm text-muted-foreground">{hint}</p>
-      </div>
-      <button
-        type="button" role="switch" aria-checked={checked} aria-labelledby={ids.label} aria-describedby={ids.hint}
-        disabled={disabled} onClick={() => onChange(!checked)}
-        className={cn(
-          'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 before:absolute before:-inset-2 before:content-[""] disabled:opacity-60',
-          checked ? 'bg-primary bg-gradient-primary' : 'bg-input',
-        )}
-      >
-        <span className={cn('inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200', checked ? 'translate-x-6' : 'translate-x-1')} />
-      </button>
-    </div>
-  );
-};
-
 const PUSH_KINDS: { key: keyof api.PushPreferences; label: string; hint: string }[] = [
   { key: 'daily', label: 'Daily set', hint: 'A morning note when your new daily set is ready.' },
   { key: 'streak', label: 'Streak reminders', hint: 'An evening nudge if your streak is about to break.' },
   { key: 'contests', label: 'Contests', hint: 'When a contest is about to start and when its results are in.' },
   { key: 'league', label: 'League results', hint: 'Whether you were promoted or demoted after each week.' },
+  { key: 'social', label: 'Friends', hint: 'New followers, follow requests and accepted requests.' },
 ];
 
 /** Web Push: this browser's on/off switch, then which kinds to receive. */
 const NotificationsForm = () => {
   const config = usePushConfig();
+  const community = useCommunityEnabled();
   const cache = useQueryClient();
   const toast = useToast();
   const [subscribed, setSubscribed] = useState<boolean | null>(null);
@@ -500,7 +479,7 @@ const NotificationsForm = () => {
       />
       {subscribed && (
         <>
-          {PUSH_KINDS.map((k) => (
+          {PUSH_KINDS.filter((k) => community || k.key !== 'social').map((k) => (
             <SwitchRow key={k.key} label={k.label} hint={k.hint} checked={preferences[k.key]} onChange={(v) => void setPreference(k.key, v)} />
           ))}
           <Button type="button" variant="outline" size="sm" loading={busy} onClick={() => void sendTest()}><Bell /> Send a test notification</Button>
@@ -562,6 +541,7 @@ const FeedbackButton = () => {
 /** /settings: profile details, goals, appearance, exam conditions and account actions. */
 const Settings = () => {
   const { signOut } = useSession();
+  const community = useCommunityEnabled();
   return (
     <Page className="max-w-3xl space-y-6">
       <div className="space-y-1">
@@ -573,6 +553,9 @@ const Settings = () => {
       <Section title="Daily topics" description="Choose what your daily challenge leans towards and what it leaves out. Skipped topics are never used unless nothing else is left." icon={<ListFilter />}><TopicsForm /></Section>
       <Section title="Appearance" description="Pick a theme and how much things move." icon={<Palette />}><AppearanceForm /></Section>
       <Section title="Notifications" description="Reminders and results, sent to this device even when Aptric is closed." icon={<Bell />}><NotificationsForm /></Section>
+      {community && (
+        <Section title="Privacy and friends" description="Who can follow you, what they can see, and who you blocked." icon={<Lock />}><PrivacySettings /></Section>
+      )}
       <Section title="Exam conditions" description="How strictly practice mimics a real exam." icon={<ShieldAlert />}><ExamConditionsForm /></Section>
       <Section title="Help and account" description="Tell us what you think, or sign out." icon={<LifeBuoy />}>
         <div className="flex flex-wrap gap-2">

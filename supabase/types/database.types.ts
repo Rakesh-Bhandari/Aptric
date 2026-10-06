@@ -1956,10 +1956,43 @@ export type Database = {
       };
       gen_store_embeddings: { Args: { p_model: string; p_rows: Json }; Returns: number };
       get_activity: { Args: { days?: number }; Returns: Json };
+      block_user: { Args: { target_handle: string }; Returns: Json };
+      follow_user: { Args: { target_handle: string }; Returns: Json };
+      get_blocks: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_follow_requests: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_followers: { Args: { cursor?: string; target_handle: string }; Returns: Json };
+      get_following: { Args: { cursor?: string; target_handle: string }; Returns: Json };
+      get_friend_activity: { Args: { cursor?: string }; Returns: Json };
+      get_privacy: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_suggested_users: { Args: Record<PropertyKey, never>; Returns: Json };
+      remove_follower: { Args: { target_handle: string }; Returns: Json };
+      report_user: { Args: { details?: string; reason: string; target_handle: string }; Returns: Json };
+      respond_follow_request: { Args: { accept: boolean; request_id: string }; Returns: Json };
+      search_users: { Args: { cursor?: string; q: string }; Returns: Json };
+      set_privacy: {
+        Args: {
+          college_visibility?: Database["public"]["Enums"]["visibility_level"];
+          discoverable?: boolean;
+          exam_visibility?: Database["public"]["Enums"]["visibility_level"];
+          is_private?: boolean;
+          name_visibility?: Database["public"]["Enums"]["visibility_level"];
+          share_activity?: boolean;
+          stats_visibility?: Database["public"]["Enums"]["visibility_level"];
+        };
+        Returns: Json;
+      };
+      unblock_user: { Args: { target_handle: string }; Returns: Json };
+      unfollow_user: { Args: { target_handle: string }; Returns: Json };
       get_contest: { Args: { contest_id: string }; Returns: Json };
-      get_contest_standings: { Args: { contest_id: string; page_offset?: number; page_size?: number }; Returns: Json };
+      get_contest_standings: {
+        Args: { contest_id: string; friends_only?: boolean; page_offset?: number; page_size?: number };
+        Returns: Json;
+      };
       get_daily_result: { Args: { target_set_id?: string }; Returns: Json };
-      get_leaderboard: { Args: { board?: string; page_offset?: number; page_size?: number }; Returns: Json };
+      get_leaderboard: {
+        Args: { board?: string; friends_only?: boolean; page_offset?: number; page_size?: number };
+        Returns: Json;
+      };
       get_mistakes: { Args: { page_offset?: number; page_size?: number }; Returns: Json };
       get_my_league: { Args: Record<PropertyKey, never>; Returns: Json };
       get_player_profile: { Args: { target_handle?: string }; Returns: Json };
@@ -2013,6 +2046,7 @@ export type Database = {
       report_status: "open" | "triaged" | "resolved" | "dismissed";
       tag_kind: "exam" | "general";
       user_role: "user" | "admin";
+      visibility_level: "everyone" | "followers" | "friends" | "nobody";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -2134,6 +2168,7 @@ export const Constants = {
       report_status: ["open", "triaged", "resolved", "dismissed"],
       tag_kind: ["exam", "general"],
       user_role: ["user", "admin"],
+      visibility_level: ["everyone", "followers", "friends", "nobody"],
     },
   },
 } as const;

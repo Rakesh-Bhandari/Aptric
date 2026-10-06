@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarClock, ChevronRight, Crown, ListChecks, Medal, Swords, Timer, Trophy, Users } from 'lucide-react';
+import { CalendarClock, ChevronRight, Crown, ListChecks, Medal, Swords, Timer, Trophy, UserPlus, Users } from 'lucide-react';
 import { ContestStateBadge } from '@/components/compete/ContestStateBadge';
+import { FollowButton } from '@/components/community/FollowButton';
+import { ScopeSwitch, type Scope } from '@/components/community/ScopeSwitch';
 import { LiveIndicator, PlayerLink, StandingRow, YouChip, ZoneDivider } from '@/components/compete/standings';
 import { TierEmblem } from '@/components/compete/TierEmblem';
 import { formatCountdown, formatSpan, useNow } from '@/components/compete/time';
@@ -12,9 +14,11 @@ import { Page, PageHeader } from '@/components/ui/page';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { entryRelationship } from '@/lib/community';
 import { displayName, formatDateTime, formatRelative, plural } from '@/lib/format';
 import { leagueZone } from '@/lib/game';
-import { useContests, useLeaderboard, useMyLeague } from '@/lib/queries';
+import { FRIENDS_PATH } from '@/lib/routes';
+import { useCommunityEnabled, useContests, useLeaderboard, useMyLeague } from '@/lib/queries';
 import type { Board, ContestSummary, LeaderboardEntry, MyLeague } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -154,10 +158,13 @@ const BOARDS: { value: Board; label: string; metric: (e: LeaderboardEntry) => st
   { value: 'rating', label: 'Rating', metric: (e) => `${e.rating}` },
 ];
 
-const LeaderboardRow = ({ e, metric }: { e: LeaderboardEntry; metric: string }) => (
+const LeaderboardRow = ({ e, metric, community = false }: { e: LeaderboardEntry; metric: string; community?: boolean }) => (
   <StandingRow rank={e.rank} me={e.is_me} player={<PlayerLink handle={e.handle} name={displayName(e)} avatar={e.avatar_url} showHandle={false} />}>
     <span className="block font-bold tabular-nums text-heading">{metric}</span>
     <span className="text-xs text-muted-foreground">Level {e.level}</span>
+    {community && !e.is_me && e.handle && (
+      <span className="mt-1 block"><FollowButton handle={e.handle} relationship={entryRelationship(e)} /></span>
+    )}
   </StandingRow>
 );
 
@@ -219,10 +226,13 @@ const BoardSwitcher = ({ value, onChange }: { value: Board; onChange: (b: Board)
 
 const LeaderboardsTab = () => {
   const [board, setBoard] = useState<Board>('weekly');
+  const [scope, setScope] = useState<Scope>('all');
   const [pages, setPages] = useState(1);
+  const community = useCommunityEnabled();
+  const friends = community && scope === 'friends';
   const def = BOARDS.find((b) => b.value === board)!;
-  const lb = useLeaderboard(board, 0);
-  const more = useLeaderboard(board, 50);
+  const lb = useLeaderboard(board, 0, friends);
+  const more = useLeaderboard(board, 50, friends);
   const listRef = useRef<HTMLOListElement>(null);
   const [myRowVisible, setMyRowVisible] = useState(false);
 
@@ -247,20 +257,30 @@ const LeaderboardsTab = () => {
 
   return (
     <div className="space-y-4">
-      <BoardSwitcher value={board} onChange={(b) => { setBoard(b); setPages(1); }} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <BoardSwitcher value={board} onChange={(b) => { setBoard(b); setPages(1); }} />
+        {community && <ScopeSwitch label="Who to show" value={scope} onChange={(s) => { setScope(s); setPages(1); }} />}
+      </div>
       {lb.isError && <ErrorState error={lb.error} onRetry={() => void lb.refetch()} />}
       {!lb.data && !lb.isError && <div className="space-y-4"><Skeleton className="h-56 rounded-lg" /><ListSkeleton rows={5} /></div>}
-      {lb.data && entries.length === 0 && (
+      {lb.data && entries.length === 0 && (friends ? (
+        <EmptyState
+          icon={<Users />} title="No friends on this board yet"
+          action={<Button variant="outline" asChild><Link to={FRIENDS_PATH}><UserPlus /> Find people to follow</Link></Button>}
+        >
+          Follow people to compare with them here. You show up too once you earn some XP.
+        </EmptyState>
+      ) : (
         <EmptyState icon={<Medal />} title="No one's on this board yet">Be the first: answer a question to earn XP.</EmptyState>
-      )}
+      ))}
       {lb.data && entries.length > 0 && (
         <>
           {top.length > 0 && <Podium top={top} metric={def.metric} label={`${def.label} leaderboard`} />}
           <Card className="overflow-hidden">
             {(rest.length > 0 || extra.length > 0) && (
               <ol ref={listRef} aria-label={`${def.label} leaderboard`} className="divide-y">
-                {rest.map((e) => <LeaderboardRow key={e.user_id} e={e} metric={def.metric(e)} />)}
-                {extra.map((e) => <LeaderboardRow key={e.user_id} e={e} metric={def.metric(e)} />)}
+                {rest.map((e) => <LeaderboardRow key={e.user_id} e={e} metric={def.metric(e)} community={community} />)}
+                {extra.map((e) => <LeaderboardRow key={e.user_id} e={e} metric={def.metric(e)} community={community} />)}
               </ol>
             )}
             <div className={cn('flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-muted-foreground', (rest.length > 0 || extra.length > 0) && 'border-t')}>

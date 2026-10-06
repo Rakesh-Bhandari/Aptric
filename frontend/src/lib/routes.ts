@@ -12,3 +12,9 @@ export const practiceHref = (p: { subtopics?: string[]; difficulty?: Difficulty 
 
 /** Account and preferences page. */
 export const SETTINGS_PATH = '/settings';
+
+/** Friends: activity, following, followers and follow requests. */
+export const FRIENDS_PATH = '/friends';
+
+/** Someone's followers or the people they follow. */
+export const followListHref = (handle: string, list: 'followers' | 'following') => `/u/${handle}/${list}`;
