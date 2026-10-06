@@ -54,7 +54,7 @@ Legend: ✅ fixed in this change · 🔴 high · 🟠 medium · 🟡 low.
 | # | Area | Finding | Impact | Status |
 |---|------|---------|--------|--------|
 | B1 | Backend | Pre-registration takeover (S1). | Security | ✅ |
-| B2 | Backend | **Midnight stampede.** `ensurePersonalSet` runs on first daily call and loads the *entire* published-question pool into Node (`POOL_SQL`, no limit) plus 3 more queries. Your users are mostly in one timezone, so thousands hit this at the same minute. | Timeouts / 5xx at exactly the busiest moment, memory growth with a bigger bank | Open (see `SCALING.md` §3) |
+| B2 | Backend | **Midnight stampede.** `ensurePersonalSet` runs on first daily call and loads the *entire* published-question pool into Node (`POOL_SQL`, no limit) plus 3 more queries. Your users are mostly in one timezone, so thousands hit this at the same minute. | Timeouts / 5xx at exactly the busiest moment, memory growth with a bigger bank | ✅ Fixed: pool/band cached with single-flight loading, and players without topic preferences share one set per (track, level, league tier, day). Sets are still built lazily, only for players who show up (`backend/src/personalSet.js`) |
 | B3 | Backend | **Push cron cannot scale.** `/cron/push` loops all due users inside one serverless request (300 s max, 25 concurrent sends). | Notifications silently stop being delivered past a few thousand subscribers | Open (`SCALING.md` §4) |
 | B4 | Backend | Every query is a PostgREST HTTPS round trip returning JSON (`backend_sql`); the rate-limit check alone is a full extra round trip on every auth call. | Latency and Supabase request cost grow linearly with traffic | Open (O1) |
 | B5 | Backend | Login rate limit lets attackers lock out users (O5). | Availability | Open |

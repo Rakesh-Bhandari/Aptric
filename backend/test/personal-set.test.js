@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { difficultyMix, seededRandom, selectQuestions } from '../src/personalSet.js';
+import { difficultyMix, overlapShare, seededRandom, selectQuestions, ttlCache } from '../src/personalSet.js';
 import { DAILY_RPCS, RPCS } from '../src/routes/rpc.js';
 import { validatePreferences } from '../src/routes/me.js';
 
@@ -144,4 +144,31 @@ test('the SQL scopes personal sets to their player', async () => {
   assert.match(sql, /s\.user_id = target_user_id/, 'today_set_for serves the player their own set');
   assert.match(sql, /user_id is null or user_id = \(select auth\.uid\(\)\)/, 'players cannot read each other\'s sets');
   assert.match(sql, /s\.user_id is null\s+and s\.set_date >= gen_date/, 'shared reuse window ignores personal sets');
+});
+
+test('ttlCache shares one in-flight load, expires, and drops failures', async () => {
+  let t = 0;
+  const cache = ttlCache(1000, { now: () => t });
+  let calls = 0;
+  const load = async () => ++calls;
+  assert.deepEqual(await Promise.all([cache.get('k', load), cache.get('k', load), cache.get('k', load)]), [1, 1, 1]);
+  t = 999;
+  assert.equal(await cache.get('k', load), 1);
+  t = 1001;
+  assert.equal(await cache.get('k', load), 2);
+  await assert.rejects(cache.get('bad', async () => { throw new Error('x'); }));
+  assert.equal(await cache.get('bad', async () => 'ok'), 'ok');
+});
+
+test('overlapShare measures how much of a set a player already had', () => {
+  assert.equal(overlapShare([], ['a']), 0);
+  assert.equal(overlapShare(['a', 'b', 'c', 'd'], ['a', 'b', 'z']), 0.5);
+  assert.equal(overlapShare(['a'], []), 0);
+});
+
+test('a cohort set (no preferences) is the same for different players', () => {
+  const key = 'track:1:1:2026-10-04';
+  const a = selectQuestions({ seed: `cohort:${key}`, mix: difficultyMix(BEGINNER), pool: POOL }).ids;
+  const b = selectQuestions({ seed: `cohort:${key}`, mix: difficultyMix(BEGINNER), pool: [...POOL].reverse() }).ids;
+  assert.deepEqual(a, b);
 });
