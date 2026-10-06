@@ -5,30 +5,56 @@
     <!-- ?v= busts cached copies of the old logo; bump it when the icons change. -->
     <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
     <link rel="manifest" href="/site.webmanifest?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Daily aptitude practice for placements, CAT, banking and more: short daily challenges, focused practice by topic and friendly weekly leagues." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://aptric.app/" />
+    <meta property="og:url" content="https://aptric.app/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Aptric" />
     <meta property="og:title" content="Aptric – Practice. Compete. Grow." />
     <meta property="og:description" content="Short daily aptitude challenges, focused practice and friendly leagues for placements, CAT, banking and more." />
     <!-- Relative path: crawlers that need an absolute URL should get the deployed origin prepended at deploy time. -->
-    <meta property="og:image" content="/brand/og.png" />
+    <meta property="og:image" content="https://aptric.app/brand/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="The Aptric logo and “Practice. Compete. Grow.” on navy, beside a glowing mountain path: daily aptitude practice for placements, CAT, banking and more" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Aptric – Practice. Compete. Grow." />
     <meta name="twitter:description" content="Short daily aptitude challenges, focused practice and friendly leagues for placements, CAT, banking and more." />
-    <meta name="twitter:image" content="/brand/og.png" />
+    <meta name="twitter:image" content="https://aptric.app/brand/og.png" />
     <!-- Browser UI colour: matches the app header (--header), white or midnight. -->
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0b1226" media="(prefers-color-scheme: dark)" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://aptric.app/#org",
+            "name": "Aptric",
+            "url": "https://aptric.app/",
+            "logo": "https://aptric.app/icon-512.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://aptric.app/#website",
+            "url": "https://aptric.app/",
+            "name": "Aptric",
+            "description": "Daily aptitude practice for placements, CAT, banking and more.",
+            "publisher": { "@id": "https://aptric.app/#org" }
+          }
+        ]
+      }
+    </script>
     <title>Aptric – daily aptitude practice</title>
     <!-- Page colour before the stylesheet arrives, so dark mode doesn't flash white. -->
     <style>html{background:#f8fafc}html[data-theme='dark']{background:#0a1020;color-scheme:dark}</style>
