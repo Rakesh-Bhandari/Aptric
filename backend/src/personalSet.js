@@ -10,6 +10,56 @@ const DIFFICULTIES = ['easy', 'medium', 'hard'];
 const RANK = { easy: 0, medium: 1, hard: 2 };
 const PREFERRED_WEIGHT = 3;
 const REUSE_WINDOW_DAYS = 60;
+const POOL_TTL_MS = 10 * 60 * 1000;
+const BAND_TTL_MS = 10 * 60 * 1000;
+const COHORT_TTL_MS = 30 * 60 * 1000;
+const COHORT_MAX_ENTRIES = 500;
+// A shared (cohort) set is skipped for a player when more than this share of it is
+// something they had in the last REUSE_WINDOW_DAYS; they get their own pick instead.
+const COHORT_MAX_OVERLAP = 0.3;
+
+// Small TTL cache ---------------------------------------------------------------
+
+/**
+ * Caches async results by key for ttlMs. Concurrent callers for the same key share
+ * one in-flight call (so a burst at local midnight costs one query, not one per
+ * player), and a failed call is not cached. `now` is injectable for tests.
+ */
+export function ttlCache(ttlMs, { max = Infinity, now = Date.now } = {}) {
+  const entries = new Map();
+  return {
+    get(key, load) {
+      const hit = entries.get(key);
+      if (hit && hit.expires > now()) return hit.value;
+      const value = Promise.resolve().then(load);
+      entries.set(key, { value, expires: now() + ttlMs });
+      value.catch(() => entries.get(key)?.value === value && entries.delete(key));
+      if (entries.size > max) {
+        for (const [k, e] of entries) if (e.expires <= now() || entries.size > max) entries.delete(k);
+      }
+      return value;
+    },
+    clear: () => entries.clear(),
+  };
+}
+
+const poolCache = ttlCache(POOL_TTL_MS);
+const bandCache = ttlCache(BAND_TTL_MS);
+const cohortCache = ttlCache(COHORT_TTL_MS, { max: COHORT_MAX_ENTRIES });
+
+/** Test hook: forget everything cached. */
+export function resetPersonalSetCaches() {
+  poolCache.clear();
+  bandCache.clear();
+  cohortCache.clear();
+}
+
+/** Share of `ids` found in `recent` (0 for an empty set). */
+export function overlapShare(ids, recent) {
+  if (!ids.length) return 0;
+  const seen = new Set(recent);
+  return ids.filter((id) => seen.has(id)).length / ids.length;
+}
 
 // Seeded randomness -------------------------------------------------------------
 
@@ -169,27 +219,46 @@ const INSERT_SQL = `
  * question ids ([] when it was already there, or no set could be made, in which
  * case the shared set applies). Safe to call on every request: it is one cheap
  * read once the set exists, and concurrent first calls end up with the same row.
+ *
+ * Cost control for the daily burst: only players who actually show up get a set
+ * (nothing is generated for inactive ones, and a returning player simply gets
+ * today's set on their first call). The question pool and level bands are cached
+ * and loaded once per burst, and players with no topic preferences share one
+ * picked set per (track, level, league tier, day) instead of each running the
+ * picker; a player whose recent questions overlap that set too much gets their
+ * own pick. The row stored per player is the same either way.
  */
 export async function ensurePersonalSet(userId) {
   const { rows: [me] } = await query(PLAYER_SQL, [userId]);
   if (!me || me.has_set) return [];
 
-  const [{ rows: [band] }, { rows: pool }, { rows: prefs }, { rows: recent }] = await Promise.all([
-    query(BAND_SQL, [me.band_level]),
-    query(POOL_SQL, [me.track_id]),
+  const [band, pool, { rows: prefs }, { rows: recentRows }] = await Promise.all([
+    bandCache.get(me.band_level, async () => (await query(BAND_SQL, [me.band_level])).rows[0]),
+    poolCache.get(me.track_id, async () => (await query(POOL_SQL, [me.track_id])).rows),
     query('select topic_id, preference from public.user_topic_preferences where user_id = $1', [userId]),
     query(RECENT_SQL, [userId, me.today]),
   ]);
   if (!band || !pool.length) return [];
 
-  const { ids } = selectQuestions({
+  const recent = recentRows.map((r) => r.question_id);
+  const mix = difficultyMix(band, me.league_tier, me.tier_count);
+  const personal = () => selectQuestions({
     seed: `${userId}:${me.today}`,
-    mix: difficultyMix(band, me.league_tier, me.tier_count),
+    mix,
     pool,
     preferred: prefs.filter((p) => p.preference === 'prefer').map((p) => p.topic_id),
     excluded: prefs.filter((p) => p.preference === 'exclude').map((p) => p.topic_id),
-    recent: recent.map((r) => r.question_id),
-  });
+    recent,
+  }).ids;
+
+  let ids;
+  if (prefs.length) {
+    ids = personal();
+  } else {
+    const cohortKey = `${me.track_id}:${band.level}:${me.league_tier}:${me.today}`;
+    const shared = await cohortCache.get(cohortKey, () => selectQuestions({ seed: `cohort:${cohortKey}`, mix, pool }).ids);
+    ids = overlapShare(shared, recent) <= COHORT_MAX_OVERLAP ? shared : personal();
+  }
   if (!ids.length) return [];
 
   await query(INSERT_SQL, [me.track_id, band.level, me.today, userId, ids]);

@@ -215,6 +215,8 @@ Errors before the stream are ordinary JSON: `400` bad body, `401`, `403 tutor_lo
 
 `get_today_set`, `get_daily_result`, `submit_answer`, `use_hint` and `give_up` first call `ensurePersonalSet` (`src/personalSet.js`). Once per player and local day it picks a set and stores it as a `daily_sets` row with `user_id` set (migration `20261008000001`), so refreshes return the same set; `private.today_set_for` prefers it and falls back to the shared set if none could be made.
 
+To survive the burst at local midnight, nothing is generated ahead of time (inactive players cost nothing; a returning player gets today's set on their first call). The published-question pool and level bands are cached in memory (10 min, one in-flight load shared by concurrent players), and players with no topic preferences share one picked set per (track, level, league tier, local day); if more than 30% of that set is something the player had in the last 60 days they get their own pick instead. Players with preferences always get a personal pick.
+
 - **Difficulty**: the player's level band (profile level, floored by the placement level) gives the easy / medium / hard counts from `levels`; each league step above Bronze (two at most) turns one easy into a medium, or a medium into a hard.
 - **Seed**: `userId:date` drives a seeded random generator, so the same inputs always give the same set.
 - **Topics**: excluded topics are never used (unless that would leave no question at all, then they are ignored); preferred topics are three times as likely to be picked; questions from the player's own sets in the last 60 days are avoided while enough others remain. A bank too small for the mix gives a shorter set, not an empty one.
