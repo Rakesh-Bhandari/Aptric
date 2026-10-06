@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /auth/
+Disallow: /onboarding
+Disallow: /settings
+Disallow: /session/
+Disallow: /solve/
+Disallow: /practice/session
+Disallow: /dev/
+
+Sitemap: https://aptric.app/sitemap.xml
