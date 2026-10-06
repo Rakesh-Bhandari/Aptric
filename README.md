@@ -27,6 +27,8 @@ on a question bank grown with verified AI generation.
 
 <img src=".github/readme/divider.svg" width="100%" alt="">
 
+> **Planning docs:** [Security & bug audit](docs/SECURITY-AUDIT.md) · [Scaling plan](docs/SCALING.md) · [Roadmap, monetisation & competitive defence](docs/ROADMAP.md)
+
 ## 📖 Overview
 
 Aptric is a **React + TypeScript** single-page app with a **Node.js (Express) API**, deployable to Vercel, on a **Supabase Postgres** database (Supabase is used only as the database).

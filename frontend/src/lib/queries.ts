@@ -31,6 +31,7 @@ export const keys = {
   topics: ['topics'] as const,
   topicPreferences: ['topic-preferences'] as const,
   pushConfig: ['push-config'] as const,
+  entitlements: ['entitlements'] as const,
   lastPlacement: (userId: string) => ['last-placement', userId] as const,
 };
 
@@ -61,5 +62,17 @@ export const useContestStandings = (id: string, live: boolean) =>
 export const useExamTags = () => useQuery({ queryKey: keys.examTags, queryFn: api.getExamTags, staleTime: Infinity });
 export const useLevels = () => useQuery({ queryKey: keys.levels, queryFn: api.getLevels, staleTime: Infinity });
 export const useTopics = () => useQuery({ queryKey: keys.topics, queryFn: api.getTopics, staleTime: Infinity });
+/** The player's plan. Defaults to the free plan until it loads, so gated UI never flashes open. */
+export const useEntitlements = () => {
+  const query = useQuery({ queryKey: keys.entitlements, queryFn: api.getEntitlements, staleTime: 5 * 60_000 });
+  const ent = query.data;
+  return {
+    ...query,
+    plan: ent?.plan ?? 'free',
+    showAds: ent?.show_ads ?? true,
+    can: (feature: string) => ent?.features?.[feature] === true || (typeof ent?.features?.[feature] === 'string' && ent.features[feature] !== ''),
+    limit: (key: string): number | null => ent?.limits?.[key] ?? null,
+  };
+};
 export const usePushConfig = () => useQuery({ queryKey: keys.pushConfig, queryFn: api.getPushConfig });
 export const useTopicPreferences = () => useQuery({ queryKey: keys.topicPreferences, queryFn: api.getTopicPreferences });

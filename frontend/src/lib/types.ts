@@ -402,3 +402,13 @@ export interface TopicPreferences {
   preferred_topic_ids: string[];
   excluded_topic_ids: string[];
 }
+
+/** The signed-in player's plan (GET /me/entitlements): switches and limits set per plan in Postgres. */
+export interface Entitlements {
+  plan: string;
+  name: string;
+  features: Record<string, boolean | string>;
+  limits: Record<string, number>;
+  /** Free plans show ads; paid plans don't. */
+  show_ads: boolean;
+}

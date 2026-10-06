@@ -8,6 +8,7 @@ import { Router } from 'express';
 import { asUser, asUserBatch } from '../db.js';
 import { badRequest, forbidden } from '../http.js';
 import { requireUser } from '../middleware/auth.js';
+import { getEntitlements, publicEntitlements } from '../entitlements.js';
 
 const router = Router();
 router.use(requireUser);
@@ -111,6 +112,11 @@ router.patch('/me/preferences', async (req, res) => {
     [PREFERENCES_SQL],
   ]);
   res.json(rows[0]);
+});
+
+// The player's plan: feature switches, limits and whether ads are shown.
+router.get('/me/entitlements', async (req, res) => {
+  res.json(publicEntitlements(await getEntitlements(req.user.id)));
 });
 
 router.get('/me/placement', async (req, res) => {

@@ -146,6 +146,10 @@ export async function createLinkToken(accountId, purpose, minutes = config.email
 /**
  * Spends a link token. Email links also confirm the address. Returns the
  * account, or throws otp_expired for an unknown, used or expired link.
+ *
+ * An address that was never confirmed may carry a password somebody else chose
+ * at sign-up (pre-registration takeover). Proving the address by magic link or
+ * recovery therefore drops that password; the owner sets their own afterwards.
  */
 export async function consumeLinkToken(token, purpose) {
   const expired = new HttpError(400, 'otp_expired', 'This link has expired or was already used.');
@@ -163,7 +167,8 @@ export async function consumeLinkToken(token, purpose) {
        where t.account_id = spent.account_id and t.purpose = $2 and t.used_at is null and t.token_hash <> $1
      )
      update private.accounts a
-     set email_verified_at = coalesce(a.email_verified_at, case when $2 <> 'oauth' then now() end)
+     set email_verified_at = coalesce(a.email_verified_at, case when $2 <> 'oauth' then now() end),
+         password_hash = case when a.email_verified_at is null and $2 in ('magiclink', 'recovery') then null else a.password_hash end
      from spent
      where a.id = spent.account_id
      returning a.*`,

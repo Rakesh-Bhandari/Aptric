@@ -115,7 +115,9 @@ const quietLog = () => {
   return { lines, warn: push, error: push, info: push };
 };
 
-async function serve({ ctx = context(), llm = fakeLlm(() => ['Think about units.']), settings = SETTINGS, hitLimit, log = quietLog() } = {}) {
+const FREE_PLAN = async () => ({ plan: 'free', features: {}, limits: {} });
+
+async function serve({ ctx = context(), llm = fakeLlm(() => ['Think about units.']), settings = SETTINGS, hitLimit, log = quietLog(), entitlements = FREE_PLAN } = {}) {
   const state = fakeDb(ctx);
   const hits = [];
   const app = express();
@@ -125,6 +127,7 @@ async function serve({ ctx = context(), llm = fakeLlm(() => ['Think about units.
     llm,
     settings,
     log,
+    entitlements,
     hitLimit: hitLimit ?? (async (bucket, key, windowSeconds, max) => hits.push({ bucket, key, windowSeconds, max })),
   }));
   app.use(errorHandler);
@@ -505,4 +508,21 @@ test('a database without the tutor migration answers 503 tutor_not_ready, not a 
   assert.equal(h.status, 503);
   assert.equal(h.json.error.code, 'tutor_not_ready');
   assert.ok(s.log.lines.some((l) => l.includes('npx supabase db push')));
+});
+
+test('rate limits follow the player\'s plan, falling back to the server defaults', async (t) => {
+  const seen = {};
+  const record = async (bucket, key, windowSeconds, max) => { seen[bucket] = max; };
+  const paid = await serve({
+    hitLimit: record,
+    entitlements: async () => ({ plan: 'plus', features: {}, limits: { tutor_messages_per_hour: 120, tutor_messages_per_day: 600 } }),
+  });
+  t.after(paid.close);
+  assert.equal((await paid.chat({ intent: 'concept' })).status, 200);
+  assert.deepEqual([seen['tutor:hour'], seen['tutor:day']], [120, 600]);
+
+  const free = await serve({ hitLimit: record });
+  t.after(free.close);
+  assert.equal((await free.chat({ intent: 'concept' })).status, 200);
+  assert.deepEqual([seen['tutor:hour'], seen['tutor:day']], [60, 200]);
 });
