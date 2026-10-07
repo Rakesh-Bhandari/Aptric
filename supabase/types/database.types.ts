@@ -1957,6 +1957,32 @@ export type Database = {
       gen_store_embeddings: { Args: { p_model: string; p_rows: Json }; Returns: number };
       get_activity: { Args: { days?: number }; Returns: Json };
       block_user: { Args: { target_handle: string }; Returns: Json };
+      create_post: {
+        Args: {
+          body: string;
+          contains_spoiler?: boolean;
+          exam_tag?: string;
+          kind: string;
+          poll_options?: string[];
+          question_id?: string;
+          topic_id?: string;
+        };
+        Returns: Json;
+      };
+      create_reply: { Args: { body: string; target_post_id: string }; Returns: Json };
+      delete_post: { Args: { target_post_id: string }; Returns: Json };
+      delete_reply: { Args: { target_reply_id: string }; Returns: Json };
+      get_feed: { Args: { cursor?: string; feed?: string; sort?: string; topic_id?: string }; Returns: Json };
+      get_mutes: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_post: { Args: { target_post_id: string }; Returns: Json };
+      get_replies: { Args: { cursor?: string; target_post_id: string }; Returns: Json };
+      mute_user: { Args: { target_handle: string }; Returns: Json };
+      react_post: { Args: { reaction?: string; target_post_id: string }; Returns: Json };
+      report_post: { Args: { details?: string; reason: string; target_post_id: string }; Returns: Json };
+      unmute_user: { Args: { target_handle: string }; Returns: Json };
+      vote_poll: { Args: { option_idx: number; target_post_id: string }; Returns: Json };
+      admin_list_post_reports: { Args: { only_status?: string; page_offset?: number; page_size?: number }; Returns: Json };
+      admin_moderate_post: { Args: { action: string; note?: string; target_post_id: string }; Returns: Json };
       follow_user: { Args: { target_handle: string }; Returns: Json };
       get_blocks: { Args: Record<PropertyKey, never>; Returns: Json };
       get_follow_requests: { Args: Record<PropertyKey, never>; Returns: Json };

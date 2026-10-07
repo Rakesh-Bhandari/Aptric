@@ -16,7 +16,10 @@ const HANDLE = /^[A-Za-z0-9_]{1,24}$/;
 const SEARCH_TERM = /^@?[A-Za-z0-9_]{0,24}$/;
 // "<timestamptz>|<uuid or id>" or a handle, as the paging functions return them.
 const CURSOR = /^[0-9A-Za-z:+.| _-]{1,80}$/;
+// A hot-feed cursor also carries the page's clock and a score (e.g. 1.2345e-05).
+const CURSOR_LONG = /^[0-9A-Za-z:+.| _eE-]{1,160}$/;
 const WORD = /^[a-z_]{1,24}$/;
+const FEED_WORD = /^[a-z_]{1,12}$/;
 
 // name -> { args: { arg: sql type }, set: returns rows (setof / table), void: returns nothing,
 //           admin: the route itself refuses non-admins before the call,
@@ -79,6 +82,33 @@ export const RPCS = {
       share_activity: 'boolean', discoverable: 'boolean',
     },
   },
+  // Community: 48-hour posts (flag community_posts). The limits here are the outer flood guard; the
+  // per-day post and reply limits come from plans.limits in SQL.
+  create_post: {
+    limit: ['rpc_post', 60, 10], max: { body: 600 }, check: { kind: WORD, exam_tag: /^[a-z0-9_-]{1,40}$/ },
+    args: {
+      kind: 'text', body: 'text', question_id: 'uuid', topic_id: 'uuid', exam_tag: 'text',
+      contains_spoiler: 'boolean', poll_options: 'text[]',
+    },
+  },
+  delete_post: { limit: ['rpc_post', 60, 10], args: { target_post_id: 'uuid' } },
+  create_reply: { limit: ['rpc_reply', 60, 20], max: { body: 400 }, args: { target_post_id: 'uuid', body: 'text' } },
+  delete_reply: { limit: ['rpc_reply', 60, 20], args: { target_reply_id: 'uuid' } },
+  react_post: { limit: ['rpc_react', 60, 60], check: { reaction: WORD }, args: { target_post_id: 'uuid', reaction: 'text' } },
+  vote_poll: { limit: ['rpc_react', 60, 60], args: { target_post_id: 'uuid', option_idx: 'integer' } },
+  report_post: {
+    limit: ['rpc_report', 3600, 20], check: { reason: WORD }, max: { details: 300 },
+    args: { target_post_id: 'uuid', reason: 'text', details: 'text' },
+  },
+  mute_user: { limit: ['rpc_block', 60, 20], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
+  unmute_user: { limit: ['rpc_block', 60, 20], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
+  get_mutes: { args: {} },
+  get_feed: { check: { feed: FEED_WORD, sort: FEED_WORD, cursor: CURSOR_LONG }, args: { feed: 'text', sort: 'text', topic_id: 'uuid', cursor: 'text' } },
+  get_post: { args: { target_post_id: 'uuid' } },
+  get_replies: { check: { cursor: CURSOR }, args: { target_post_id: 'uuid', cursor: 'text' } },
+  // Moderation: the route refuses non-admins, the SQL checks again and audits every action.
+  admin_list_post_reports: { admin: true, check: { only_status: WORD }, args: { only_status: 'text', page_size: 'integer', page_offset: 'integer' } },
+  admin_moderate_post: { admin: true, check: { action: WORD }, max: { note: 500 }, args: { target_post_id: 'uuid', action: 'text', note: 'text' } },
   // Admin (each checks private.is_admin() itself)
   admin_get_question: { args: { target_question_id: 'uuid' } },
   admin_save_question: {
@@ -128,6 +158,12 @@ for (const name of [
   'unblock_user', 'get_blocks', 'report_user', 'get_followers', 'get_following', 'search_users', 'get_suggested_users',
   'get_friend_activity', 'get_privacy', 'set_privacy',
 ]) RPCS[name].flag = COMMUNITY_FLAG;
+// 48-hour posts are a second switch, so the two halves can open separately.
+export const POSTS_FLAG = 'community_posts';
+for (const name of [
+  'create_post', 'delete_post', 'create_reply', 'delete_reply', 'react_post', 'vote_poll', 'report_post', 'mute_user',
+  'unmute_user', 'get_mutes', 'get_feed', 'get_post', 'get_replies',
+]) RPCS[name].flag = POSTS_FLAG;
 // The Friends filter is the part of two older functions that belongs to the community feature.
 RPCS.get_leaderboard.flagArgs = { friends_only: COMMUNITY_FLAG };
 RPCS.get_contest_standings.flagArgs = { friends_only: COMMUNITY_FLAG };

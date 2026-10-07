@@ -7,7 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import * as api from '@/lib/api';
 import { friendlyError } from '@/lib/errors';
 import { formatRelative } from '@/lib/format';
-import { invalidateSocial, keys, queryClient, useBlocks, usePrivacy } from '@/lib/queries';
+import { invalidateFeeds, invalidateSocial, keys, queryClient, useBlocks, useMutes, usePrivacy } from '@/lib/queries';
 import type { Privacy, VisibilityLevel } from '@/lib/types';
 
 const LEVELS: { value: VisibilityLevel; label: string }[] = [
@@ -59,10 +59,42 @@ const BlockedList = () => {
   );
 };
 
-/** Who may see what, whether you appear in search and the friends' feed, and who you blocked. */
-export const PrivacySettings = () => {
+/** Muted players (their posts are hidden from your Community feed), with an Unmute button. */
+const MutedList = () => {
+  const mutes = useMutes();
+  const toast = useToast();
+  const items = mutes.data?.items ?? [];
+  if (mutes.isError) return <FieldHint error>We couldn't load your muted list.</FieldHint>;
+  if (!mutes.data || items.length === 0) return <FieldHint>You have not muted anyone.</FieldHint>;
+  const unmute = async (handle: string) => {
+    try {
+      await api.unmuteUser(handle);
+      toast.success(`@${handle} is unmuted.`);
+      await Promise.all([queryClient.invalidateQueries({ queryKey: keys.mutes }), invalidateFeeds()]);
+    } catch (err) {
+      toast.error(friendlyError(err, "We couldn't unmute them."));
+    }
+  };
+  return (
+    <ul aria-label="Muted players" className="divide-y rounded-lg border">
+      {items.map((m) => (
+        <li key={m.handle} className="flex min-h-14 items-center gap-3 px-3 py-2">
+          <Avatar src={m.avatar_url} name={m.handle} className="size-8" />
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-heading">@{m.handle}</span>
+          <Button size="sm" variant="outline" onClick={() => void unmute(m.handle)}>Unmute<span className="sr-only"> @{m.handle}</span></Button>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+/** Who may see what, whether you appear in search and the friends' feed, who you blocked and muted. */
+export const PrivacySettings = ({ follow = true, posts = false }: { follow?: boolean; posts?: boolean }) => {
   const privacy = usePrivacy();
   const toast = useToast();
+  if (!follow) {
+    return posts ? <div className="space-y-2"><h3 className="text-sm font-semibold text-heading">Muted players</h3><MutedList /></div> : null;
+  }
   if (privacy.isError) return <FieldHint error>We couldn't load your privacy settings. Try again later.</FieldHint>;
   const p = privacy.data;
   if (!p) return <FieldHint>Loading…</FieldHint>;
@@ -102,6 +134,12 @@ export const PrivacySettings = () => {
         <h3 className="text-sm font-semibold text-heading">Blocked players</h3>
         <BlockedList />
       </div>
+      {posts && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-heading">Muted players</h3>
+          <MutedList />
+        </div>
+      )}
     </div>
   );
 };

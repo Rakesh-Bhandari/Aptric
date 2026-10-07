@@ -54,6 +54,7 @@ const PG_STATUS = {
   '23514': 400, // check_violation
   P0001: 400,   // raise exception without a code
   '54000': 409, // program_limit_exceeded (a cap such as "following up to 1,000")
+  SP422: 422,   // a post that gives away a question's answer and was not marked as a spoiler
 };
 
 

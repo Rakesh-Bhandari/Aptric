@@ -377,3 +377,31 @@ export const adminAttempts = () => ({
   count: 2,
   rows: [0, 1].map((i) => ({ id: `at${i}`, created_at: iso(-i), question: { id: `aq${i}`, stem: STEMS[i] }, context: 'daily', is_correct: i === 0, used_hint: false, time_ms: 42_000, xp_awarded: i === 0 ? 10 : 0 })),
 });
+
+// Community: 48-hour posts -----------------------------------------------------
+
+/** A live post. `expiresInHours` counts from FIXED_NOW; created_at is 48 hours earlier. */
+export const post = (id: string, expiresInHours: number, over: Record<string, unknown> = {}) => ({
+  id, kind: 'tip', body: `Post ${id}: convert km/h to m/s by multiplying by 5/18.`, spoiler: false, spoiler_locked: false,
+  question: null, topic: { id: 't00', name: 'Speed & Distance' }, exam_tag: null, poll: null,
+  created_at: iso(expiresInHours - 48), expires_at: iso(expiresInHours), like_count: 2, reply_count: 1, my_reaction: null,
+  is_mine: false, status: null, author_verified: false, author: userCard('aarav_meht'), ...over,
+});
+
+export const feedPage = (posts: unknown[] = [post('a', 5.2), post('b', 30)]) => ({
+  items: posts, next_cursor: null, server_now: FIXED_NOW.toISOString(),
+});
+
+export const replies = () => ({
+  items: [{ id: 'r1', post_id: 'a', body: 'Thanks, that helped!', created_at: iso(-1), expires_at: iso(5.2), is_mine: false, can_delete: false, author: userCard('diya_n') }],
+  next_cursor: null, server_now: FIXED_NOW.toISOString(),
+});
+
+export const adminPostReports = () => ({
+  total: 1,
+  items: [{
+    id: 'p-rep', kind: 'tip', body: 'Totally legit tip, message me on a chat app', status: 'hidden', report_count: 3, created_at: iso(-30),
+    expires_at: iso(18), reviewed_at: null, question_id: null,
+    author: { id: 'u9', handle: 'spammy_sam', strikes_30d: 2 }, reports: [{ reason: 'spam', count: 2 }, { reason: 'abuse', count: 1 }],
+  }],
+});

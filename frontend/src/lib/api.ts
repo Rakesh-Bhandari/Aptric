@@ -1,6 +1,7 @@
 import type { Database } from '@db/database.types';
 import { api } from './http';
 import type {
+  FeedName, FeedSort, MutedUser, NewPost, Post, PostPage, PostReportReason, Reaction, Reply, ReplyPage,
   ActivityPage, BlockedUser, FollowRequest, FollowStatus, Privacy, UserPage, UserReportReason, VisibilityLevel,
   Activity, AnswerResult, AttemptContext, Board, CatalogTopic, ContestAnswerResult, ContestDetail, ContestStandings,
   ContestSummary, ContestViolation, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
@@ -104,6 +105,26 @@ export const getPrivacy = () => rpc<Privacy>('get_privacy');
 export const setPrivacy = (patch: Partial<Privacy>) =>
   rpc<Privacy>('set_privacy', patch as Functions['set_privacy']['Args']);
 export type { VisibilityLevel };
+export const muteUser = (handle: string) => rpc<{ muted: true }>('mute_user', { target_handle: handle });
+export const unmuteUser = (handle: string) => rpc<{ muted: false }>('unmute_user', { target_handle: handle });
+export const getMutes = () => rpc<{ items: MutedUser[] }>('get_mutes');
+
+// Community: 48-hour posts ------------------------------------------------------
+export const getFeed = (p: { feed: FeedName; sort: FeedSort; topicId?: string | null; cursor?: string | null }) =>
+  rpc<PostPage>('get_feed', { feed: p.feed, sort: p.sort, topic_id: p.topicId ?? undefined, cursor: p.cursor ?? undefined });
+export const getPost = (id: string) => rpc<{ post: Post; server_now: string }>('get_post', { target_post_id: id });
+export const createPost = (post: NewPost) =>
+  rpc<{ post: Post; server_now: string }>('create_post', post as Functions['create_post']['Args']);
+export const deletePost = (id: string) => rpc<{ deleted: true }>('delete_post', { target_post_id: id });
+export const getReplies = (postId: string, cursor: string | null = null) =>
+  rpc<ReplyPage>('get_replies', { target_post_id: postId, cursor: cursor ?? undefined });
+export const createReply = (postId: string, body: string) => rpc<Reply>('create_reply', { target_post_id: postId, body });
+export const deleteReply = (id: string) => rpc<{ deleted: true }>('delete_reply', { target_reply_id: id });
+export const reactPost = (id: string, reaction: Reaction | null) =>
+  rpc<{ like_count: number; my_reaction: Reaction | null }>('react_post', { target_post_id: id, reaction: reaction ?? undefined });
+export const votePoll = (id: string, option: number) => rpc<Post['poll']>('vote_poll', { target_post_id: id, option_idx: option });
+export const reportPost = (id: string, reason: PostReportReason, details?: string) =>
+  rpc<{ ok: true }>('report_post', { target_post_id: id, reason, details: details?.trim() || undefined });
 
 // Profile and settings -------------------------------------------------------
 export const fetchProfile = (): Promise<Profile> => api<Profile>('GET', '/me/profile');
@@ -128,7 +149,7 @@ export const getTopicPreferences = () => api<TopicPreferences>('GET', '/me/prefe
 export const saveTopicPreferences = (prefs: TopicPreferences) => api<TopicPreferences>('PATCH', '/me/preferences', prefs);
 
 // Push notifications ---------------------------------------------------------
-export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean; social: boolean };
+export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean; social: boolean; post_expiry: boolean };
 export type PushConfig = { enabled: boolean; publicKey: string | null; preferences: PushPreferences };
 export type PushSubscriptionJSON = { endpoint: string; keys: { p256dh: string; auth: string } };
 

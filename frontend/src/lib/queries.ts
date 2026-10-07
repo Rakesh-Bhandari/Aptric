@@ -1,8 +1,9 @@
 import { QueryClient, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import * as api from './api';
 import { predictFollow, withFollowStatus } from './community';
+import { withPostChange, withReaction, withoutPost } from './posts';
 import { errorCode } from './errors';
-import type { Board, FollowStatus, Relationship } from './types';
+import type { Board, FeedName, FeedSort, FollowStatus, Post, Reaction, Relationship } from './types';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +36,11 @@ export const keys = {
   blocks: ['blocks'] as const,
   activityFeed: ['friend-activity'] as const,
   privacy: ['privacy'] as const,
+  feed: (feed: FeedName, sort: FeedSort, topicId: string | null) => ['feed', feed, sort, topicId] as const,
+  post: (id: string) => ['post', id] as const,
+  replies: (postId: string) => ['replies', postId] as const,
+  mutes: ['mutes'] as const,
+  adminPostReports: (status: string) => ['admin-post-reports', status] as const,
   examTags: ['exam-tags'] as const,
   levels: ['levels'] as const,
   topics: ['topics'] as const,
@@ -177,3 +183,64 @@ export const invalidateSocial = () =>
   Promise.all(
     [...PEOPLE_KEYS, keys.blocks].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
   );
+
+// Community: 48-hour posts -----------------------------------------------------
+
+/** Whether 48-hour posts are on for this player's plan (they ship dark, like the follow features). */
+export const usePostsEnabled = () => useEntitlements().can('community_posts');
+
+export const useFeed = (feed: FeedName, sort: FeedSort, topicId: string | null = null) =>
+  useInfiniteQuery({
+    queryKey: keys.feed(feed, sort, topicId), initialPageParam: null as string | null,
+    enabled: feed !== 'topic' || topicId !== null,
+    queryFn: ({ pageParam }) => api.getFeed({ feed, sort, topicId, cursor: pageParam }),
+    getNextPageParam: (last) => last.next_cursor,
+    staleTime: 20_000,
+  });
+
+export const useReplies = (postId: string, enabled: boolean) =>
+  useInfiniteQuery({
+    queryKey: keys.replies(postId), initialPageParam: null as string | null, enabled,
+    queryFn: ({ pageParam }) => api.getReplies(postId, pageParam),
+    getNextPageParam: (last) => last.next_cursor,
+  });
+
+export const useMutes = () => useQuery({ queryKey: keys.mutes, queryFn: api.getMutes });
+
+const FEED_KEYS = [['feed'], ['post']] as const;
+
+/** Writes a change to one post into every cached feed, returns what to put back. */
+const patchPostCaches = (id: string, change: (p: Post) => Post): Snapshot => {
+  const snapshot: Snapshot = [];
+  for (const queryKey of FEED_KEYS) {
+    for (const [key, data] of queryClient.getQueriesData({ queryKey })) {
+      const next = withPostChange(data, id, change);
+      if (next === data) continue;
+      snapshot.push([key, data]);
+      queryClient.setQueryData(key, next);
+    }
+  }
+  return snapshot;
+};
+
+/** React to a post (or take the reaction back by choosing it again): instant, rolled back on error. */
+export const useReactAction = (post: Pick<Post, 'id' | 'my_reaction'>) =>
+  useMutation({
+    mutationFn: (reaction: Reaction) => api.reactPost(post.id, post.my_reaction === reaction ? null : reaction),
+    onMutate: (reaction) => ({
+      snapshot: patchPostCaches(post.id, (p) => withReaction(p, p.my_reaction === reaction ? null : reaction)),
+    }),
+    onError: (_err, _reaction, ctx) => {
+      for (const [key, data] of ctx?.snapshot ?? []) queryClient.setQueryData(key, data);
+    },
+  });
+
+/** Takes a post out of every list at once (deleted, or its 48 hours are up). */
+export const dropPost = (id: string) => {
+  for (const queryKey of FEED_KEYS) {
+    for (const [key, data] of queryClient.getQueriesData({ queryKey })) queryClient.setQueryData(key, withoutPost(data, id));
+  }
+};
+
+/** Everything that depends on the feed: after posting, deleting, muting or blocking. */
+export const invalidateFeeds = () => queryClient.invalidateQueries({ queryKey: ['feed'] });

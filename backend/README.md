@@ -113,8 +113,10 @@ All bodies are JSON. Errors are `{ "error": { "code", "message", ... } }`; datab
 | `POST /reports`, `POST /feedback` | user | report a question / send feedback |
 | `GET` / `PATCH /me/preferences` | user | topics the daily set leans towards (`preferred_topic_ids`) and never uses unless nothing else is left (`excluded_topic_ids`); `PATCH` replaces both lists and rebuilds today's set if it has not been started |
 | `GET /catalog/exam-tags`, `GET /catalog/levels`, `GET /catalog/topics` | user | small catalogs (topics: active ones with published questions, by section) |
-| `GET /push/config`, `POST /push/subscribe`, `POST /push/unsubscribe`, `PATCH /push/preferences`, `POST /push/test` | user | [Web Push](#push-notifications): the VAPID public key and the player's switches, register / remove this browser, change `daily` / `streak` / `contests` / `league` / `social` (booleans), send a test (10 an hour) |
+| `GET /push/config`, `POST /push/subscribe`, `POST /push/unsubscribe`, `PATCH /push/preferences`, `POST /push/test` | user | [Web Push](#push-notifications): the VAPID public key and the player's switches, register / remove this browser, change `daily` / `streak` / `contests` / `league` / `social` / `post_expiry` (booleans), send a test (10 an hour) |
 | `POST /rpc/<community function>` | user + plan feature | Follow / friends ([Community](#community)): `follow_user`, `unfollow_user`, `remove_follower`, `respond_follow_request`, `get_follow_requests`, `block_user`, `unblock_user`, `get_blocks`, `report_user`, `get_followers`, `get_following`, `search_users`, `get_suggested_users`, `get_friend_activity`, `get_privacy`, `set_privacy`; plus the `friends_only` argument of `get_leaderboard` / `get_contest_standings`. 403 `feature_disabled` unless the player's plan has `community_follow` |
+| `POST /rpc/<post function>` | user + plan feature | 48-hour posts ([Community](#community)): `create_post`, `delete_post`, `create_reply`, `delete_reply`, `react_post`, `vote_poll`, `report_post`, `mute_user`, `unmute_user`, `get_mutes`, `get_feed`, `get_post`, `get_replies`. 403 `feature_disabled` unless the plan has `community_posts`. A post that gives away a question's answer without the spoiler tick is 422 `SP422` |
+| `POST /rpc/admin_list_post_reports`, `admin_moderate_post` | admin | the moderation queue (`only_status` `pending` or `all`) and `hide` / `restore` / `remove` / `dismiss`; the route refuses non-admins, the SQL checks again, every action is written to `audit_log` |
 | `GET /cron/push` | `CRON_SECRET` | sends the notifications that are due; called hourly by a scheduler (GitHub Actions workflow) |
 | `GET /questions/:id/subtopic` | user | subtopic of a question the user can see |
 | `POST /tutor/chat` | user | one Aptric Tutor turn, streamed as server-sent events (see [Aptric Tutor](#aptric-tutor)) |
@@ -150,11 +152,13 @@ Slice 1: follow / friends (`supabase/migrations/20261012000001_follow_friends.sq
 - **Limits.** Following up to 1,000 people; 60 follows / unfollows an hour and 300 a day; 100 pending requests; 30 searches a minute; 100 blocks a day; 10 user reports a day. Each community call also has a flood limit in `RPCS[...].limit` (`hit()`), and a SQL limit raises `RL429`, which the API answers as 429 `over_request_rate_limit` with `Retry-After`. Reaching a cap is `54000` (409).
 - **Argument checks.** `RPCS[...].check` / `.max` validate handles, search terms, cursors and report reasons before any SQL runs.
 - **Paging.** Lists are cursor-paged (`"<timestamptz>|<id>"`, 30 per page; search and the feed 20) and the page size is fixed server-side.
+- **48-hour posts** (`20261013000001_community_posts.sql`, flag `community_posts`; the `pilot` plan has both flags). The 48-hour rule is enforced twice: every read (RLS policies and RPCs) checks `expires_at > now()`, so a post is gone the second it expires, and the pg_cron job `aptric-posts-cleanup` (every 15 minutes) hard-deletes expired posts, replies, reactions, votes and reports in batches of 500 (idempotent, skips locked rows). `expires_at` is generated from `created_at`, nothing can edit a post and `created_at` cannot change, so a post cannot be extended, pinned or brought back. Reported or removed posts leave a snapshot (author id, SHA-256 of the text, reasons) for 30 days, then it is purged.
+- **Post rules.** 5 posts and 30 replies a day, set per plan in `plans.limits.posts_per_day` / `replies_per_day` (no deploy; halved after two removals in 30 days, and after three removals new posts are hidden from everyone but their author until a moderator reviews them). Accounts under 24 hours old, or without a finished daily set, can reply but not post. Text is 500 / 280 characters, no HTML or images, banned phrases are in `community_banned_words` (edit in SQL), and links need a verified email. A post that links a question shows only its wording; if its text looks like it gives away the answer (cues like "the answer is", option letters, the correct option's text) the author must tick "Contains spoiler", and a spoiler is withheld by the server from anyone who has not attempted the question. Posts that link a question in a running contest are refused. Three different reporters hide a post until a moderator has reviewed it.
 - **Cleanup.** Activity events older than 14 days are never returned and are deleted daily by the pg_cron job `aptric-friend-events-prune`.
 
 ## Push notifications
 
-Web Push (VAPID) to browsers that opted in under **Settings → Notifications**; the frontend's `public/sw.js` shows them and opens the right page on click. Five kinds, each its own switch:
+Web Push (VAPID) to browsers that opted in under **Settings → Notifications**; the frontend's `public/sw.js` shows them and opens the right page on click. Six kinds, each its own switch:
 
 | Kind | When | Sent to |
 | --- | --- | --- |
@@ -163,6 +167,7 @@ Web Push (VAPID) to browsers that opted in under **Settings → Notifications**;
 | `contests` | within an hour of a published contest starting; within 3 hours of it ending | everyone opted in (start); players who entered (results, with their rank) |
 | `league` | within 3 hours of the weekly rollover | league members: promoted, stayed or demoted |
 | `social` | within 3 hours of a follow, a follow request, or an accepted request | the followed player / the requested player / the requester. One notification per (recipient, person), ever: follow / unfollow / follow-back loops cannot repeat it. Follows that came from an approved request are not announced to the approver |
+| `post_expiry` | when one of your live posts has 5 to 6 hours left | **opt-in** (off until the player turns it on in Settings): the post's author, once per post |
 
 **Setup**
 

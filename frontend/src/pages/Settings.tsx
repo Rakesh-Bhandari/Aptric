@@ -17,7 +17,7 @@ import { errorCode, friendlyError } from '@/lib/errors';
 import { formatRelative } from '@/lib/format';
 import { DAILY_TARGETS, HANDLE_RE } from '@/lib/game';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '@/lib/push';
-import { keys, queryClient, useCommunityEnabled, useExamTags, useLevels, usePushConfig, useTopicPreferences, useTopics } from '@/lib/queries';
+import { keys, queryClient, useCommunityEnabled, useExamTags, useLevels, usePostsEnabled, usePushConfig, useTopicPreferences, useTopics } from '@/lib/queries';
 import type { CatalogTopic } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -398,12 +398,14 @@ const PUSH_KINDS: { key: keyof api.PushPreferences; label: string; hint: string 
   { key: 'contests', label: 'Contests', hint: 'When a contest is about to start and when its results are in.' },
   { key: 'league', label: 'League results', hint: 'Whether you were promoted or demoted after each week.' },
   { key: 'social', label: 'Friends', hint: 'New followers, follow requests and accepted requests.' },
+  { key: 'post_expiry', label: 'Posts about to expire', hint: 'A heads-up about 6 hours before one of your community posts disappears. Off unless you turn it on.' },
 ];
 
 /** Web Push: this browser's on/off switch, then which kinds to receive. */
 const NotificationsForm = () => {
   const config = usePushConfig();
   const community = useCommunityEnabled();
+  const posts = usePostsEnabled();
   const cache = useQueryClient();
   const toast = useToast();
   const [subscribed, setSubscribed] = useState<boolean | null>(null);
@@ -479,7 +481,7 @@ const NotificationsForm = () => {
       />
       {subscribed && (
         <>
-          {PUSH_KINDS.filter((k) => community || k.key !== 'social').map((k) => (
+          {PUSH_KINDS.filter((k) => (community || k.key !== 'social') && (posts || k.key !== 'post_expiry')).map((k) => (
             <SwitchRow key={k.key} label={k.label} hint={k.hint} checked={preferences[k.key]} onChange={(v) => void setPreference(k.key, v)} />
           ))}
           <Button type="button" variant="outline" size="sm" loading={busy} onClick={() => void sendTest()}><Bell /> Send a test notification</Button>
@@ -542,6 +544,7 @@ const FeedbackButton = () => {
 const Settings = () => {
   const { signOut } = useSession();
   const community = useCommunityEnabled();
+  const posts = usePostsEnabled();
   return (
     <Page className="max-w-3xl space-y-6">
       <div className="space-y-1">
@@ -553,8 +556,10 @@ const Settings = () => {
       <Section title="Daily topics" description="Choose what your daily challenge leans towards and what it leaves out. Skipped topics are never used unless nothing else is left." icon={<ListFilter />}><TopicsForm /></Section>
       <Section title="Appearance" description="Pick a theme and how much things move." icon={<Palette />}><AppearanceForm /></Section>
       <Section title="Notifications" description="Reminders and results, sent to this device even when Aptric is closed." icon={<Bell />}><NotificationsForm /></Section>
-      {community && (
-        <Section title="Privacy and friends" description="Who can follow you, what they can see, and who you blocked." icon={<Lock />}><PrivacySettings /></Section>
+      {(community || posts) && (
+        <Section title="Privacy and friends" description="Who can follow you, what they can see, and who you blocked or muted." icon={<Lock />}>
+          <PrivacySettings follow={community} posts={posts} />
+        </Section>
       )}
       <Section title="Exam conditions" description="How strictly practice mimics a real exam." icon={<ShieldAlert />}><ExamConditionsForm /></Section>
       <Section title="Help and account" description="Tell us what you think, or sign out." icon={<LifeBuoy />}>

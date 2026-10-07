@@ -1,7 +1,8 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { ArrowRight, Check, ChevronDown, Clock, EyeOff, Eye, Flag, Lightbulb, MoreHorizontal, Repeat, ShieldAlert, SkipForward, Sparkles, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Check, ChevronDown, Clock, EyeOff, Eye, Flag, Lightbulb, MessagesSquare, MoreHorizontal, Repeat, ShieldAlert, SkipForward, Sparkles, X } from 'lucide-react';
 import { Markdown } from '@/components/markdown/Markdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,10 @@ import { useSolveKeys } from '@/hooks/useSolveKeys';
 import { friendlyError } from '@/lib/errors';
 import { formatClock, formatDuration, plural } from '@/lib/format';
 import { DIFFICULTY_LABEL, OPTION_KEYS, OPTION_LETTERS } from '@/lib/game';
+import { keys, queryClient } from '@/lib/queries';
+import { discussHref } from '@/lib/routes';
 import type { TutorIntent } from '@/lib/tutor';
-import type { Difficulty, QuestionOption } from '@/lib/types';
+import type { Difficulty, Entitlements, QuestionOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ReportDialog } from './ReportDialog';
 import { SESSION_TIMER_SLOT } from './SessionHeader';
@@ -100,6 +103,9 @@ const Kbd = ({ children, className }: { children: ReactNode; className?: string 
 
 const menuItem =
   'flex min-h-11 cursor-pointer select-none items-center gap-2.5 rounded-md px-3 text-sm font-medium outline-none transition-colors data-[highlighted]:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:text-muted-foreground';
+
+/** Community posts are on for this player (read from the loaded plan, so the solve screen needs no provider). */
+const discussEnabled = () => queryClient.getQueryData<Entitlements>(keys.entitlements)?.features?.community_posts === true;
 
 export const SolveScreen = ({
   question, kind, worth, initialHint = null, onSubmit, onHint, hintCost, onGiveUp, onSkip, onNext, nextLabel,
@@ -447,6 +453,11 @@ export const SolveScreen = ({
                 {onGiveUp && (
                   <Dropdown.Item className={menuItem} disabled={answered || !!busy} onSelect={() => void giveUp()}>
                     <Eye /> Give up &amp; see answer
+                  </Dropdown.Item>
+                )}
+                {answered && (kind === 'daily' || kind === 'practice') && discussEnabled() && (
+                  <Dropdown.Item asChild className={menuItem}>
+                    <Link to={discussHref(question.id)}><MessagesSquare /> Ask or share on Community</Link>
                   </Dropdown.Item>
                 )}
                 <Dropdown.Item className={menuItem} onSelect={() => setReportOpen(true)}>

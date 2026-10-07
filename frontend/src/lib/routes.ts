@@ -18,3 +18,9 @@ export const FRIENDS_PATH = '/friends';
 
 /** Someone's followers or the people they follow. */
 export const followListHref = (handle: string, list: 'followers' | 'following') => `/u/${handle}/${list}`;
+
+/** 48-hour community posts. */
+export const COMMUNITY_PATH = '/community';
+
+/** The post composer, opened on a question you solved (spoiler-safe: the post links to it, never reveals it). */
+export const discussHref = (questionId: string) => `${COMMUNITY_PATH}?compose=1&question=${encodeURIComponent(questionId)}`;

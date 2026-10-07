@@ -50,6 +50,8 @@ export function messageFor(type, data = {}) {
       };
     case 'follow_accepted':
       return { title: `@${data.handle} accepted your follow request`, body: 'You can see their activity now.', url: `/u/${data.handle}`, tag: `follow-accepted-${data.handle}` };
+    case 'post_expiry':
+      return { title: 'Your post disappears in about 6 hours', body: 'Posts last 48 hours. Check the replies before it goes.', url: '/community?feed=mine', tag: `post-expiry-${data.id}` };
     default:
       return null;
   }

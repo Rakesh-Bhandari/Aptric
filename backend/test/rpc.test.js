@@ -101,3 +101,28 @@ test('community calls need the plan feature; the friends filter needs it only wh
   assert.deepEqual(requiredFlags('get_today_set'), []);
   assert.deepEqual(requiredFlags('nope'), []);
 });
+
+test('post functions are validated and need the community_posts feature', async () => {
+  const { POSTS_FLAG } = await import('../src/routes/rpc.js');
+  for (const name of ['create_post', 'create_reply', 'get_feed', 'react_post', 'report_post', 'delete_post']) {
+    assert.deepEqual(requiredFlags(name, {}), [POSTS_FLAG], name);
+  }
+  assert.deepEqual(requiredFlags('admin_moderate_post', {}), [], 'moderation is for admins, whatever the plan');
+  assert.equal(RPCS.admin_moderate_post.admin, true);
+  assert.equal(RPCS.admin_list_post_reports.admin, true);
+  const uuid = '11111111-1111-4111-8111-111111111111';
+  assert.match(buildCall('create_post', { kind: 'tip', body: 'hello', contains_spoiler: false }).text, /create_post\(kind => \$1::text, body => \$2::text, contains_spoiler => \$3::boolean\)/);
+  assert.match(buildCall('create_post', { kind: 'poll', body: 'b', poll_options: ['a', 'b'] }).text, /poll_options => \$3::text\[\]/);
+  assert.throws(() => buildCall('create_post', { kind: 'tip; drop', body: 'x' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('create_post', { kind: 'tip', body: 'x'.repeat(601) }), (e) => e.status === 400);
+  assert.throws(() => buildCall('create_post', { kind: 'tip', body: 'x', author_id: uuid }), (e) => e.status === 400, 'no mass assignment');
+  assert.throws(() => buildCall('create_reply', { target_post_id: uuid, body: 'x'.repeat(401) }), (e) => e.status === 400);
+  assert.doesNotThrow(() => buildCall('get_feed', { feed: 'everyone', sort: 'hot', cursor: '2026-10-06 19:19:20.058+00|1.2345e-05|' + uuid }));
+  assert.throws(() => buildCall('get_feed', { feed: 'every;one' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('get_feed', { cursor: "x'; --" }), (e) => e.status === 400);
+  assert.throws(() => buildCall('react_post', { target_post_id: uuid, reaction: 'Fire!' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('report_post', { target_post_id: uuid, reason: 'spam', details: 'x'.repeat(301) }), (e) => e.status === 400);
+  for (const name of ['create_post', 'create_reply', 'react_post', 'vote_poll', 'report_post', 'delete_post', 'mute_user']) {
+    assert.ok(RPCS[name].limit, `${name} is rate limited at the API`);
+  }
+});

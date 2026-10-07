@@ -21,6 +21,7 @@ const Compete = lazy(() => import('@/pages/Compete'));
 const ContestPage = lazy(() => import('@/pages/ContestPage'));
 const Progress = lazy(() => import('@/pages/Progress'));
 const Friends = lazy(() => import('@/pages/Friends'));
+const Community = lazy(() => import('@/pages/Community'));
 const FollowersPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="followers" /> })));
 const FollowingPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="following" /> })));
 const Profile = lazy(() => import('@/pages/Profile'));
@@ -45,6 +46,7 @@ const AdminContestResults = lazy(() => import('@/admin/ContestResults'));
 const AdminUsers = lazy(() => import('@/admin/Users'));
 const AdminUserPage = lazy(() => import('@/admin/UserPage'));
 const AdminReports = lazy(() => import('@/admin/Reports'));
+const AdminPostReports = lazy(() => import('@/admin/PostReports'));
 const AdminJobs = lazy(() => import('@/admin/Jobs'));
 const AdminAuditLog = lazy(() => import('@/admin/AuditLog'));
 
@@ -98,6 +100,7 @@ const router = createBrowserRouter([
               { path: 'u/:handle/followers', element: <FollowersPage /> },
               { path: 'u/:handle/following', element: <FollowingPage /> },
               { path: 'friends', element: <Friends /> },
+              { path: 'community', element: <Community /> },
               { path: 'session/summary', element: <SessionSummary /> },
               { path: 'leaderboard', element: <Navigate to="/compete?tab=leaderboards" replace /> },
               { path: 'topics', element: <Navigate to="/practice" replace /> },
@@ -116,6 +119,7 @@ const router = createBrowserRouter([
                   { path: 'users', element: <AdminUsers /> },
                   { path: 'users/:id', element: <AdminUserPage /> },
                   { path: 'reports', element: <AdminReports /> },
+                  { path: 'posts', element: <AdminPostReports /> },
                   { path: 'jobs', element: <AdminJobs /> },
                   { path: 'audit', element: <AdminAuditLog /> },
                 ],

@@ -136,6 +136,18 @@ export const JOBS = [
         and exists (select 1 from public.follows f where f.follower_id = r.follower_id and f.followee_id = r.followee_id)
         and ${ELIGIBLE} and ${WANTS('social')}`),
   },
+  {
+    type: 'post_expiry',
+    // Opt-in only (no preference row means off). Live posts that expire in 5 to 6 hours: the hourly run
+    // reaches each post once, and the key makes a repeated run harmless.
+    sql: claim(`
+      select x.author_id as user_id, 'post-expiry:' || x.id as dedupe_key, jsonb_build_object('id', x.id) as data
+      from public.posts x
+      join public.profiles p on p.id = x.author_id
+      where x.status = 'visible' and x.expires_at > now() + interval '5 hours' and x.expires_at <= now() + interval '6 hours'
+        and ${ELIGIBLE}
+        and coalesce((select pp.post_expiry from private.push_preferences pp where pp.user_id = p.id), false)`),
+  },
 ];
 
 const CHUNK = 25;

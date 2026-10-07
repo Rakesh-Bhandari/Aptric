@@ -164,3 +164,17 @@ export const pickContestQuestions = (filters, count, excludeIds = []) => rpc('ad
 // Resolves to { total, entries: [{ rank, user_id, handle, banned, score, correct, answered, time_ms, answers }] }.
 export const getContestResults = (id, { page = 0, pageSize = 50 } = {}) =>
     rpc('admin_get_contest_results', { target_contest_id: id, page_size: pageSize, page_offset: page * pageSize });
+
+// --- Community posts -------------------------------------------------------------
+
+// Live posts that were reported (or hidden / removed). onlyStatus: 'pending' (not reviewed) or 'all'.
+export const listPostReports = ({ onlyStatus = 'pending', page = 0, pageSize = 20 } = {}) =>
+    rpc('admin_list_post_reports', { only_status: onlyStatus, page_size: pageSize, page_offset: page * pageSize });
+
+// action: 'hide' | 'restore' | 'remove' | 'dismiss'. Audited in Postgres.
+export const moderatePost = (id, action, note) =>
+    rpc('admin_moderate_post', { target_post_id: id, action, note: note?.trim() || undefined });
+
+export const countPendingPosts = async () => (await listPostReports({ pageSize: 1 })).total;
+
+export const POST_REPORT_REASONS = ['spam', 'abuse', 'answer_leak', 'personal_info', 'other'];

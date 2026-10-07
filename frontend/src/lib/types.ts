@@ -498,3 +498,100 @@ export interface Privacy {
 }
 
 export type UserReportReason = 'spam' | 'abuse' | 'impersonation' | 'personal_info' | 'other';
+
+// Community: 48-hour posts -----------------------------------------------------
+
+export type PostKind = 'question' | 'tip' | 'win' | 'study_buddy' | 'poll';
+export type Reaction = 'up' | 'fire' | 'idea';
+export type FeedName = 'following' | 'topic' | 'everyone' | 'mine';
+export type FeedSort = 'new' | 'hot';
+export type PostReportReason = 'spam' | 'abuse' | 'answer_leak' | 'personal_info' | 'other';
+
+/** A question a post links to: its stem only, never the options or the answer. */
+export interface PostQuestion {
+  id: string;
+  stem: string;
+  difficulty: Difficulty;
+  subtopic_id: string;
+  attempted: boolean;
+}
+
+export interface Post {
+  id: string;
+  kind: PostKind;
+  /** null while a spoiler is locked: you have not attempted the linked question yet. */
+  body: string | null;
+  spoiler: boolean;
+  spoiler_locked: boolean;
+  question: PostQuestion | null;
+  topic: { id: string; name: string } | null;
+  exam_tag: string | null;
+  poll: { options: { text: string; votes: number }[]; my_vote: number | null } | null;
+  created_at: string;
+  /** created_at + 48 hours. The post is gone from every feed when this passes. */
+  expires_at: string;
+  like_count: number;
+  reply_count: number;
+  my_reaction: Reaction | null;
+  is_mine: boolean;
+  /** Only on your own posts: 'hidden' means waiting for a moderator. */
+  status: 'visible' | 'hidden' | 'removed' | null;
+  /** Verified authors may include links. */
+  author_verified: boolean;
+  author: UserCard;
+}
+
+export interface PostPage {
+  items: Post[];
+  next_cursor: string | null;
+  /** The server's clock when the page was built, for the countdown. */
+  server_now: string;
+}
+
+export interface Reply {
+  id: string;
+  post_id: string;
+  body: string;
+  created_at: string;
+  expires_at: string;
+  is_mine: boolean;
+  can_delete: boolean;
+  author: UserCard;
+}
+
+export interface ReplyPage {
+  items: Reply[];
+  next_cursor: string | null;
+  server_now: string;
+}
+
+export interface NewPost {
+  kind: PostKind;
+  body: string;
+  question_id?: string;
+  topic_id?: string;
+  exam_tag?: string;
+  contains_spoiler?: boolean;
+  poll_options?: string[];
+}
+
+export interface MutedUser {
+  handle: string;
+  avatar_url: string | null;
+  muted_at: string;
+}
+
+/** One reported (or hidden / removed) post in the admin queue. */
+export interface AdminPostReport {
+  id: string;
+  kind: PostKind;
+  body: string;
+  status: 'visible' | 'hidden' | 'removed';
+  report_count: number;
+  created_at: string;
+  expires_at: string;
+  reviewed_at: string | null;
+  question_id: string | null;
+  author: { id: string; handle: string; strikes_30d: number };
+  reports: { reason: PostReportReason; count: number }[];
+}
