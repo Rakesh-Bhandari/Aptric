@@ -76,7 +76,7 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
       case 'list_my_contests': return [d.hostedContest()];
       case 'list_group_contests': return [];
       case 'get_host_status': return d.hostStatus();
-      case 'list_my_hosted_contests': return { status: d.hostStatus(), items: [(({ questions, ...c }) => c)(d.hostContest({ status: 'scheduled', state: 'upcoming' }))] };
+      case 'list_my_hosted_contests': return { status: d.hostStatus(), items: [d.hostContest({ status: 'scheduled', state: 'upcoming' })] };
       case 'host_get_contest': return d.hostContest();
       case 'host_pick_questions': return d.pickedQuestions(Number(body.question_count ?? 5));
       case 'host_save_contest': return d.hostContest({ id: 'c-new', title: body.title });
