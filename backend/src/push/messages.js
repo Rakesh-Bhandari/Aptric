@@ -52,6 +52,20 @@ export function messageFor(type, data = {}) {
       return { title: `@${data.handle} accepted your follow request`, body: 'You can see their activity now.', url: `/u/${data.handle}`, tag: `follow-accepted-${data.handle}` };
     case 'post_expiry':
       return { title: 'Your post disappears in about 6 hours', body: 'Posts last 48 hours. Check the replies before it goes.', url: '/community?feed=mine', tag: `post-expiry-${data.id}` };
+    case 'challenge_received':
+      return {
+        title: `@${data.handle} challenged you: beat ${data.score}/${data.total}`,
+        body: 'Accept to see the questions. Your clock starts when you do.',
+        url: `/challenges/${data.id}`,
+        tag: `challenge-${data.id}`,
+      };
+    case 'challenge_expiring':
+      return { title: 'Your challenge expires in about 6 hours', body: `Against @${data.handle}. Don't let it lapse.`, url: `/challenges/${data.id}`, tag: `challenge-${data.id}` };
+    case 'challenge_result': {
+      const title = { won: `You beat @${data.handle}!`, lost: `@${data.handle} won this one`, draw: `A draw with @${data.handle}` }[data.outcome];
+      if (!title) return null;
+      return { title, body: `${data.mine}/${data.total} to ${data.theirs}/${data.total}. Ask for a rematch.`, url: `/challenges/${data.id}`, tag: `challenge-${data.id}` };
+    }
     default:
       return null;
   }

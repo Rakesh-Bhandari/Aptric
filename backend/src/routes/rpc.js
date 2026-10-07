@@ -20,6 +20,8 @@ const CURSOR = /^[0-9A-Za-z:+.| _-]{1,80}$/;
 const CURSOR_LONG = /^[0-9A-Za-z:+.| _eE-]{1,160}$/;
 const WORD = /^[a-z_]{1,24}$/;
 const FEED_WORD = /^[a-z_]{1,12}$/;
+// A challenge share link token: 16 characters from a fixed alphabet.
+const TOKEN = /^[A-Za-z0-9]{16}$/;
 
 // name -> { args: { arg: sql type }, set: returns rows (setof / table), void: returns nothing,
 //           admin: the route itself refuses non-admins before the call,
@@ -106,6 +108,23 @@ export const RPCS = {
   get_feed: { check: { feed: FEED_WORD, sort: FEED_WORD, cursor: CURSOR_LONG }, args: { feed: 'text', sort: 'text', topic_id: 'uuid', cursor: 'text' } },
   get_post: { args: { target_post_id: 'uuid' } },
   get_replies: { check: { cursor: CURSOR }, args: { target_post_id: 'uuid', cursor: 'text' } },
+  // Community: 1v1 challenges (flag community_challenges). The questions are served only to a player whose own run
+  // has started (accept_challenge / start_challenge_run), graded in SQL, on the server's clock.
+  create_challenge: {
+    limit: ['rpc_challenge', 60, 10], check: { set_kind: WORD, opponent_handle: HANDLE },
+    args: { set_kind: 'text', set_ref: 'uuid', opponent_handle: 'text', question_ids: 'uuid[]' },
+  },
+  start_challenge_run: { limit: ['rpc_challenge', 60, 10], args: { target_challenge_id: 'uuid' } },
+  accept_challenge: { limit: ['rpc_challenge', 60, 20], check: { token: TOKEN }, args: { target_challenge_id: 'uuid', token: 'text' } },
+  decline_challenge: { limit: ['rpc_challenge', 60, 20], args: { target_challenge_id: 'uuid' } },
+  cancel_challenge: { limit: ['rpc_challenge', 60, 20], args: { target_challenge_id: 'uuid' } },
+  get_challenge_run: { args: { target_challenge_id: 'uuid' } },
+  submit_challenge_answer: { limit: ['rpc_answer', 60, 120], args: { target_challenge_id: 'uuid', question_id: 'uuid', option_id: 'uuid' } },
+  challenge_hint: { limit: ['rpc_answer', 60, 120], args: { target_challenge_id: 'uuid', question_id: 'uuid' } },
+  finish_challenge_run: { limit: ['rpc_challenge', 60, 20], check: { violation: WORD }, args: { target_challenge_id: 'uuid', violation: 'text' } },
+  get_challenge: { limit: ['rpc_challenge_read', 60, 120], check: { token: TOKEN }, args: { target_challenge_id: 'uuid', token: 'text' } },
+  list_challenges: { check: { tab: WORD, cursor: CURSOR }, args: { tab: 'text', cursor: 'text' } },
+  request_rematch: { limit: ['rpc_challenge', 60, 10], args: { target_challenge_id: 'uuid' } },
   // Moderation: the route refuses non-admins, the SQL checks again and audits every action.
   admin_list_post_reports: { admin: true, check: { only_status: WORD }, args: { only_status: 'text', page_size: 'integer', page_offset: 'integer' } },
   admin_moderate_post: { admin: true, check: { action: WORD }, max: { note: 500 }, args: { target_post_id: 'uuid', action: 'text', note: 'text' } },
@@ -164,6 +183,12 @@ for (const name of [
   'create_post', 'delete_post', 'create_reply', 'delete_reply', 'react_post', 'vote_poll', 'report_post', 'mute_user',
   'unmute_user', 'get_mutes', 'get_feed', 'get_post', 'get_replies',
 ]) RPCS[name].flag = POSTS_FLAG;
+// 1v1 challenges are a third switch.
+export const CHALLENGES_FLAG = 'community_challenges';
+for (const name of [
+  'create_challenge', 'start_challenge_run', 'accept_challenge', 'decline_challenge', 'cancel_challenge', 'get_challenge_run',
+  'submit_challenge_answer', 'challenge_hint', 'finish_challenge_run', 'get_challenge', 'list_challenges', 'request_rematch',
+]) RPCS[name].flag = CHALLENGES_FLAG;
 // The Friends filter is the part of two older functions that belongs to the community feature.
 RPCS.get_leaderboard.flagArgs = { friends_only: COMMUNITY_FLAG };
 RPCS.get_contest_standings.flagArgs = { friends_only: COMMUNITY_FLAG };

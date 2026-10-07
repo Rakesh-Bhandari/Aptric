@@ -3,7 +3,7 @@ import * as api from './api';
 import { predictFollow, withFollowStatus } from './community';
 import { withPostChange, withReaction, withoutPost } from './posts';
 import { errorCode } from './errors';
-import type { Board, FeedName, FeedSort, FollowStatus, Post, Reaction, Relationship } from './types';
+import type { Board, ChallengeTab, FeedName, FeedSort, FollowStatus, Post, Reaction, Relationship } from './types';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +40,8 @@ export const keys = {
   post: (id: string) => ['post', id] as const,
   replies: (postId: string) => ['replies', postId] as const,
   mutes: ['mutes'] as const,
+  challenge: (idOrToken: string) => ['challenge', idOrToken] as const,
+  challenges: (tab: ChallengeTab) => ['challenges', tab] as const,
   adminPostReports: (status: string) => ['admin-post-reports', status] as const,
   examTags: ['exam-tags'] as const,
   levels: ['levels'] as const,
@@ -244,3 +246,30 @@ export const dropPost = (id: string) => {
 
 /** Everything that depends on the feed: after posting, deleting, muting or blocking. */
 export const invalidateFeeds = () => queryClient.invalidateQueries({ queryKey: ['feed'] });
+
+// Community: 1v1 challenges -------------------------------------------------------
+
+/** Whether 1v1 challenges are on for this player's plan (they ship dark too). */
+export const useChallengesEnabled = () => useEntitlements().can('community_challenges');
+
+/** One challenge by id, or by share-link token (`token: true`). */
+export const useChallenge = (idOrToken: string, token = false) =>
+  useQuery({
+    queryKey: keys.challenge(idOrToken),
+    queryFn: () => api.getChallenge(token ? { token: idOrToken } : { id: idOrToken }),
+    enabled: Boolean(idOrToken),
+    // Waiting on the other player: look again now and then.
+    refetchInterval: (q) => (q.state.data && ['pending', 'accepted'].includes(q.state.data.status) ? 20_000 : false),
+  });
+
+export const useChallenges = (tab: ChallengeTab) =>
+  useInfiniteQuery({
+    queryKey: keys.challenges(tab), initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) => api.listChallenges(tab, pageParam),
+    getNextPageParam: (last) => last.next_cursor,
+    refetchInterval: 60_000,
+  });
+
+/** After any challenge changes: the lists and every open challenge. */
+export const invalidateChallenges = () =>
+  Promise.all([queryClient.invalidateQueries({ queryKey: ['challenges'] }), queryClient.invalidateQueries({ queryKey: ['challenge'] })]);

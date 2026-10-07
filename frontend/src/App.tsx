@@ -22,6 +22,9 @@ const ContestPage = lazy(() => import('@/pages/ContestPage'));
 const Progress = lazy(() => import('@/pages/Progress'));
 const Friends = lazy(() => import('@/pages/Friends'));
 const Community = lazy(() => import('@/pages/Community'));
+const Challenges = lazy(() => import('@/pages/Challenges'));
+const ChallengePage = lazy(() => import('@/pages/ChallengePage'));
+const ChallengeLinkPage = lazy(() => import('@/pages/ChallengePage').then((m) => ({ default: m.ChallengeLinkPage })));
 const FollowersPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="followers" /> })));
 const FollowingPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="following" /> })));
 const Profile = lazy(() => import('@/pages/Profile'));
@@ -101,6 +104,9 @@ const router = createBrowserRouter([
               { path: 'u/:handle/following', element: <FollowingPage /> },
               { path: 'friends', element: <Friends /> },
               { path: 'community', element: <Community /> },
+              { path: 'challenges', element: <Challenges /> },
+              { path: 'challenges/:id', element: <ChallengePage /> },
+              { path: 'c/:token', element: <ChallengeLinkPage /> },
               { path: 'session/summary', element: <SessionSummary /> },
               { path: 'leaderboard', element: <Navigate to="/compete?tab=leaderboards" replace /> },
               { path: 'topics', element: <Navigate to="/practice" replace /> },

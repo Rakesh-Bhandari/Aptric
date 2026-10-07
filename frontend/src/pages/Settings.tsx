@@ -17,7 +17,7 @@ import { errorCode, friendlyError } from '@/lib/errors';
 import { formatRelative } from '@/lib/format';
 import { DAILY_TARGETS, HANDLE_RE } from '@/lib/game';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '@/lib/push';
-import { keys, queryClient, useCommunityEnabled, useExamTags, useLevels, usePostsEnabled, usePushConfig, useTopicPreferences, useTopics } from '@/lib/queries';
+import { keys, queryClient, useCommunityEnabled, useExamTags, useLevels, useChallengesEnabled, usePostsEnabled, usePushConfig, useTopicPreferences, useTopics } from '@/lib/queries';
 import type { CatalogTopic } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -398,6 +398,7 @@ const PUSH_KINDS: { key: keyof api.PushPreferences; label: string; hint: string 
   { key: 'contests', label: 'Contests', hint: 'When a contest is about to start and when its results are in.' },
   { key: 'league', label: 'League results', hint: 'Whether you were promoted or demoted after each week.' },
   { key: 'social', label: 'Friends', hint: 'New followers, follow requests and accepted requests.' },
+  { key: 'challenges', label: 'Challenges', hint: 'A friend challenges you, a challenge is about to expire, and results. Quiet between 22:00 and 07:00.' },
   { key: 'post_expiry', label: 'Posts about to expire', hint: 'A heads-up about 6 hours before one of your community posts disappears. Off unless you turn it on.' },
 ];
 
@@ -406,6 +407,7 @@ const NotificationsForm = () => {
   const config = usePushConfig();
   const community = useCommunityEnabled();
   const posts = usePostsEnabled();
+  const challengesOn = useChallengesEnabled();
   const cache = useQueryClient();
   const toast = useToast();
   const [subscribed, setSubscribed] = useState<boolean | null>(null);
@@ -481,7 +483,7 @@ const NotificationsForm = () => {
       />
       {subscribed && (
         <>
-          {PUSH_KINDS.filter((k) => (community || k.key !== 'social') && (posts || k.key !== 'post_expiry')).map((k) => (
+          {PUSH_KINDS.filter((k) => (community || k.key !== 'social') && (posts || k.key !== 'post_expiry') && (challengesOn || k.key !== 'challenges')).map((k) => (
             <SwitchRow key={k.key} label={k.label} hint={k.hint} checked={preferences[k.key]} onChange={(v) => void setPreference(k.key, v)} />
           ))}
           <Button type="button" variant="outline" size="sm" loading={busy} onClick={() => void sendTest()}><Bell /> Send a test notification</Button>

@@ -227,6 +227,10 @@ RLS is on for every table and nobody gets write grants: all writes go through `S
 
 The slice ships dark behind `plans.features.community_follow`; a `pilot` plan carries it for pilot groups (see `backend/README.md`, Community). `private.push_preferences.social` is the new notification switch.
 
+## Community: 1v1 challenges (`20261014000001_challenges.sql`)
+
+`challenges` (`set_kind` daily / practice_topic / custom_set, frozen `question_ids`, `share_token`, locked challenger result, opponent result, `status` pending / accepted / completed / declined / expired / cancelled, `winner_id`, `accept_by`, `complete_by`, `rematch_of`), `challenge_runs` (one timed run per player, with the server's `deadline_at` and any `violation`), `challenge_answers` (primary key `(challenge, user, question)`: one scoring attempt), `challenge_hints` and `integrity_events` (collusion flags, admin-readable). RLS is on, players have no write grants, `question_ids` and `share_token` are not granted columns (they come back only through the RPCs, and the questions only to a player whose run has started). `private.settle_challenge` applies the clock (stale draft, expired invitation, run out of time) under the row lock and is called by every read and write as well as by the `aptric-challenges-settle` job, so a state never depends on a job having run. `private.reward_challenge` pays XP under a per-player advisory lock. `private.can_challenge` is the one place that says who may be challenged by name. `private.push_preferences.challenges` is the notification switch.
+
 ## Admin area
 
 `frontend/src/admin` (`/admin/*`, lists and searches through the API's `/admin/*` routes), for `profiles.role = 'admin'` only. The UI's role check is cosmetic: reads go through RLS and writes through RLS or the `admin_*` functions (`20261001000013_admin.sql`), which check `private.is_admin()` themselves. Every write lands in `audit_log`.

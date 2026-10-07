@@ -21,6 +21,8 @@ export interface MockOptions {
   community?: boolean;
   /** Turns on 48-hour posts (plans.features.community_posts). */
   communityPosts?: boolean;
+  /** Turns on 1v1 challenges (plans.features.community_challenges). */
+  communityChallenges?: boolean;
   /** Fields merged into the signed-in profile (e.g. onboarded_at: null for onboarding). */
   profile?: Record<string, unknown>;
 }
@@ -57,6 +59,8 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
           ? { ...board, total: 2, entries: board.entries.filter((e) => e.is_me || e.following).map((e, i) => ({ ...e, rank: i + 1 })) }
           : board;
       }
+      case 'list_challenges': return { items: body.tab === 'incoming' ? [d.challenge()] : [], next_cursor: null, server_now: d.FIXED_NOW.toISOString() };
+      case 'get_challenge': return d.challenge();
       case 'get_feed': return d.feedPage();
       case 'get_replies': return d.replies();
       case 'get_mutes': return { items: [] };
@@ -89,7 +93,7 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
   }
 
   if (p === '/me/entitlements') {
-    return { plan: 'free', name: 'Free', features: { ads: true, community_follow: opts.community === true, community_posts: opts.communityPosts === true }, limits: {}, show_ads: true };
+    return { plan: 'free', name: 'Free', features: { ads: true, community_follow: opts.community === true, community_posts: opts.communityPosts === true, community_challenges: opts.communityChallenges === true }, limits: {}, show_ads: true };
   }
   if (p === '/push/config') return { enabled: false, publicKey: null, preferences: { daily: true, streak: true, contests: true, league: true, social: true } };
   if (p === '/tutor/history') return { available: true, messages: [] };

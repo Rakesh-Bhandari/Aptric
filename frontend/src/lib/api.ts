@@ -1,6 +1,7 @@
 import type { Database } from '@db/database.types';
 import { api } from './http';
 import type {
+  Challenge, ChallengeAnswerResult, ChallengeDetail, ChallengePage, ChallengeRun, ChallengeSetKind, ChallengeTab, ContestViolation as RunViolation,
   FeedName, FeedSort, MutedUser, NewPost, Post, PostPage, PostReportReason, Reaction, Reply, ReplyPage,
   ActivityPage, BlockedUser, FollowRequest, FollowStatus, Privacy, UserPage, UserReportReason, VisibilityLevel,
   Activity, AnswerResult, AttemptContext, Board, CatalogTopic, ContestAnswerResult, ContestDetail, ContestStandings,
@@ -126,6 +127,25 @@ export const votePoll = (id: string, option: number) => rpc<Post['poll']>('vote_
 export const reportPost = (id: string, reason: PostReportReason, details?: string) =>
   rpc<{ ok: true }>('report_post', { target_post_id: id, reason, details: details?.trim() || undefined });
 
+// Community: 1v1 challenges ---------------------------------------------------------
+export const createChallenge = (p: { setKind: ChallengeSetKind; setRef?: string; opponent?: string; questionIds?: string[] }) =>
+  rpc<Challenge>('create_challenge', { set_kind: p.setKind, set_ref: p.setRef, opponent_handle: p.opponent, question_ids: p.questionIds });
+export const startChallengeRun = (id: string) => rpc<ChallengeRun>('start_challenge_run', { target_challenge_id: id });
+export const acceptChallenge = (p: { id?: string; token?: string }) =>
+  rpc<ChallengeRun>('accept_challenge', { target_challenge_id: p.id, token: p.token });
+export const declineChallenge = (id: string) => rpc<Challenge>('decline_challenge', { target_challenge_id: id });
+export const cancelChallenge = (id: string) => rpc<Challenge>('cancel_challenge', { target_challenge_id: id });
+export const getChallengeRun = (id: string) => rpc<ChallengeRun>('get_challenge_run', { target_challenge_id: id });
+export const submitChallengeAnswer = (p: { id: string; questionId: string; optionId: string }) =>
+  rpc<ChallengeAnswerResult>('submit_challenge_answer', { target_challenge_id: p.id, question_id: p.questionId, option_id: p.optionId });
+export const finishChallengeRun = (id: string, violation?: RunViolation) =>
+  rpc<Challenge>('finish_challenge_run', { target_challenge_id: id, violation });
+export const getChallenge = (p: { id?: string; token?: string }) =>
+  rpc<ChallengeDetail>('get_challenge', { target_challenge_id: p.id, token: p.token });
+export const listChallenges = (tab: ChallengeTab, cursor: string | null = null) =>
+  rpc<ChallengePage>('list_challenges', { tab, cursor: cursor ?? undefined });
+export const requestRematch = (id: string) => rpc<Challenge>('request_rematch', { target_challenge_id: id });
+
 // Profile and settings -------------------------------------------------------
 export const fetchProfile = (): Promise<Profile> => api<Profile>('GET', '/me/profile');
 
@@ -149,7 +169,7 @@ export const getTopicPreferences = () => api<TopicPreferences>('GET', '/me/prefe
 export const saveTopicPreferences = (prefs: TopicPreferences) => api<TopicPreferences>('PATCH', '/me/preferences', prefs);
 
 // Push notifications ---------------------------------------------------------
-export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean; social: boolean; post_expiry: boolean };
+export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean; social: boolean; post_expiry: boolean; challenges: boolean };
 export type PushConfig = { enabled: boolean; publicKey: string | null; preferences: PushPreferences };
 export type PushSubscriptionJSON = { endpoint: string; keys: { p256dh: string; auth: string } };
 

@@ -126,3 +126,25 @@ test('post functions are validated and need the community_posts feature', async 
     assert.ok(RPCS[name].limit, `${name} is rate limited at the API`);
   }
 });
+
+test('challenge functions are validated, rate limited and behind their own switch', async () => {
+  const { CHALLENGES_FLAG } = await import('../src/routes/rpc.js');
+  const uuid = '11111111-1111-4111-8111-111111111111';
+  for (const name of ['create_challenge', 'accept_challenge', 'submit_challenge_answer', 'get_challenge', 'list_challenges', 'request_rematch']) {
+    assert.deepEqual(requiredFlags(name, {}), [CHALLENGES_FLAG], name);
+  }
+  assert.match(buildCall('accept_challenge', { token: 'abcdefghjkmnpqrs' }).text, /accept_challenge\(token => \$1::text\)/);
+  assert.throws(() => buildCall('accept_challenge', { token: 'short' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('accept_challenge', { token: "abcdefghjkmnpqr'" }), (e) => e.status === 400);
+  assert.throws(() => buildCall('get_challenge', { token: '../../etc/passwd' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('create_challenge', { set_kind: 'daily; drop' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('create_challenge', { set_kind: 'daily', opponent_handle: 'a b' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('create_challenge', { set_kind: 'daily', winner_id: uuid }), (e) => e.status === 400, 'no mass assignment');
+  assert.throws(() => buildCall('submit_challenge_answer', { target_challenge_id: uuid, question_id: uuid, option_id: uuid, is_correct: true }), (e) => e.status === 400, 'the client cannot say it was right');
+  assert.throws(() => buildCall('submit_challenge_answer', { target_challenge_id: uuid, question_id: uuid, option_id: uuid, time_ms: 1 }), (e) => e.status === 400, 'nor how long it took');
+  assert.match(buildCall('create_challenge', { set_kind: 'custom_set', question_ids: [uuid, uuid] }).text, /question_ids => \$2::uuid\[\]/);
+  assert.throws(() => buildCall('create_challenge', { set_kind: 'custom_set', question_ids: uuid }), (e) => e.status === 400);
+  for (const name of ['create_challenge', 'accept_challenge', 'submit_challenge_answer', 'finish_challenge_run', 'request_rematch']) {
+    assert.ok(RPCS[name].limit, `${name} is rate limited at the API`);
+  }
+});

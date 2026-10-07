@@ -405,3 +405,20 @@ export const adminPostReports = () => ({
     author: { id: 'u9', handle: 'spammy_sam', strikes_30d: 2 }, reports: [{ reason: 'spam', count: 2 }, { reason: 'abuse', count: 1 }],
   }],
 });
+
+// Community: 1v1 challenges -------------------------------------------------------
+
+export const challenge = (over: Record<string, unknown> = {}) => ({
+  id: 'ch1', status: 'pending', draft: false, role: 'opponent', set_kind: 'daily', question_count: 3,
+  challenger: userCard('aarav_meht', { relationship: relationship({ friend: true, following: true, followed_by: true }) }),
+  opponent: userCard('priya_s'), target: { score: 3, total: 3, time_ms: 72_000 }, created_at: iso(-2), sent_at: iso(-2),
+  accept_by: iso(46), accepted_at: null, complete_by: null, completed_at: null, rematch_of: null, share_token: null,
+  my_run: null, result: null, can_accept: true, server_now: FIXED_NOW.toISOString(), review: null, ...over,
+});
+
+export const challengeRun = (over: Record<string, unknown> = {}) => ({
+  challenge: challenge({ status: 'accepted', can_accept: false, my_run: { started_at: iso(0), deadline_at: iso(0.5), finished_at: null, violation: null, answered: 0 } }),
+  run: { started_at: iso(0), deadline_at: iso(0.5), finished_at: null, violation: null },
+  questions: [0, 1, 2].map((i) => ({ ...questionCard(i), position: i, answer: null, hint_used: false, correct_option_id: null, explanation: null })),
+  server_now: FIXED_NOW.toISOString(), ...over,
+});

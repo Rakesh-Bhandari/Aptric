@@ -1956,6 +1956,18 @@ export type Database = {
       };
       gen_store_embeddings: { Args: { p_model: string; p_rows: Json }; Returns: number };
       get_activity: { Args: { days?: number }; Returns: Json };
+      accept_challenge: { Args: { target_challenge_id?: string; token?: string }; Returns: Json };
+      cancel_challenge: { Args: { target_challenge_id: string }; Returns: Json };
+      challenge_hint: { Args: { question_id: string; target_challenge_id: string }; Returns: Json };
+      create_challenge: { Args: { opponent_handle?: string; question_ids?: string[]; set_kind: string; set_ref?: string }; Returns: Json };
+      decline_challenge: { Args: { target_challenge_id: string }; Returns: Json };
+      finish_challenge_run: { Args: { target_challenge_id: string; violation?: string }; Returns: Json };
+      get_challenge: { Args: { target_challenge_id?: string; token?: string }; Returns: Json };
+      get_challenge_run: { Args: { target_challenge_id: string }; Returns: Json };
+      list_challenges: { Args: { cursor?: string; tab?: string }; Returns: Json };
+      request_rematch: { Args: { target_challenge_id: string }; Returns: Json };
+      start_challenge_run: { Args: { target_challenge_id: string }; Returns: Json };
+      submit_challenge_answer: { Args: { option_id: string; question_id: string; target_challenge_id: string }; Returns: Json };
       block_user: { Args: { target_handle: string }; Returns: Json };
       create_post: {
         Args: {

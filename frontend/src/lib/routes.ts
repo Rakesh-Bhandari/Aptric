@@ -24,3 +24,7 @@ export const COMMUNITY_PATH = '/community';
 
 /** The post composer, opened on a question you solved (spoiler-safe: the post links to it, never reveals it). */
 export const discussHref = (questionId: string) => `${COMMUNITY_PATH}?compose=1&question=${encodeURIComponent(questionId)}`;
+
+/** 1v1 challenges: the lists, one challenge, and the share link. */
+export const CHALLENGES_PATH = '/challenges';
+export const challengeHref = (id: string) => `/challenges/${id}`;

@@ -595,3 +595,83 @@ export interface AdminPostReport {
   author: { id: string; handle: string; strikes_30d: number };
   reports: { reason: PostReportReason; count: number }[];
 }
+
+// Community: 1v1 challenges ----------------------------------------------------
+
+export type ChallengeStatus = 'pending' | 'accepted' | 'completed' | 'declined' | 'expired' | 'cancelled';
+export type ChallengeSetKind = 'daily' | 'practice_topic' | 'custom_set';
+export type ChallengeTab = 'incoming' | 'outgoing' | 'completed';
+
+export interface ChallengeSide {
+  score: number;
+  time_ms: number;
+  hints: number;
+}
+
+/** A challenge as you may see it. The question list is never in here. */
+export interface Challenge {
+  id: string;
+  status: ChallengeStatus;
+  /** The challenger is still playing their own set; nobody else can see it yet. */
+  draft: boolean;
+  role: 'challenger' | 'opponent' | 'viewer';
+  set_kind: ChallengeSetKind;
+  question_count: number;
+  challenger: UserCard;
+  opponent: UserCard | null;
+  /** The challenger's locked-in result: what the opponent has to beat. */
+  target: { score: number; total: number; time_ms: number } | null;
+  created_at: string;
+  sent_at: string | null;
+  accept_by: string | null;
+  accepted_at: string | null;
+  complete_by: string | null;
+  completed_at: string | null;
+  rematch_of: string | null;
+  /** Only the challenger gets the link token. */
+  share_token: string | null;
+  my_run: { started_at: string; deadline_at: string; finished_at: string | null; violation: string | null; answered: number } | null;
+  result: { winner: 'challenger' | 'opponent' | 'draw'; challenger: ChallengeSide; opponent: ChallengeSide } | null;
+  can_accept: boolean;
+  server_now: string;
+}
+
+export interface ChallengeReviewItem {
+  question: QuestionCard;
+  correct_option_id: string;
+  explanation: string;
+  mine: { selected_option_id: string | null; is_correct: boolean } | null;
+}
+
+export interface ChallengeDetail extends Challenge {
+  /** Once your own run is over: the questions with the key and your answers. */
+  review: ChallengeReviewItem[] | null;
+}
+
+export interface ChallengeQuestion extends QuestionCard {
+  position: number;
+  answer: { selected_option_id: string | null; is_correct: boolean } | null;
+  hint_used: boolean;
+  correct_option_id: string | null;
+  explanation: string | null;
+}
+
+export interface ChallengeRun {
+  challenge: Challenge;
+  run: { started_at: string; deadline_at: string; finished_at: string | null; violation: string | null };
+  questions: ChallengeQuestion[];
+  server_now: string;
+}
+
+export interface ChallengePage {
+  items: Challenge[];
+  next_cursor: string | null;
+  server_now: string;
+}
+
+export interface ChallengeAnswerResult {
+  is_correct: boolean;
+  answered: number;
+  finished: boolean;
+  challenge: Challenge;
+}

@@ -148,6 +148,53 @@ export const JOBS = [
         and ${ELIGIBLE}
         and coalesce((select pp.post_expiry from private.push_preferences pp where pp.user_id = p.id), false)`),
   },
+  // Challenges. Quiet hours: nothing between 22:00 and 07:00 local time (unclaimed rows wait for the next run).
+  {
+    type: 'challenge_received',
+    sql: claim(`
+      select c.opponent_id as user_id, 'challenge:' || c.id as dedupe_key,
+             jsonb_build_object('id', c.id, 'handle', fp.handle, 'score', c.challenger_score, 'total', cardinality(c.question_ids)) as data
+      from public.challenges c
+      join public.profiles p  on p.id  = c.opponent_id
+      join public.profiles fp on fp.id = c.challenger_id and fp.banned_at is null
+      where c.status = 'pending' and c.sent_at > now() - interval '24 hours' and c.accept_by > now()
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker_id = p.id and b.blocked_id = fp.id) or (b.blocker_id = fp.id and b.blocked_id = p.id))
+        and ${LOCAL_HOUR} between 7 and 21
+        and ${ELIGIBLE} and ${WANTS('challenges')}`),
+  },
+  {
+    type: 'challenge_expiring',
+    // Waiting for you (or in play) with 5 to 6 hours left.
+    sql: claim(`
+      select p.id as user_id, 'challenge-expiring:' || c.id as dedupe_key,
+             jsonb_build_object('id', c.id, 'handle', fp.handle) as data
+      from public.challenges c
+      join public.profiles p  on p.id  = c.opponent_id
+      join public.profiles fp on fp.id = c.challenger_id and fp.banned_at is null
+      where ((c.status = 'pending' and c.sent_at is not null and c.accept_by > now() + interval '5 hours' and c.accept_by <= now() + interval '6 hours')
+          or (c.status = 'accepted' and c.complete_by > now() + interval '5 hours' and c.complete_by <= now() + interval '6 hours'))
+        and ${LOCAL_HOUR} between 7 and 21
+        and ${ELIGIBLE} and ${WANTS('challenges')}`),
+  },
+  {
+    type: 'challenge_result',
+    // Both players hear how it ended (finished in the last 24 hours, so a night's quiet hours do not lose it).
+    sql: claim(`
+      select p.id as user_id, 'challenge-result:' || c.id as dedupe_key,
+             jsonb_build_object('id', c.id, 'handle', op.handle, 'total', cardinality(c.question_ids),
+               'outcome', case when c.is_draw then 'draw' when c.winner_id = p.id then 'won' else 'lost' end,
+               'mine',   case when p.id = c.challenger_id then c.challenger_score else c.opponent_score end,
+               'theirs', case when p.id = c.challenger_id then c.opponent_score else c.challenger_score end) as data
+      from public.challenges c
+      join public.profiles p  on p.id in (c.challenger_id, c.opponent_id)
+      join public.profiles op on op.id = case when p.id = c.challenger_id then c.opponent_id else c.challenger_id end and op.banned_at is null
+      where c.status = 'completed' and c.completed_at > now() - interval '24 hours'
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker_id = p.id and b.blocked_id = op.id) or (b.blocker_id = op.id and b.blocked_id = p.id))
+        and ${LOCAL_HOUR} between 7 and 21
+        and ${ELIGIBLE} and ${WANTS('challenges')}`),
+  },
 ];
 
 const CHUNK = 25;

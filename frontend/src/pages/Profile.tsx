@@ -1,8 +1,9 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Calendar, CheckCheck, Flame, Lock, Settings, Share2, Sparkles, Target, Trophy } from 'lucide-react';
+import { Calendar, CheckCheck, Flame, Lock, Settings, Share2, Sparkles, Swords, Target, Trophy } from 'lucide-react';
 import { AptricLogo } from '@/components/brand';
 import { FollowButton } from '@/components/community/FollowButton';
+import { ChallengeDialog } from '@/components/community/ChallengeDialog';
 import { ProfileMenu } from '@/components/community/ProfileMenu';
 import { TierEmblem } from '@/components/compete/TierEmblem';
 import { BadgeGrid } from '@/components/profile/BadgeGrid';
@@ -18,7 +19,7 @@ import { ErrorState } from '@/components/ui/states';
 import { useToast } from '@/context/ToastContext';
 import { errorCode } from '@/lib/errors';
 import { displayName, formatPercent, formatRelative, plural } from '@/lib/format';
-import { useCommunityEnabled, usePlayer } from '@/lib/queries';
+import { useChallengesEnabled, useCommunityEnabled, usePlayer } from '@/lib/queries';
 import { followListHref, FRIENDS_PATH, SETTINGS_PATH } from '@/lib/routes';
 import type { PlayerProfile } from '@/lib/types';
 
@@ -199,6 +200,8 @@ const Profile = () => {
 /** /u/:handle: someone's public profile. */
 export const PublicProfile = () => {
   const { handle = '' } = useParams();
+  const [challenging, setChallenging] = useState(false);
+  const challengesOn = useChallengesEnabled();
   const player = usePlayer(handle.toLowerCase());
   const isMe = useMemo(() => player.data?.is_me, [player.data]);
   const community = useCommunityEnabled();
@@ -215,7 +218,10 @@ export const PublicProfile = () => {
             action={isMe
               ? <Button variant="outline" size="sm" asChild><Link to={SETTINGS_PATH}>Edit your profile</Link></Button>
               : community && player.data.handle && (
-                <span className="inline-flex items-center gap-1">
+                <span className="inline-flex flex-wrap items-center justify-center gap-1">
+                  {challengesOn && player.data.relationship.friend && (
+                    <Button size="sm" variant="secondary" onClick={() => setChallenging(true)}><Swords /> Challenge</Button>
+                  )}
                   <FollowButton handle={player.data.handle} relationship={player.data.relationship} isPrivate={player.data.is_private} />
                   <ProfileMenu handle={player.data.handle} />
                 </span>
@@ -223,6 +229,7 @@ export const PublicProfile = () => {
           />
         )
         : <HeaderSkeleton />}
+      {challengesOn && player.data?.handle && <ChallengeDialog open={challenging} onOpenChange={setChallenging} opponent={player.data.handle} />}
     </Page>
   );
 };
