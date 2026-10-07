@@ -25,6 +25,8 @@ export interface MockOptions {
   communityChallenges?: boolean;
   /** Turns on private leagues (plans.features.community_groups). */
   communityGroups?: boolean;
+  /** Turns on user-hosted contests (plans.features.community_contests). */
+  communityContests?: boolean;
   /** Fields merged into the signed-in profile (e.g. onboarded_at: null for onboarding). */
   profile?: Record<string, unknown>;
 }
@@ -71,6 +73,15 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
       case 'get_group_announcements': return { items: [] };
       case 'get_group_members': return { items: [] };
       case 'get_group_requests': return { items: [] };
+      case 'list_my_contests': return [d.hostedContest()];
+      case 'list_group_contests': return [];
+      case 'get_host_status': return d.hostStatus();
+      case 'list_my_hosted_contests': return { status: d.hostStatus(), items: [(({ questions, ...c }) => c)(d.hostContest({ status: 'scheduled', state: 'upcoming' }))] };
+      case 'host_get_contest': return d.hostContest();
+      case 'host_pick_questions': return d.pickedQuestions(Number(body.question_count ?? 5));
+      case 'host_save_contest': return d.hostContest({ id: 'c-new', title: body.title });
+      case 'host_publish_contest': return d.hostContest({ id: 'c-new', status: 'scheduled' });
+      case 'admin_list_hosted_contests': return d.adminHostedContests();
       case 'get_feed': return d.feedPage();
       case 'get_replies': return d.replies();
       case 'get_mutes': return { items: [] };
@@ -103,7 +114,7 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
   }
 
   if (p === '/me/entitlements') {
-    return { plan: 'free', name: 'Free', features: { ads: true, community_follow: opts.community === true, community_posts: opts.communityPosts === true, community_challenges: opts.communityChallenges === true, community_groups: opts.communityGroups === true }, limits: {}, show_ads: true };
+    return { plan: 'free', name: 'Free', features: { ads: true, community_follow: opts.community === true, community_posts: opts.communityPosts === true, community_challenges: opts.communityChallenges === true, community_groups: opts.communityGroups === true, community_contests: opts.communityContests === true }, limits: {}, show_ads: true };
   }
   if (p === '/push/config') return { enabled: false, publicKey: null, preferences: { daily: true, streak: true, contests: true, league: true, social: true } };
   if (p === '/tutor/history') return { available: true, messages: [] };

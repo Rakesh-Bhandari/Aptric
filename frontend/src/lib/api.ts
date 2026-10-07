@@ -9,6 +9,7 @@ import type {
   ContestSummary, ContestViolation, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
   PlacementAnswer, PlacementResult, PlacementStart, PlayerProfile, PracticeBatch, PracticeMode, Profile,
   SectionNode, TodaySet, TopicPreferences, Entitlements,
+  ContestJoinResult, ContestReportReason, HostContest, HostDraft, HostHub, HostStatus, PickedQuestion,
 } from './types';
 
 type Functions = Database['public']['Functions'];
@@ -69,7 +70,8 @@ export const getPlayerProfile = (handle: string | null = null) =>
 // Contests -------------------------------------------------------------------
 export const listContests = () => rpc<ContestSummary[]>('list_contests');
 export const getContest = (id: string) => rpc<ContestDetail>('get_contest', { contest_id: id });
-export const joinContest = (id: string) => rpc<ContestSummary>('join_contest', { contest_id: id });
+export const joinContest = (id: string, accessCode?: string) =>
+  rpc<ContestJoinResult>('join_contest', { contest_id: id, access_code: accessCode?.trim() || undefined });
 export const submitContestAnswer = (p: { contestId: string; questionId: string; optionId: string; timeMs: number | null }) =>
   rpc<ContestAnswerResult>('submit_contest_answer', {
     contest_id: p.contestId, question_id: p.questionId, option_id: p.optionId, time_ms: p.timeMs ?? undefined,
@@ -77,10 +79,35 @@ export const submitContestAnswer = (p: { contestId: string; questionId: string; 
 /** Closes the attempt (idempotent): the first call records the reason, later ones change nothing. */
 export const finishContest = (contestId: string, violation?: ContestViolation) =>
   rpc<ContestSummary>('finish_contest', { contest_id: contestId, violation });
-export const getContestStandings = (id: string, pageSize = 50, offset = 0, friendsOnly = false) =>
+export const getContestStandings = (id: string, pageSize = 50, offset = 0, friendsOnly = false, groupId: string | null = null) =>
   rpc<ContestStandings>('get_contest_standings', {
-    contest_id: id, page_size: pageSize, page_offset: offset, friends_only: friendsOnly || undefined,
+    contest_id: id, page_size: pageSize, page_offset: offset, friends_only: friendsOnly || undefined, group_id: groupId ?? undefined,
   });
+
+// Community: user-hosted contests ---------------------------------------------------
+export const listMyContests = () => rpc<ContestSummary[]>('list_my_contests');
+export const listGroupContests = (groupId: string) => rpc<ContestSummary[]>('list_group_contests', { target_group_id: groupId });
+export const getHostStatus = () => rpc<HostStatus>('get_host_status');
+export const listMyHostedContests = () => rpc<HostHub>('list_my_hosted_contests');
+export const hostGetContest = (id: string) => rpc<HostContest>('host_get_contest', { target_contest_id: id });
+export const hostPickQuestions = (p: { sectionId?: string; topicId?: string; subtopicId?: string; difficulty?: Difficulty; count: number; excludeIds?: string[] }) =>
+  rpc<PickedQuestion[]>('host_pick_questions', {
+    section_id: p.sectionId, topic_id: p.topicId, subtopic_id: p.subtopicId, difficulty: p.difficulty,
+    question_count: p.count, exclude_ids: p.excludeIds?.length ? p.excludeIds : undefined,
+  });
+export const hostSaveContest = (id: string | null, d: HostDraft) =>
+  rpc<HostContest>('host_save_contest', {
+    target_contest_id: id ?? undefined, title: d.title, description: d.description, starts_at: d.starts_at, ends_at: d.ends_at,
+    question_ids: d.question_ids, visibility: d.visibility, group_id: d.group_id ?? undefined, access_code: d.access_code ?? undefined,
+    clear_access_code: d.clear_access_code || undefined, max_participants: d.max_participants ?? undefined,
+    late_join_minutes: d.late_join_minutes, host_plays: d.host_plays,
+  });
+export const hostPublishContest = (id: string) => rpc<HostContest>('host_publish_contest', { target_contest_id: id });
+export const hostUnpublishContest = (id: string) => rpc<HostContest>('host_unpublish_contest', { target_contest_id: id });
+export const hostCancelContest = (id: string, reason?: string) => rpc<HostContest>('host_cancel_contest', { target_contest_id: id, reason: reason || undefined });
+export const hostDeleteDraft = (id: string) => rpc<{ deleted: true }>('host_delete_draft', { target_contest_id: id });
+export const reportContest = (id: string, reason: ContestReportReason, detail?: string) =>
+  rpc<{ reported: true }>('report_contest', { contest_id: id, reason, detail: detail || undefined });
 
 // Community: follow / friends --------------------------------------------------
 export const followUser = (handle: string) => rpc<{ status: FollowStatus }>('follow_user', { target_handle: handle });

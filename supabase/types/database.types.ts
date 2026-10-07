@@ -2023,6 +2023,47 @@ export type Database = {
       report_post: { Args: { details?: string; reason: string; target_post_id: string }; Returns: Json };
       unmute_user: { Args: { target_handle: string }; Returns: Json };
       vote_poll: { Args: { option_idx: number; target_post_id: string }; Returns: Json };
+      admin_list_hosted_contests: { Args: { filter?: string; page_offset?: number; page_size?: number }; Returns: Json };
+      admin_review_hosted_contest: { Args: { action: string; note?: string; strike?: boolean; target_contest_id: string }; Returns: Json };
+      get_host_status: { Args: Record<PropertyKey, never>; Returns: Json };
+      host_cancel_contest: { Args: { reason?: string; target_contest_id: string }; Returns: Json };
+      host_delete_draft: { Args: { target_contest_id: string }; Returns: Json };
+      host_get_contest: { Args: { target_contest_id: string }; Returns: Json };
+      host_pick_questions: {
+        Args: {
+          difficulty?: Database["public"]["Enums"]["question_difficulty"];
+          exclude_ids?: string[];
+          question_count?: number;
+          section_id?: string;
+          subtopic_id?: string;
+          topic_id?: string;
+        };
+        Returns: Json;
+      };
+      host_publish_contest: { Args: { target_contest_id: string }; Returns: Json };
+      host_save_contest: {
+        Args: {
+          access_code?: string;
+          clear_access_code?: boolean;
+          description?: string;
+          ends_at: string;
+          group_id?: string;
+          host_plays?: boolean;
+          late_join_minutes?: number;
+          max_participants?: number;
+          question_ids?: string[];
+          starts_at: string;
+          target_contest_id?: string;
+          title: string;
+          visibility?: string;
+        };
+        Returns: Json;
+      };
+      host_unpublish_contest: { Args: { target_contest_id: string }; Returns: Json };
+      list_group_contests: { Args: { target_group_id: string }; Returns: Json };
+      list_my_contests: { Args: Record<PropertyKey, never>; Returns: Json };
+      list_my_hosted_contests: { Args: Record<PropertyKey, never>; Returns: Json };
+      report_contest: { Args: { contest_id: string; detail?: string; reason: string }; Returns: Json };
       admin_list_post_reports: { Args: { only_status?: string; page_offset?: number; page_size?: number }; Returns: Json };
       admin_moderate_post: { Args: { action: string; note?: string; target_post_id: string }; Returns: Json };
       follow_user: { Args: { target_handle: string }; Returns: Json };
@@ -2053,7 +2094,7 @@ export type Database = {
       unfollow_user: { Args: { target_handle: string }; Returns: Json };
       get_contest: { Args: { contest_id: string }; Returns: Json };
       get_contest_standings: {
-        Args: { contest_id: string; friends_only?: boolean; page_offset?: number; page_size?: number };
+        Args: { contest_id: string; friends_only?: boolean; group_id?: string; page_offset?: number; page_size?: number };
         Returns: Json;
       };
       get_daily_result: { Args: { target_set_id?: string }; Returns: Json };
@@ -2080,7 +2121,7 @@ export type Database = {
         Returns: Json;
       };
       finish_contest: { Args: { contest_id: string; violation?: string }; Returns: Json };
-      join_contest: { Args: { contest_id: string }; Returns: Json };
+      join_contest: { Args: { access_code?: string; contest_id: string }; Returns: Json };
       list_contests: { Args: Record<PropertyKey, never>; Returns: Json };
       start_placement: { Args: Record<PropertyKey, never>; Returns: Json };
       submit_answer: {

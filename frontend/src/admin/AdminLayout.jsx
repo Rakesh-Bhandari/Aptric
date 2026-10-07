@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Flag, ListChecks, ListTodo, MessagesSquare, ScrollText, Sparkles, Trophy, Users } from 'lucide-react';
+import { Flag, ListChecks, ListTodo, Medal, MessagesSquare, ScrollText, Sparkles, Trophy, Users } from 'lucide-react';
 import { AptricMark } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/SessionContext';
-import { countActiveJobs, countByStatus, countOpenReports, countPendingPosts } from './api';
+import { countActiveJobs, countByStatus, countOpenReports, countPendingHosted, countPendingPosts } from './api';
 import './Admin.css';
 
 const NAV = [
@@ -13,6 +13,7 @@ const NAV = [
     { to: 'reports', label: 'Reports', icon: Flag, count: 'reports' },
     { to: 'posts', label: 'Community posts', icon: MessagesSquare, count: 'posts' },
     { to: 'contests', label: 'Contests', icon: Trophy },
+    { to: 'hosted', label: 'Hosted contests', icon: Medal, count: 'hosted' },
     { to: 'users', label: 'Users', icon: Users },
     { to: 'jobs', label: 'Generation jobs', icon: Sparkles, count: 'jobs' },
     { to: 'audit', label: 'Audit log', icon: ScrollText },
@@ -28,10 +29,10 @@ const AdminLayout = () => {
 
     const refreshCounts = useCallback(async () => {
         try {
-            const [review, reports, jobs, posts] = await Promise.all([
-                countByStatus('in_review'), countOpenReports(), countActiveJobs(), countPendingPosts().catch(() => 0),
+            const [review, reports, jobs, posts, hosted] = await Promise.all([
+                countByStatus('in_review'), countOpenReports(), countActiveJobs(), countPendingPosts().catch(() => 0), countPendingHosted().catch(() => 0),
             ]);
-            setCounts({ review, reports, jobs, posts });
+            setCounts({ review, reports, jobs, posts, hosted });
         } catch { /* counts are decoration */ }
     }, []);
 

@@ -17,6 +17,17 @@ export function messageFor(type, data = {}) {
       };
     case 'contest_start':
       return { title: `${data.title} starts within the hour`, body: 'Get ready: the contest opens soon.', url: `/compete/contests/${data.id}`, tag: `contest-${data.id}` };
+    case 'hosted_contest_24h':
+      return { title: `${data.title} starts in 24 hours`, body: 'Plan your time: it opens at the same moment for everyone.', url: `/compete/contests/${data.id}`, tag: `contest-${data.id}` };
+    case 'hosted_contest_1h':
+      return { title: `${data.title} starts within the hour`, body: 'Get ready: the contest opens soon.', url: `/compete/contests/${data.id}`, tag: `contest-${data.id}` };
+    case 'hosted_contest_summary':
+      return {
+        title: `${data.title} is over`,
+        body: data.players ? `${data.players} ${Number(data.players) === 1 ? 'player' : 'players'} took part. See your summary.` : 'No one took part. See your summary.',
+        url: `/compete/host/${data.id}`,
+        tag: `contest-${data.id}`,
+      };
     case 'contest_end':
       return {
         title: `${data.title}: results are in`,

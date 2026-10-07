@@ -179,3 +179,34 @@ test('league functions are validated, rate limited and behind their own switch',
     assert.ok(RPCS[name].limit, `${name} is rate limited at the API`);
   }
 });
+
+test('hosted-contest functions are validated, rate limited and behind their own switch', async () => {
+  const { CONTESTS_FLAG, GROUPS_FLAG } = await import('../src/routes/rpc.js');
+  const uuid = '11111111-1111-4111-8111-111111111111';
+  for (const name of ['get_host_status', 'host_pick_questions', 'host_save_contest', 'host_publish_contest', 'host_cancel_contest', 'report_contest', 'list_my_contests']) {
+    assert.deepEqual(requiredFlags(name, {}), [CONTESTS_FLAG], name);
+  }
+  assert.deepEqual(requiredFlags('list_group_contests', {}), [GROUPS_FLAG]);
+  assert.deepEqual(requiredFlags('join_contest', { contest_id: uuid, access_code: 'abcd' }), [], 'joining a contest needs no flag: it is the same engine');
+  assert.deepEqual(requiredFlags('get_contest_standings', { contest_id: uuid, group_id: uuid }), [GROUPS_FLAG], 'the league filter needs the leagues feature');
+  assert.deepEqual(requiredFlags('get_contest_standings', { contest_id: uuid }), []);
+  // Moderation is for admins whatever the plan
+  assert.equal(RPCS.admin_list_hosted_contests.admin, true);
+  assert.equal(RPCS.admin_review_hosted_contest.admin, true);
+  assert.deepEqual(requiredFlags('admin_review_hosted_contest', {}), []);
+  // Arguments
+  assert.match(buildCall('join_contest', { contest_id: uuid, access_code: 'Secret1' }).text, /access_code => \$2::text/);
+  assert.throws(() => buildCall('join_contest', { contest_id: uuid, access_code: "x'; drop" }), (e) => e.status === 400);
+  assert.throws(() => buildCall('join_contest', { contest_id: uuid, access_code: 'abc' }), (e) => e.status === 400, 'codes are 4 to 24 characters');
+  assert.throws(() => buildCall('host_save_contest', { title: 'x'.repeat(121) }), (e) => e.status === 400);
+  assert.throws(() => buildCall('host_save_contest', { title: 'x', host_id: uuid }), (e) => e.status === 400, 'no mass assignment: the host is the caller');
+  assert.throws(() => buildCall('host_save_contest', { title: 'x', status: 'scheduled' }), (e) => e.status === 400, 'status is never an argument');
+  assert.throws(() => buildCall('host_save_contest', { title: 'x', visibility: 'public; drop' }), (e) => e.status === 400);
+  assert.match(buildCall('host_save_contest', { target_contest_id: null, title: 'x', question_ids: [uuid] }).text, /question_ids => \$3::uuid\[\]/);
+  assert.throws(() => buildCall('host_save_contest', { title: 'x', question_ids: uuid }), (e) => e.status === 400, 'arrays must be arrays');
+  assert.throws(() => buildCall('report_contest', { contest_id: uuid, reason: 'spam', detail: 'x'.repeat(301) }), (e) => e.status === 400);
+  assert.throws(() => buildCall('admin_review_hosted_contest', { target_contest_id: uuid, action: 'approve; drop' }), (e) => e.status === 400);
+  for (const name of ['host_pick_questions', 'host_save_contest', 'host_publish_contest', 'host_cancel_contest', 'report_contest', 'join_contest']) {
+    assert.ok(RPCS[name].limit, `${name} is rate limited at the API`);
+  }
+});

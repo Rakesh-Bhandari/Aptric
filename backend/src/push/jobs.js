@@ -65,7 +65,42 @@ export const JOBS = [
              jsonb_build_object('title', c.title, 'id', c.id) as data
       from public.contests c
       join public.profiles p on true
-      where c.is_published and c.starts_at > now() and c.starts_at <= now() + interval '1 hour'
+      where c.is_published and c.host_id is null and c.starts_at > now() and c.starts_at <= now() + interval '1 hour'
+        and ${ELIGIBLE} and ${WANTS('contests')}`),
+  },
+  {
+    type: 'hosted_contest_24h',
+    // A hosted contest starting in 23 to 24 hours (hourly runs: one window each): whoever entered it, and its host.
+    // Hosted contests are never broadcast: unlisted and league contests are only for the people in them.
+    sql: claim(`
+      select p.id as user_id, 'hosted-24h:' || c.id as dedupe_key,
+             jsonb_build_object('title', c.title, 'id', c.id, 'when', '24h') as data
+      from public.contests c
+      join public.profiles p on p.id = c.host_id or exists (select 1 from public.contest_entries e where e.contest_id = c.id and e.user_id = p.id)
+      where c.host_id is not null and c.is_published and c.starts_at > now() + interval '23 hours' and c.starts_at <= now() + interval '24 hours'
+        and ${ELIGIBLE} and ${WANTS('contests')}`),
+  },
+  {
+    type: 'hosted_contest_1h',
+    // Starting within the hour. Not held back for quiet hours: players asked for this contest.
+    sql: claim(`
+      select p.id as user_id, 'hosted-1h:' || c.id as dedupe_key,
+             jsonb_build_object('title', c.title, 'id', c.id, 'when', '1h') as data
+      from public.contests c
+      join public.profiles p on p.id = c.host_id or exists (select 1 from public.contest_entries e where e.contest_id = c.id and e.user_id = p.id)
+      where c.host_id is not null and c.is_published and c.starts_at > now() and c.starts_at <= now() + interval '1 hour'
+        and ${ELIGIBLE} and ${WANTS('contests')}`),
+  },
+  {
+    type: 'hosted_contest_summary',
+    // The host, once their contest has ended (in the last 3 hours, slack for a missed run).
+    sql: claim(`
+      select p.id as user_id, 'hosted-summary:' || c.id as dedupe_key,
+             jsonb_build_object('title', c.title, 'id', c.id,
+               'players', (select count(*) from public.contest_entries e where e.contest_id = c.id and e.user_id <> c.host_id)) as data
+      from public.contests c
+      join public.profiles p on p.id = c.host_id
+      where c.host_id is not null and c.status = 'scheduled' and c.hidden_at is null and c.ends_at <= now() and c.ends_at > now() - interval '3 hours'
         and ${ELIGIBLE} and ${WANTS('contests')}`),
   },
   {

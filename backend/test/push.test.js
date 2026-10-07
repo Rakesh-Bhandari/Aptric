@@ -70,12 +70,17 @@ test('messageFor words each notification and links into the app', () => {
   assert.equal(messageFor('challenge_result', { outcome: 'nonsense' }), null);
   assert.equal(messageFor('group_announcement', { id: 'a1', group: 'IIT-X 2026', slug: 'iit-x-2026-ab12c', body: 'Season starts Monday' }).url, '/leagues/iit-x-2026-ab12c');
   assert.equal(messageFor('group_announcement', { id: 'a1', group: 'IIT-X 2026', slug: 's', body: 'Hello' }).title, 'IIT-X 2026: new announcement');
+  assert.equal(messageFor('hosted_contest_24h', { title: 'Friday quiz', id: 'c1' }).title, 'Friday quiz starts in 24 hours');
+  assert.equal(messageFor('hosted_contest_1h', { title: 'Friday quiz', id: 'c1' }).url, '/compete/contests/c1');
+  assert.equal(messageFor('hosted_contest_summary', { title: 'Friday quiz', id: 'c1', players: 12 }).body, '12 players took part. See your summary.');
+  assert.equal(messageFor('hosted_contest_summary', { title: 'Friday quiz', id: 'c1', players: 1 }).body, '1 player took part. See your summary.');
+  assert.equal(messageFor('hosted_contest_summary', { title: 'Friday quiz', id: 'c1', players: 0 }).url, '/compete/host/c1');
   assert.equal(messageFor('nope'), null);
 });
 
 test('every job claims its rows in push_log before returning subscriptions', () => {
   assert.deepEqual(JOBS.map((j) => j.type), [
-    'daily', 'streak', 'contest_start', 'contest_end', 'league', 'follow', 'follow_request', 'follow_accepted', 'post_expiry',
+    'daily', 'streak', 'contest_start', 'hosted_contest_24h', 'hosted_contest_1h', 'hosted_contest_summary', 'contest_end', 'league', 'follow', 'follow_request', 'follow_accepted', 'post_expiry',
     'challenge_received', 'challenge_expiring', 'challenge_result', 'group_announcement',
   ]);
   for (const job of JOBS) {

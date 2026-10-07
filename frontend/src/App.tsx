@@ -26,6 +26,8 @@ const Challenges = lazy(() => import('@/pages/Challenges'));
 const Leagues = lazy(() => import('@/pages/Leagues'));
 const JoinLeaguePage = lazy(() => import('@/pages/Leagues').then((m) => ({ default: m.JoinLeaguePage })));
 const League = lazy(() => import('@/pages/League'));
+const Host = lazy(() => import('@/pages/Host'));
+const HostEditor = lazy(() => import('@/pages/HostEditor'));
 const ChallengePage = lazy(() => import('@/pages/ChallengePage'));
 const ChallengeLinkPage = lazy(() => import('@/pages/ChallengePage').then((m) => ({ default: m.ChallengeLinkPage })));
 const FollowersPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="followers" /> })));
@@ -53,6 +55,7 @@ const AdminUsers = lazy(() => import('@/admin/Users'));
 const AdminUserPage = lazy(() => import('@/admin/UserPage'));
 const AdminReports = lazy(() => import('@/admin/Reports'));
 const AdminPostReports = lazy(() => import('@/admin/PostReports'));
+const AdminHostedContests = lazy(() => import('@/admin/HostedContests'));
 const AdminJobs = lazy(() => import('@/admin/Jobs'));
 const AdminAuditLog = lazy(() => import('@/admin/AuditLog'));
 
@@ -99,6 +102,9 @@ const router = createBrowserRouter([
               { path: 'practice', element: <Practice /> },
               { path: 'compete', element: <Compete /> },
               { path: 'compete/contests/:id', element: <ContestPage /> },
+              { path: 'compete/host', element: <Host /> },
+              { path: 'compete/host/new', element: <HostEditor /> },
+              { path: 'compete/host/:id', element: <HostEditor /> },
               { path: 'progress', element: <Progress /> },
               { path: 'profile', element: <Profile /> },
               { path: 'settings', element: <Settings /> },
@@ -132,6 +138,7 @@ const router = createBrowserRouter([
                   { path: 'users/:id', element: <AdminUserPage /> },
                   { path: 'reports', element: <AdminReports /> },
                   { path: 'posts', element: <AdminPostReports /> },
+                  { path: 'hosted', element: <AdminHostedContests /> },
                   { path: 'jobs', element: <AdminJobs /> },
                   { path: 'audit', element: <AdminAuditLog /> },
                 ],

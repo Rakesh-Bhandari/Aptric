@@ -33,3 +33,10 @@ export const challengeHref = (id: string) => `/challenges/${id}`;
 export const LEAGUES_PATH = '/leagues';
 export const leagueHref = (slug: string) => `/leagues/${slug}`;
 export const inviteHref = (code: string, origin = window.location.origin) => `${origin}/leagues/join?code=${code}`;
+
+/** Hosting a contest: the hub, a new contest, one contest of yours. Playing one is the ordinary contest page. */
+export const HOST_PATH = '/compete/host';
+export const hostContestHref = (id: string) => `${HOST_PATH}/${id}`;
+export const contestHref = (id: string) => `/compete/contests/${id}`;
+/** The link a host shares: unlisted contests are reachable by it. */
+export const contestShareHref = (id: string, origin = window.location.origin) => `${origin}${contestHref(id)}`;

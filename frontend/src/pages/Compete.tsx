@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarClock, ChevronRight, Crown, ListChecks, Medal, Swords, Timer, Trophy, UserPlus, Users } from 'lucide-react';
+import { CalendarClock, ChevronRight, Crown, ListChecks, Medal, Plus, Swords, Timer, Trophy, UserPlus, Users } from 'lucide-react';
 import { ContestStateBadge } from '@/components/compete/ContestStateBadge';
 import { FollowButton } from '@/components/community/FollowButton';
 import { ScopeSwitch, type Scope } from '@/components/community/ScopeSwitch';
@@ -8,6 +8,7 @@ import { LiveIndicator, PlayerLink, StandingRow, YouChip, ZoneDivider } from '@/
 import { TierEmblem } from '@/components/compete/TierEmblem';
 import { formatCountdown, formatSpan, useNow } from '@/components/compete/time';
 import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Page, PageHeader } from '@/components/ui/page';
@@ -18,7 +19,9 @@ import { entryRelationship } from '@/lib/community';
 import { displayName, formatDateTime, formatRelative, plural } from '@/lib/format';
 import { leagueZone } from '@/lib/game';
 import { FRIENDS_PATH } from '@/lib/routes';
-import { useCommunityEnabled, useContests, useLeaderboard, useMyLeague } from '@/lib/queries';
+import { useCommunityEnabled, useContests, useContestsEnabled, useLeaderboard, useMyContests, useMyLeague } from '@/lib/queries';
+import { HOST_PATH } from '@/lib/routes';
+import { VISIBILITY_SHORT } from '@/lib/hosting';
 import type { Board, ContestSummary, LeaderboardEntry, MyLeague } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -319,10 +322,12 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <ContestStateBadge c={c} />
-          {c.my_entry && c.state !== 'ended' && <span className="text-xs font-semibold text-success">✓ You're in</span>}
+          {c.hosted && <Badge variant="muted">{VISIBILITY_SHORT[c.visibility]}</Badge>}
+          {c.my_entry && c.state !== 'ended' && c.state !== 'cancelled' && <span className="text-xs font-semibold text-success">✓ You're in</span>}
         </div>
         <CardTitle className="pt-1">{c.title}</CardTitle>
         {c.description && <CardDescription className="line-clamp-2">{c.description}</CardDescription>}
+        {c.hosted && c.host?.handle && <p className="text-xs text-muted-foreground">Hosted by @{c.host.handle}{c.is_host ? ' (you)' : ''}</p>}
       </CardHeader>
       <CardContent className="flex-1 space-y-3">
         <p className="flex items-start gap-2 text-sm text-foreground">
@@ -353,12 +358,38 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
 
 const ContestsTab = () => {
   const contests = useContests();
-  if (contests.isError) return <ErrorState error={contests.error} onRetry={() => void contests.refetch()} />;
-  if (!contests.data) return <div className="grid gap-4 sm:grid-cols-2"><Skeleton className="h-60 rounded-lg" /><Skeleton className="h-60 rounded-lg" /></div>;
-  if (contests.data.length === 0) {
-    return <EmptyState icon={<Swords />} title="No contests right now">Contests are timed events where everyone answers the same questions. Check back soon.</EmptyState>;
-  }
-  return <div className="grid gap-4 sm:grid-cols-2">{contests.data.map((c) => <ContestCard key={c.id} c={c} />)}</div>;
+  const hosting = useContestsEnabled();
+  const mine = useMyContests(hosting);
+  // Contests you host or entered that the public list does not carry (unlisted and league ones).
+  const listed = new Set((contests.data ?? []).map((c) => c.id));
+  const yours = (mine.data ?? []).filter((c) => !listed.has(c.id));
+  const header = hosting && (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm text-muted-foreground">Timed events where everyone answers the same questions.</p>
+      <Button asChild variant="secondary"><Link to={HOST_PATH}><Plus /> Host a contest</Link></Button>
+    </div>
+  );
+  if (contests.isError) return <div className="space-y-4">{header}<ErrorState error={contests.error} onRetry={() => void contests.refetch()} /></div>;
+  if (!contests.data) return <div className="space-y-4">{header}<div className="grid gap-4 sm:grid-cols-2"><Skeleton className="h-60 rounded-lg" /><Skeleton className="h-60 rounded-lg" /></div></div>;
+  return (
+    <div className="space-y-6">
+      {header}
+      {yours.length > 0 && (
+        <section className="space-y-3" aria-labelledby="your-contests">
+          <h2 id="your-contests" className="text-sm font-bold text-heading">Your contests</h2>
+          <div className="grid gap-4 sm:grid-cols-2">{yours.map((c) => <ContestCard key={c.id} c={c} />)}</div>
+        </section>
+      )}
+      {contests.data.length === 0 && yours.length === 0
+        ? <EmptyState icon={<Swords />} title="No contests right now">Contests are timed events where everyone answers the same questions. Check back soon.</EmptyState>
+        : contests.data.length > 0 && (
+          <section className="space-y-3" aria-labelledby="open-contests">
+            {yours.length > 0 && <h2 id="open-contests" className="text-sm font-bold text-heading">Open to everyone</h2>}
+            <div className="grid gap-4 sm:grid-cols-2">{contests.data.map((c) => <ContestCard key={c.id} c={c} />)}</div>
+          </section>
+        )}
+    </div>
+  );
 };
 
 // Page -----------------------------------------------------------------------

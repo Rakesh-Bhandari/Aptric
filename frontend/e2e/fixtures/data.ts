@@ -268,16 +268,23 @@ export const mistakes = () => ({
   })),
 });
 
+/** The fields every contest summary carries; official contests are not hosted. */
+const official = {
+  finished_at: null, violation: null, hosted: false, is_host: false, host: null, visibility: 'public', group: null, needs_code: false,
+  max_participants: null, host_plays: false, late_join_until: null, status_note: null,
+};
+
 export const contests = () => [
-  { id: 'c-live', slug: 'weekend-sprint', title: 'Weekend Sprint #14', description: '20 mixed questions in 30 minutes.', starts_at: iso(-0.5), ends_at: iso(1.5), state: 'live', question_count: 20, participants: 312, my_entry: { score: 640, correct: 8, answered: 9, time_ms: 410_000, rank: 27 } },
-  { id: 'c-up', slug: 'quant-blitz', title: 'Quant Blitz', description: 'Fast arithmetic for bank exams.', starts_at: iso(30), ends_at: iso(31), state: 'upcoming', question_count: 15, participants: 88, my_entry: null },
-  { id: 'c-old', slug: 'reasoning-cup', title: 'Reasoning Cup', description: null, starts_at: iso(-72), ends_at: iso(-71), state: 'ended', question_count: 25, participants: 540, my_entry: { score: 1_120, correct: 18, answered: 25, time_ms: 3_100_000, rank: 41 } },
+  { ...official, id: 'c-live', slug: 'weekend-sprint', title: 'Weekend Sprint #14', description: '20 mixed questions in 30 minutes.', starts_at: iso(-0.5), ends_at: iso(1.5), state: 'live', question_count: 20, participants: 312, my_entry: { score: 640, correct: 8, answered: 9, time_ms: 410_000, rank: 27 } },
+  { ...official, id: 'c-up', slug: 'quant-blitz', title: 'Quant Blitz', description: 'Fast arithmetic for bank exams.', starts_at: iso(30), ends_at: iso(31), state: 'upcoming', question_count: 15, participants: 88, my_entry: null },
+  { ...official, id: 'c-old', slug: 'reasoning-cup', title: 'Reasoning Cup', description: null, starts_at: iso(-72), ends_at: iso(-71), state: 'ended', question_count: 25, participants: 540, my_entry: { score: 1_120, correct: 18, answered: 25, time_ms: 3_100_000, rank: 41 } },
 ];
 
 export const contest = (id: string) => {
-  const base = contests().find((c) => c.id === id) ?? contests()[0];
+  const base = [...contests(), hostedContest(), hostedContest({ id: 'c-code', needs_code: true, title: 'Friday quiz' })].find((c) => c.id === id) ?? contests()[0];
   return {
     ...base,
+    dashboard: null,
     joined: base.my_entry !== null,
     questions: base.state === 'upcoming' ? null : Array.from({ length: 5 }, (_, i) => ({
       ...questionCard(i), position: i + 1,
@@ -438,4 +445,39 @@ export const groupBoard = (win = 'weekly') => ({
     { rank: 2, user: userCard('priya_s'), xp: 380, correct: 28, streak: 3, role: 'member', is_me: true, rank_delta: -1 },
   ],
   me: { rank: 2, xp: 380, correct: 28, rank_delta: -1 }, most_improved: null,
+});
+
+// Community: user-hosted contests ------------------------------------------------------
+
+/** An unlisted contest hosted by someone else, starting in 3 hours (not yet joined). */
+export const hostedContest = (over: Record<string, unknown> = {}) => ({
+  ...official, id: 'c-hosted', slug: 'friday-quiz-1234', title: 'Friday quiz', description: 'Quant only. Good luck!', starts_at: iso(3), ends_at: iso(4), state: 'upcoming',
+  question_count: 6, participants: 3, my_entry: null, hosted: true, host: { handle: 'aarav_meht', display_name: 'Aarav Mehta', avatar_url: null },
+  visibility: 'unlisted', max_participants: 50, late_join_until: iso(3.25), ...over,
+});
+
+export const hostStatus = (over: Record<string, unknown> = {}) => ({
+  ok: true, reasons: [], via_group: false, level: 6, min_level: 5, verified: true, age_days: 60, min_age_days: 30, post_strikes: 0, host_strikes: 0,
+  quota: { used: 1, limit: 2, max_participants: 50 }, groups: [], ...over,
+});
+
+export const hostContest = (over: Record<string, unknown> = {}) => ({
+  ...hostedContest({ is_host: true, host: { handle: 'priya_sha', display_name: 'Priya Sharma', avatar_url: null }, participants: 0 }),
+  status: 'draft', review_state: 'none', hidden: false, late_join_minutes: 15, has_code: false, created_at: iso(-1), published_at: null, settled: false,
+  questions: [0, 1, 2, 3, 4].map((i) => ({ position: i, question_id: `hq${i}`, stem: `Hosted question ${i + 1}`, difficulty: 'easy', seen: i === 0 })),
+  seen_count: 1, dashboard: { registrations: 0, started: 0, finished: 0, active_now: null, capacity: 50 }, ...over,
+});
+
+export const pickedQuestions = (n = 5) => Array.from({ length: n }, (_, i) => ({
+  id: `hq${i}`, stem: `Hosted question ${i + 1}`, difficulty: 'easy', subtopic: 'Ratios', seen: i === 0,
+}));
+
+export const adminHostedContests = () => ({
+  total: 1,
+  items: [{
+    id: 'hc1', title: 'Open cup', description: 'A public contest', starts_at: iso(5), ends_at: iso(6), state: 'upcoming', status: 'scheduled', visibility: 'public',
+    review_state: 'pending', hidden: false, status_note: null, created_at: iso(-1), participants: 0,
+    host: { id: 'u9', handle: 'aarav_meht', level: 8, host_strikes: 1, post_strikes: 0 },
+    questions: [{ position: 0, stem: 'What is 2 + 2?', difficulty: 'easy' }], reports: [],
+  }],
 });

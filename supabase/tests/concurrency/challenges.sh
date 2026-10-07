@@ -9,6 +9,8 @@
 #   2. the same two players can create at most 3 challenges a day, however many requests arrive together,
 #   3. the daily XP cap (5 rewarded challenges per player) holds when many challenges finish at once,
 #   4. a private league never goes past its size when many players join with the code together,
+#   5. a hosted contest never goes past max_participants when many players join together,
+#   6. hosted-contest XP is paid once and stays within 3 rewards a player a day when settlement runs in parallel,
 # and removes everything it created. A failing check exits non-zero.
 set -uo pipefail
 PSQL=(psql -X -q -v ON_ERROR_STOP=1 -t -A)
@@ -22,6 +24,7 @@ as() { # as <user handle> <sql>: runs one statement as that player
 cleanup() {
   # One statement at a time, so a failure cannot stop the rest.
   while IFS= read -r stmt; do "${PSQL[@]}" -c "$stmt" >/dev/null 2>&1; done <<'SQL'
+delete from public.contests where host_id in (select id from public.profiles where handle like 'race\_%')
 delete from public.challenges where challenger_id in (select id from public.profiles where handle like 'race\_%') or opponent_id in (select id from public.profiles where handle like 'race\_%')
 delete from public.attempts where user_id in (select id from public.profiles where handle like 'race\_%')
 delete from public.xp_events where user_id in (select id from public.profiles where handle like 'race\_%')
@@ -128,5 +131,38 @@ for h in b c d e f g; do ( as "race_$h" "select public.join_group('$gcode')" > "
 wait
 for h in b c d e f g; do rm -f "/tmp/race_j$h.out"; done
 check "league never exceeds its size" "$("${PSQL[@]}" -c "select count(*) from public.group_members where group_id = '$gid' and status = 'active'")" "3"
+
+# 5. Hosted contest cap: a live unlisted contest for 3 players, six join at once -> three get in
+"${PSQL[@]}" >/dev/null <<'SQL'
+insert into public.contests (id, slug, title, starts_at, ends_at, created_by, host_id, visibility, status, max_participants, published_at)
+select 'eeeeeeee-0000-0000-0000-000000000001', 'race-cap-' || md5('cap'), 'Race cap', now() - interval '1 minute', now() + interval '1 hour', p.id, p.id, 'unlisted', 'scheduled', 3, now()
+from public.profiles p where p.handle = 'race_a';
+insert into public.contest_items (contest_id, question_id, position)
+select 'eeeeeeee-0000-0000-0000-000000000001', id, row_number() over (order by id) - 1 from public.questions where stem like 'Race question%';
+SQL
+for h in b c d e f g; do ( as "race_$h" "select public.join_contest('eeeeeeee-0000-0000-0000-000000000001')" > "/tmp/race_c$h.out" ) & done
+wait
+for h in b c d e f g; do rm -f "/tmp/race_c$h.out"; done
+check "hosted contest never exceeds max_participants" "$("${PSQL[@]}" -c "select count(*) from public.contest_entries where contest_id = 'eeeeeeee-0000-0000-0000-000000000001'")" "3"
+
+# 6. Hosted XP: four ended public contests (two hosts), the same six finishers, settled by four sessions at once
+"${PSQL[@]}" >/dev/null <<'SQL'
+insert into public.contests (id, slug, title, starts_at, ends_at, created_by, host_id, visibility, status, host_review_state, max_participants, published_at)
+select ('eeeeeeee-0000-0000-0000-00000000010' || n)::uuid, 'race-xp-' || n || md5('xp'), 'Race xp ' || n, now() - interval '3 hours', now() - interval '2 hours', p.id, p.id,
+       'public', 'scheduled', 'approved', 50, now() - interval '6 hours'
+from generate_series(1, 4) n join public.profiles p on p.handle = case when n <= 2 then 'race_a' else 'race_h' end;
+insert into public.contest_items (contest_id, question_id, position)
+select c.id, q.id, row_number() over (partition by c.id order by q.id) - 1
+from public.contests c, (select id from public.questions where stem like 'Race question%' order by id limit 5) q where c.id::text like 'eeeeeeee-0000-0000-0000-00000000010%';
+insert into public.contest_entries (contest_id, user_id, score, correct, answered, time_ms)
+select c.id, p.id, 10 * length(p.handle), 3, 5, 1000
+from public.contests c, public.profiles p
+where c.id::text like 'eeeeeeee-0000-0000-0000-00000000010%' and p.handle in ('race_b', 'race_c', 'race_d', 'race_e', 'race_f', 'race_g');
+SQL
+for i in 1 2 3 4; do ( "${PSQL[@]}" -c "select private.settle_hosted_contests()" >/dev/null 2>&1 ) & done
+wait
+check "no player gets more than 3 hosted-contest rewards a day" "$("${PSQL[@]}" -c "select coalesce(max(n), 0) from (select count(*) n from public.xp_events where reason = 'hosted_contest' group by user_id) x")" "3"
+check "each reward is paid exactly once" "$("${PSQL[@]}" -c "select count(*) from public.xp_events where reason = 'hosted_contest'")" "$("${PSQL[@]}" -c "select count(*) from public.contest_rewards where contest_id::text like 'eeeeeeee-0000-0000-0000-00000000010%'")"
+check "every ended contest is settled once" "$("${PSQL[@]}" -c "select count(*) from public.contests where id::text like 'eeeeeeee-0000-0000-0000-00000000010%' and settled_at is not null")" "4"
 
 exit $fail

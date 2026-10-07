@@ -190,7 +190,7 @@
 .adm-badge-draft, .adm-badge-ended, .adm-badge-dismissed, .adm-badge-cancelled, .adm-badge-queued { background: var(--muted); color: var(--muted-foreground); }
 .adm-badge-in_review, .adm-badge-open, .adm-badge-upcoming { background: var(--primary-soft); color: var(--primary-soft-foreground); }
 .adm-badge-running, .adm-badge-admin, .adm-badge-user { background: var(--violet-soft); color: var(--violet-soft-foreground); }
-.adm-badge-triaged { background: var(--warning-soft); color: var(--warning-soft-foreground); }
+.adm-badge-triaged, .adm-badge-pending { background: var(--warning-soft); color: var(--warning-soft-foreground); }
 .adm-badge-published, .adm-badge-live, .adm-badge-done, .adm-badge-resolved, .adm-badge-correct { background: var(--success-soft); color: var(--success-soft-foreground); }
 .adm-badge-retired, .adm-badge-failed, .adm-badge-banned, .adm-badge-wrong { background: var(--danger-soft); color: var(--danger-soft-foreground); }
 

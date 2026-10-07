@@ -311,7 +311,8 @@ export interface Activity {
   recent_sets: { daily_set_id: string; set_date: string; total: number; answered: number; correct: number; xp: number }[];
 }
 
-export type ContestState = 'upcoming' | 'live' | 'ended';
+export type ContestState = 'upcoming' | 'live' | 'ended' | 'cancelled';
+export type ContestVisibility = 'public' | 'unlisted' | 'group';
 
 export interface ContestEntry {
   score: number;
@@ -338,6 +339,50 @@ export interface ContestSummary {
   /** Set once the attempt is closed; answers are refused after that. */
   finished_at: string | null;
   violation: ContestViolation | null;
+  /** Hosted by a player (false: run by Aptric). */
+  hosted: boolean;
+  is_host: boolean;
+  host: { handle: string | null; display_name: string | null; avatar_url: string | null } | null;
+  visibility: ContestVisibility;
+  /** The league it is for; only members of that league get this. */
+  group: { id: string; name: string; slug: string } | null;
+  /** An access code is needed to enter (never the code itself). */
+  needs_code: boolean;
+  max_participants: number | null;
+  /** The host also plays, for fun: unrated, no XP. */
+  host_plays: boolean;
+  /** Entry closes at this time (null: until the end). */
+  late_join_until: string | null;
+  /** A moderator's or the host's note (only the host and admins get it). */
+  status_note: string | null;
+}
+
+/** What the host sees about their own contest: counts while it runs, aggregates after the end. Never anyone's answers. */
+export interface HostQuestionStat {
+  position: number;
+  question_id: string;
+  stem: string;
+  difficulty: Difficulty;
+  answers: number;
+  accuracy: number | null;
+}
+
+export interface HostDashboard {
+  registrations: number;
+  started: number;
+  finished: number;
+  active_now: number | null;
+  capacity: number | null;
+  average_time_ms?: number | null;
+  average_score?: number | null;
+  questions?: HostQuestionStat[];
+  hardest?: HostQuestionStat | null;
+}
+
+/** The answer to "enter this contest": entered, or why not (a code is needed or was wrong). */
+export interface ContestJoinResult extends ContestSummary {
+  entered: boolean;
+  code?: 'required' | 'wrong';
 }
 
 export interface ContestQuestion extends QuestionCard {
@@ -350,6 +395,7 @@ export interface ContestQuestion extends QuestionCard {
 export interface ContestDetail extends ContestSummary {
   joined: boolean;
   questions: ContestQuestion[] | null;
+  dashboard: HostDashboard | null;
 }
 
 export interface ContestAnswerResult extends ContestSummary {
@@ -368,11 +414,15 @@ export interface ContestStanding {
   answered: number;
   time_ms: number;
   is_me: boolean;
+  /** The host (plays for fun: unrated, no XP). */
+  is_host?: boolean;
   /** Whether you follow this player. */
   following?: boolean;
 }
 
 export interface ContestStandings {
+  /** The contest has ended: this order will not change. */
+  final?: boolean;
   total: number;
   entries: ContestStanding[];
   me: Omit<ContestStanding, 'user_id' | 'handle' | 'display_name' | 'avatar_url' | 'is_me' | 'following'> | null;
@@ -765,4 +815,108 @@ export interface NewGroup {
   join_mode: GroupJoinMode;
   allowed_email_domain?: string;
   max_members?: number;
+}
+
+// Community: user-hosted contests ----------------------------------------------------
+
+export type HostReason = 'banned' | 'suspended' | 'level' | 'email' | 'age' | 'strikes';
+export type HostedStatus = 'draft' | 'scheduled' | 'cancelled';
+export type ReviewState = 'none' | 'pending' | 'approved' | 'rejected';
+
+export interface HostQuota {
+  used: number;
+  limit: number;
+  max_participants: number;
+}
+
+/** Can this player host, and if not, what is missing. */
+export interface HostGate {
+  ok: boolean;
+  reasons: HostReason[];
+  via_group: boolean;
+  level: number;
+  min_level: number;
+  verified: boolean;
+  age_days: number;
+  min_age_days: number;
+  post_strikes: number;
+  host_strikes: number;
+}
+
+export interface HostStatus extends HostGate {
+  quota: HostQuota;
+  /** Leagues you run (you can host for these even below the general bar). */
+  groups: { id: string; name: string; slug: string; gate: boolean }[];
+}
+
+export interface HostQuestion {
+  position: number;
+  question_id: string;
+  stem: string;
+  difficulty: Difficulty;
+  /** The host has answered it before (shown only to the host). */
+  seen: boolean;
+}
+
+export interface PickedQuestion {
+  id: string;
+  stem: string;
+  difficulty: Difficulty;
+  subtopic: string;
+  seen: boolean;
+}
+
+export interface HostContest extends ContestSummary {
+  status: HostedStatus;
+  review_state: ReviewState;
+  hidden: boolean;
+  late_join_minutes: number | null;
+  has_code: boolean;
+  created_at: string;
+  published_at: string | null;
+  settled: boolean;
+  questions: HostQuestion[];
+  seen_count: number;
+  dashboard: HostDashboard;
+}
+
+export interface HostHub {
+  status: HostGate & { quota: HostQuota };
+  items: Omit<HostContest, 'questions'>[];
+}
+
+export interface HostDraft {
+  title: string;
+  description: string;
+  starts_at: string;
+  ends_at: string;
+  question_ids: string[];
+  visibility: ContestVisibility;
+  group_id: string | null;
+  access_code: string | null;
+  clear_access_code: boolean;
+  max_participants: number | null;
+  late_join_minutes: number;
+  host_plays: boolean;
+}
+
+export type ContestReportReason = 'spam' | 'offensive' | 'cheating' | 'wrong_info' | 'other';
+
+export interface AdminHostedContest {
+  id: string;
+  title: string;
+  description: string | null;
+  starts_at: string;
+  ends_at: string;
+  state: ContestState;
+  status: HostedStatus;
+  visibility: ContestVisibility;
+  review_state: ReviewState;
+  hidden: boolean;
+  status_note: string | null;
+  created_at: string;
+  participants: number;
+  host: { id: string; handle: string | null; level: number; host_strikes: number; post_strikes: number };
+  questions: { position: number; stem: string; difficulty: Difficulty }[];
+  reports: { reason: ContestReportReason; count: number }[];
 }

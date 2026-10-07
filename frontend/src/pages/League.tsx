@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { ArrowDown, ArrowLeft, ArrowUp, Download, Flame, Megaphone, Share2, Swords, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Download, Flame, Megaphone, Plus, Share2, Swords, Trash2, Trophy } from 'lucide-react';
 import { ChallengeDialog } from '@/components/community/ChallengeDialog';
 import { InviteDialog } from '@/components/community/GroupDialogs';
 import { UserListSkeleton, UserRow } from '@/components/community/UserRow';
 import { LeagueAdmin } from '@/components/community/LeagueAdmin';
 import { PlayerLink, StandingRow } from '@/components/compete/standings';
+import { ContestStateBadge } from '@/components/compete/ContestStateBadge';
 import { NotFound } from '@/components/layout/ErrorBoundary';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -22,13 +23,13 @@ import { activityText } from '@/lib/community';
 import { errorCode, friendlyError } from '@/lib/errors';
 import { displayName, formatRelative, plural } from '@/lib/format';
 import { canManage, downloadText, rankDeltaSpeech, rankDeltaText, validRange, WINDOW_LABEL, windowsFor } from '@/lib/groups';
-import { invalidateGroups, keys, queryClient, useChallengesEnabled, useGroup, useGroupBoard } from '@/lib/queries';
-import { LEAGUES_PATH } from '@/lib/routes';
+import { invalidateGroups, keys, queryClient, useChallengesEnabled, useContestsEnabled, useGroup, useGroupBoard, useGroupContests } from '@/lib/queries';
+import { contestHref, HOST_PATH, LEAGUES_PATH } from '@/lib/routes';
 import type { Group, GroupWindow } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { GroupBadges, GroupsGate } from './Leagues';
 
-const TABS = ['leaderboard', 'activity', 'challenges', 'announcements', 'manage'] as const;
+const TABS = ['leaderboard', 'activity', 'challenges', 'contests', 'announcements', 'manage'] as const;
 type Tab = (typeof TABS)[number];
 
 const Delta = ({ delta }: { delta: number | null }) => {
@@ -203,6 +204,37 @@ const Challenges = ({ g }: { g: Group }) => {
   );
 };
 
+const Contests = ({ g }: { g: Group }) => {
+  const hosting = useContestsEnabled();
+  const list = useGroupContests(g.id);
+  const manage = canManage(g.my_role) && !g.is_archived;
+  return (
+    <div className="space-y-4">
+      {hosting && manage && (
+        <div className="flex justify-end"><Button asChild variant="secondary"><Link to={`${HOST_PATH}/new?league=${g.id}`}><Plus /> Host a contest for this league</Link></Button></div>
+      )}
+      {list.isError && <ErrorState error={list.error} onRetry={() => void list.refetch()} />}
+      {list.isPending && <Card><UserListSkeleton rows={2} /></Card>}
+      {list.data && list.data.length === 0 && <EmptyState icon={<Trophy />} title="No league contests">{manage && hosting ? 'Host one: members play the same questions at the same time.' : 'When an organiser hosts a contest for this league, it shows up here.'}</EmptyState>}
+      {list.data && list.data.length > 0 && (
+        <Card className="overflow-hidden">
+          <ul aria-label="League contests" className="divide-y">
+            {list.data.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <Link to={contestHref(c.id)} className="font-semibold text-heading underline-offset-2 hover:underline [overflow-wrap:anywhere]">{c.title}</Link>
+                  <p className="text-xs text-muted-foreground">{plural(c.participants, 'player')}{c.my_entry ? ' · you entered' : ''}</p>
+                </div>
+                <ContestStateBadge c={c} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+    </div>
+  );
+};
+
 const Announcements = ({ g }: { g: Group }) => {
   const toast = useToast();
   const list = useQuery({ queryKey: ['group-extra', 'announcements', g.id], queryFn: () => api.getGroupAnnouncements(g.id) });
@@ -328,12 +360,14 @@ const LeagueInner = () => {
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="challenges">Challenges</TabsTrigger>
+          <TabsTrigger value="contests">Contests</TabsTrigger>
           <TabsTrigger value="announcements">Notices</TabsTrigger>
           {manage && <TabsTrigger value="manage">Manage</TabsTrigger>}
         </TabsList>
         <TabsContent value="leaderboard"><Board g={g} /></TabsContent>
         <TabsContent value="activity"><Activity g={g} /></TabsContent>
         <TabsContent value="challenges"><Challenges g={g} /></TabsContent>
+        <TabsContent value="contests"><Contests g={g} /></TabsContent>
         <TabsContent value="announcements"><Announcements g={g} /></TabsContent>
         {manage && <TabsContent value="manage"><LeagueAdmin g={g} /></TabsContent>}
       </Tabs>

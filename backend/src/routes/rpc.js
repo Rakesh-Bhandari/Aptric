@@ -24,6 +24,8 @@ const FEED_WORD = /^[a-z_]{1,12}$/;
 const TOKEN = /^[A-Za-z0-9]{16}$/;
 // A league invite code (10 characters), a league slug, and an email domain.
 const CODE = /^[A-Za-z0-9]{10}$/;
+// A contest's access code: typed by a person, 4 to 24 letters or digits.
+const ACCESS_CODE = /^[A-Za-z0-9]{4,24}$/;
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const DOMAIN = /^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+$/;
 
@@ -57,10 +59,38 @@ export const RPCS = {
   get_player_profile: { args: { target_handle: 'text' } },
   list_contests: { args: {} },
   get_contest: { args: { contest_id: 'uuid' } },
-  join_contest: { args: { contest_id: 'uuid' } },
+  join_contest: { limit: ['rpc_contest_join', 60, 30], check: { access_code: ACCESS_CODE }, args: { contest_id: 'uuid', access_code: 'text' } },
   finish_contest: { args: { contest_id: 'uuid', violation: 'text' } },
   submit_contest_answer: { args: { contest_id: 'uuid', question_id: 'uuid', option_id: 'uuid', time_ms: 'integer' } },
-  get_contest_standings: { args: { contest_id: 'uuid', page_size: 'integer', page_offset: 'integer', friends_only: 'boolean' } },
+  get_contest_standings: { args: { contest_id: 'uuid', page_size: 'integer', page_offset: 'integer', friends_only: 'boolean', group_id: 'uuid' } },
+  // Community: user-hosted contests (flag community_contests). The host never gets an answer key; every rule
+  // (gate, quota, visibility, caps, XP) is in SQL. These limits are only the outer flood guard.
+  list_my_contests: { args: {} },
+  list_group_contests: { args: { target_group_id: 'uuid' } },
+  get_host_status: { args: {} },
+  host_pick_questions: {
+    limit: ['rpc_host_pick', 3600, 240],
+    args: { section_id: 'uuid', topic_id: 'uuid', subtopic_id: 'uuid', difficulty: 'public.question_difficulty', question_count: 'integer', exclude_ids: 'uuid[]' },
+  },
+  list_my_hosted_contests: { args: {} },
+  host_get_contest: { args: { target_contest_id: 'uuid' } },
+  host_save_contest: {
+    limit: ['rpc_host_save', 3600, 120], max: { title: 120, description: 1000 }, check: { visibility: WORD, access_code: ACCESS_CODE },
+    args: {
+      target_contest_id: 'uuid', title: 'text', description: 'text', starts_at: 'timestamptz', ends_at: 'timestamptz', question_ids: 'uuid[]',
+      visibility: 'text', group_id: 'uuid', access_code: 'text', clear_access_code: 'boolean', max_participants: 'integer',
+      late_join_minutes: 'integer', host_plays: 'boolean',
+    },
+  },
+  host_delete_draft: { limit: ['rpc_host_save', 3600, 120], args: { target_contest_id: 'uuid' } },
+  host_publish_contest: { limit: ['rpc_host_publish', 86400, 20], args: { target_contest_id: 'uuid' } },
+  host_unpublish_contest: { limit: ['rpc_host_publish', 86400, 20], args: { target_contest_id: 'uuid' } },
+  host_cancel_contest: { limit: ['rpc_host_publish', 86400, 20], max: { reason: 200 }, args: { target_contest_id: 'uuid', reason: 'text' } },
+  report_contest: { limit: ['rpc_contest_report', 3600, 30], check: { reason: WORD }, max: { detail: 300 }, args: { contest_id: 'uuid', reason: 'text', detail: 'text' } },
+  admin_list_hosted_contests: { admin: true, check: { filter: WORD }, args: { filter: 'text', page_size: 'integer', page_offset: 'integer' } },
+  admin_review_hosted_contest: {
+    admin: true, check: { action: WORD }, max: { note: 300 }, args: { target_contest_id: 'uuid', action: 'text', note: 'text', strike: 'boolean' },
+  },
   // Community: follow / friends. Each checks the caller, blocks and its own caps in SQL;
   // the limit here is the outer flood guard.
   follow_user: { limit: ['rpc_follow', 60, 120], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
@@ -237,11 +267,18 @@ for (const name of [
   'get_group_members', 'respond_group_request', 'remove_group_member', 'set_group_member_role', 'post_group_announcement',
   'delete_group_announcement', 'archive_group', 'export_group_results',
 ]) RPCS[name].flag = GROUPS_FLAG;
+// User-hosted contests are a fifth switch (joining or playing one is not: the engine is the same as for official contests).
+export const CONTESTS_FLAG = 'community_contests';
+for (const name of [
+  'list_my_contests', 'get_host_status', 'host_pick_questions', 'list_my_hosted_contests', 'host_get_contest', 'host_save_contest',
+  'host_delete_draft', 'host_publish_contest', 'host_unpublish_contest', 'host_cancel_contest', 'report_contest',
+]) RPCS[name].flag = CONTESTS_FLAG;
+RPCS.list_group_contests.flag = GROUPS_FLAG;
 // A flag that depends on an argument's value: the posts feed of your leagues.
 RPCS.get_feed.flagValues = { feed: { group: GROUPS_FLAG } };
 // The Friends filter is the part of two older functions that belongs to the community feature.
 RPCS.get_leaderboard.flagArgs = { friends_only: COMMUNITY_FLAG };
-RPCS.get_contest_standings.flagArgs = { friends_only: COMMUNITY_FLAG };
+RPCS.get_contest_standings.flagArgs = { friends_only: COMMUNITY_FLAG, group_id: GROUPS_FLAG };
 
 /** The plan features a call needs: the function's own flag, plus those of any flagged argument that is set. */
 export function requiredFlags(name, body = {}) {

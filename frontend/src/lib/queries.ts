@@ -27,7 +27,12 @@ export const keys = {
   mistakes: (offset: number) => ['mistakes', offset] as const,
   contests: ['contests'] as const,
   contest: (id: string) => ['contest', id] as const,
-  standings: (id: string, friends = false) => ['contest-standings', id, friends] as const,
+  standings: (id: string, friends = false, groupId: string | null = null) => ['contest-standings', id, friends, groupId] as const,
+  myContests: ['my-contests'] as const,
+  groupContests: (id: string) => ['group-contests', id] as const,
+  hostStatus: ['host-status'] as const,
+  hostHub: ['host-hub'] as const,
+  hostContest: (id: string) => ['host-contest', id] as const,
   followers: (handle: string) => ['users', 'followers', handle] as const,
   following: (handle: string) => ['users', 'following', handle] as const,
   search: (q: string) => ['users', 'search', q] as const,
@@ -81,9 +86,9 @@ export const useMistakes = (offset = 0) =>
   useQuery({ queryKey: keys.mistakes(offset), queryFn: () => api.getMistakes(20, offset), placeholderData: (prev) => prev });
 export const useContests = () => useQuery({ queryKey: keys.contests, queryFn: api.listContests, refetchInterval: 60_000 });
 export const useContest = (id: string) => useQuery({ queryKey: keys.contest(id), queryFn: () => api.getContest(id) });
-export const useContestStandings = (id: string, live: boolean, friends = false) =>
+export const useContestStandings = (id: string, live: boolean, friends = false, groupId: string | null = null) =>
   useQuery({
-    queryKey: keys.standings(id, friends), queryFn: () => api.getContestStandings(id, 50, 0, friends),
+    queryKey: keys.standings(id, friends, groupId), queryFn: () => api.getContestStandings(id, 50, 0, friends, groupId),
     refetchInterval: live ? 15_000 : false, placeholderData: (prev) => prev,
   });
 export const useExamTags = () => useQuery({ queryKey: keys.examTags, queryFn: api.getExamTags, staleTime: Infinity });
@@ -281,8 +286,9 @@ export const invalidateChallenges = () =>
 
 /** Whether private leagues are on for this player's plan (they ship dark too). */
 export const useGroupsEnabled = () => useEntitlements().can('community_groups');
+export const useContestsEnabled = () => useEntitlements().can('community_contests');
 
-export const useMyGroups = () => useQuery({ queryKey: keys.groups, queryFn: api.getMyGroups });
+export const useMyGroups = (enabled = true) => useQuery({ queryKey: keys.groups, queryFn: api.getMyGroups, enabled });
 
 /** One league by slug (a member's own view). */
 export const useGroup = (slug: string) =>
@@ -300,3 +306,15 @@ export const useGroupBoard = (id: string, win: GroupWindow, from: string | null 
 /** After a league changes: the hub, the league and its board. */
 export const invalidateGroups = () =>
   Promise.all(['groups', 'group', 'group-board', 'group-extra'].map((k) => queryClient.invalidateQueries({ queryKey: [k] })));
+
+// Community: user-hosted contests
+export const useMyContests = (enabled = true) => useQuery({ queryKey: keys.myContests, queryFn: api.listMyContests, enabled, refetchInterval: 60_000 });
+export const useGroupContests = (groupId: string, enabled = true) =>
+  useQuery({ queryKey: keys.groupContests(groupId), queryFn: () => api.listGroupContests(groupId), enabled });
+export const useHostStatus = (enabled = true) => useQuery({ queryKey: keys.hostStatus, queryFn: api.getHostStatus, enabled });
+export const useHostHub = () => useQuery({ queryKey: keys.hostHub, queryFn: api.listMyHostedContests });
+export const useHostContest = (id: string | null) =>
+  useQuery({ queryKey: keys.hostContest(id ?? 'new'), queryFn: () => api.hostGetContest(id as string), enabled: Boolean(id), refetchInterval: (q) => (q.state.data?.status === 'scheduled' ? 20_000 : false) });
+/** After any host action: the hub, the contest, the listings and the quota. */
+export const invalidateHosting = () =>
+  Promise.all(['host-hub', 'host-contest', 'host-status', 'my-contests', 'contests', 'group-contests', 'contest'].map((k) => queryClient.invalidateQueries({ queryKey: [k] })));

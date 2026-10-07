@@ -178,3 +178,15 @@ export const moderatePost = (id, action, note) =>
 export const countPendingPosts = async () => (await listPostReports({ pageSize: 1 })).total;
 
 export const POST_REPORT_REASONS = ['spam', 'abuse', 'answer_leak', 'personal_info', 'other'];
+
+// --- Hosted contests -------------------------------------------------------------
+// filter: 'pending' (public ones waiting for approval) | 'reported' | 'upcoming' | 'all'.
+export const listHostedContests = ({ filter = 'pending', page = 0, pageSize = 20 } = {}) =>
+    rpc('admin_list_hosted_contests', { filter, page_size: pageSize, page_offset: page * pageSize });
+
+// action: 'approve' | 'reject' | 'cancel' | 'hide' | 'unhide' | 'dismiss_reports'. Audited in Postgres;
+// `strike` (with reject / cancel / hide) counts toward the host's two-strike suspension.
+export const reviewHostedContest = (id, action, note, strike = false) =>
+    rpc('admin_review_hosted_contest', { target_contest_id: id, action, note: note?.trim() || undefined, strike: strike || undefined });
+
+export const countPendingHosted = async () => (await listHostedContests({ filter: 'pending', pageSize: 1 })).total;
