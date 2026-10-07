@@ -17,6 +17,16 @@ export interface MockOptions {
   hang?: boolean;
   /** Your rank in the weekly league (1–3 promotion, 10–12 demotion; default 4). */
   leagueRank?: number;
+  /** Turns on the follow / friends feature (plans.features.community_follow). */
+  community?: boolean;
+  /** Turns on 48-hour posts (plans.features.community_posts). */
+  communityPosts?: boolean;
+  /** Turns on 1v1 challenges (plans.features.community_challenges). */
+  communityChallenges?: boolean;
+  /** Turns on private leagues (plans.features.community_groups). */
+  communityGroups?: boolean;
+  /** Turns on user-hosted contests (plans.features.community_contests). */
+  communityContests?: boolean;
   /** Fields merged into the signed-in profile (e.g. onboarded_at: null for onboarding). */
   profile?: Record<string, unknown>;
 }
@@ -47,7 +57,44 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
       case 'get_today_set': return d.todaySet(opts.answered ?? 4);
       case 'get_daily_result': return d.dailyResult();
       case 'get_my_league': return d.myLeague(opts.leagueRank);
-      case 'get_leaderboard': return d.leaderboard(String(body.board ?? 'weekly'));
+      case 'get_leaderboard': {
+        const board = d.leaderboard(String(body.board ?? 'weekly'));
+        return body.friends_only
+          ? { ...board, total: 2, entries: board.entries.filter((e) => e.is_me || e.following).map((e, i) => ({ ...e, rank: i + 1 })) }
+          : board;
+      }
+      case 'list_challenges': return { items: body.tab === 'incoming' ? [d.challenge()] : [], next_cursor: null, server_now: d.FIXED_NOW.toISOString() };
+      case 'get_challenge': return d.challenge();
+      case 'get_my_groups': return { items: [d.group()] };
+      case 'get_group': return d.group();
+      case 'get_group_leaderboard': return d.groupBoard(String(body.win ?? 'weekly'));
+      case 'get_group_activity': return { items: [], next_cursor: null };
+      case 'get_group_challenges': return { items: [] };
+      case 'get_group_announcements': return { items: [] };
+      case 'get_group_members': return { items: [] };
+      case 'get_group_requests': return { items: [] };
+      case 'list_my_contests': return [d.hostedContest()];
+      case 'list_group_contests': return [];
+      case 'get_host_status': return d.hostStatus();
+      case 'list_my_hosted_contests': return { status: d.hostStatus(), items: [d.hostContest({ status: 'scheduled', state: 'upcoming' })] };
+      case 'host_get_contest': return d.hostContest();
+      case 'host_pick_questions': return d.pickedQuestions(Number(body.question_count ?? 5));
+      case 'host_save_contest': return d.hostContest({ id: 'c-new', title: body.title });
+      case 'host_publish_contest': return d.hostContest({ id: 'c-new', status: 'scheduled' });
+      case 'admin_list_hosted_contests': return d.adminHostedContests();
+      case 'get_feed': return d.feedPage();
+      case 'get_replies': return d.replies();
+      case 'get_mutes': return { items: [] };
+      case 'admin_list_post_reports': return d.adminPostReports();
+      case 'get_follow_requests': return { items: [] };
+      case 'get_followers': return d.followingPage();
+      case 'get_following': return d.followingPage();
+      case 'get_friend_activity': return d.friendActivity();
+      case 'get_suggested_users': return { items: [d.userCard('kabir_r')] };
+      case 'search_users': return { items: [d.userCard('asha_k')], next_cursor: null };
+      case 'get_blocks': return { items: [] };
+      case 'get_privacy':
+        return { is_private: false, stats_visibility: 'followers', exam_visibility: 'nobody', college_visibility: 'nobody', name_visibility: 'nobody', share_activity: true, discoverable: true };
       case 'get_player_profile': return d.playerProfile((body.target_handle as string) ?? null);
       case 'get_practice_tree': return d.practiceTree();
       case 'get_practice_questions': return { mode: body.mode ?? 'normal', subtopics: [{ id: 'st000', name: 'Basics' }], questions: Array.from({ length: 10 }, (_, i) => d.questionCard(i)) };
@@ -66,6 +113,10 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
     }
   }
 
+  if (p === '/me/entitlements') {
+    return { plan: 'free', name: 'Free', features: { ads: true, community_follow: opts.community === true, community_posts: opts.communityPosts === true, community_challenges: opts.communityChallenges === true, community_groups: opts.communityGroups === true, community_contests: opts.communityContests === true }, limits: {}, show_ads: true };
+  }
+  if (p === '/push/config') return { enabled: false, publicKey: null, preferences: { daily: true, streak: true, contests: true, league: true, social: true } };
   if (p === '/tutor/history') return { available: true, messages: [] };
   if (p === '/me/profile') return method === 'PATCH' ? { ...d.profile(opts.profile), ...body } : d.profile(opts.profile);
   if (p === '/me/placement') return { completed_at: d.FIXED_NOW.toISOString(), placed_level: 3, correct: 7, score: 70 };

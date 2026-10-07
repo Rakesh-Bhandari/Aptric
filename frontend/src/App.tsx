@@ -20,6 +20,18 @@ const Practice = lazy(() => import('@/pages/Practice'));
 const Compete = lazy(() => import('@/pages/Compete'));
 const ContestPage = lazy(() => import('@/pages/ContestPage'));
 const Progress = lazy(() => import('@/pages/Progress'));
+const Friends = lazy(() => import('@/pages/Friends'));
+const Community = lazy(() => import('@/pages/Community'));
+const Challenges = lazy(() => import('@/pages/Challenges'));
+const Leagues = lazy(() => import('@/pages/Leagues'));
+const JoinLeaguePage = lazy(() => import('@/pages/Leagues').then((m) => ({ default: m.JoinLeaguePage })));
+const League = lazy(() => import('@/pages/League'));
+const Host = lazy(() => import('@/pages/Host'));
+const HostEditor = lazy(() => import('@/pages/HostEditor'));
+const ChallengePage = lazy(() => import('@/pages/ChallengePage'));
+const ChallengeLinkPage = lazy(() => import('@/pages/ChallengePage').then((m) => ({ default: m.ChallengeLinkPage })));
+const FollowersPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="followers" /> })));
+const FollowingPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="following" /> })));
 const Profile = lazy(() => import('@/pages/Profile'));
 const PublicProfile = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.PublicProfile })));
 const Settings = lazy(() => import('@/pages/Settings'));
@@ -42,6 +54,8 @@ const AdminContestResults = lazy(() => import('@/admin/ContestResults'));
 const AdminUsers = lazy(() => import('@/admin/Users'));
 const AdminUserPage = lazy(() => import('@/admin/UserPage'));
 const AdminReports = lazy(() => import('@/admin/Reports'));
+const AdminPostReports = lazy(() => import('@/admin/PostReports'));
+const AdminHostedContests = lazy(() => import('@/admin/HostedContests'));
 const AdminJobs = lazy(() => import('@/admin/Jobs'));
 const AdminAuditLog = lazy(() => import('@/admin/AuditLog'));
 
@@ -88,10 +102,23 @@ const router = createBrowserRouter([
               { path: 'practice', element: <Practice /> },
               { path: 'compete', element: <Compete /> },
               { path: 'compete/contests/:id', element: <ContestPage /> },
+              { path: 'compete/host', element: <Host /> },
+              { path: 'compete/host/new', element: <HostEditor /> },
+              { path: 'compete/host/:id', element: <HostEditor /> },
               { path: 'progress', element: <Progress /> },
               { path: 'profile', element: <Profile /> },
               { path: 'settings', element: <Settings /> },
               { path: 'u/:handle', element: <PublicProfile /> },
+              { path: 'u/:handle/followers', element: <FollowersPage /> },
+              { path: 'u/:handle/following', element: <FollowingPage /> },
+              { path: 'friends', element: <Friends /> },
+              { path: 'community', element: <Community /> },
+              { path: 'leagues', element: <Leagues /> },
+              { path: 'leagues/join', element: <JoinLeaguePage /> },
+              { path: 'leagues/:slug', element: <League /> },
+              { path: 'challenges', element: <Challenges /> },
+              { path: 'challenges/:id', element: <ChallengePage /> },
+              { path: 'c/:token', element: <ChallengeLinkPage /> },
               { path: 'session/summary', element: <SessionSummary /> },
               { path: 'leaderboard', element: <Navigate to="/compete?tab=leaderboards" replace /> },
               { path: 'topics', element: <Navigate to="/practice" replace /> },
@@ -110,6 +137,8 @@ const router = createBrowserRouter([
                   { path: 'users', element: <AdminUsers /> },
                   { path: 'users/:id', element: <AdminUserPage /> },
                   { path: 'reports', element: <AdminReports /> },
+                  { path: 'posts', element: <AdminPostReports /> },
+                  { path: 'hosted', element: <AdminHostedContests /> },
                   { path: 'jobs', element: <AdminJobs /> },
                   { path: 'audit', element: <AdminAuditLog /> },
                 ],

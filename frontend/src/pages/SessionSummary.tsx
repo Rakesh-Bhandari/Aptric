@@ -1,6 +1,7 @@
-import { useId, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { useId, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Award, BookOpen, Check, ChevronDown, Clock, Eye, Flame, Home, Lightbulb, Minus, RotateCcw, Share2, Sparkles, Target, Trophy, TrendingUp, X } from 'lucide-react';
+import { ArrowRight, Award, BookOpen, Check, ChevronDown, Clock, Eye, Flame, Home, Lightbulb, Minus, RotateCcw, Share2, Sparkles, Swords, Target, Trophy, TrendingUp, X } from 'lucide-react';
+import { ChallengeDialog } from '@/components/community/ChallengeDialog';
 import { Markdown } from '@/components/markdown/Markdown';
 import { AskTutorButton } from '@/components/solve/AskTutor';
 import { loadSummary, type SessionItem, type SessionSummaryData } from '@/components/solve/session';
@@ -15,7 +16,7 @@ import { useToast } from '@/context/ToastContext';
 import { formatDay, formatDuration, formatPercent, plural } from '@/lib/format';
 import { MasteryStars } from '@/components/ui/stars';
 import { DIFFICULTY_LABEL, OPTION_LETTERS, sessionStars } from '@/lib/game';
-import { useDailyResult } from '@/lib/queries';
+import { useChallengesEnabled, useDailyResult } from '@/lib/queries';
 import type { DailyResult, Outcome } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { NotFound } from '@/components/layout/ErrorBoundary';
@@ -54,6 +55,8 @@ const SessionSummary = () => {
   const [params] = useSearchParams();
   const toast = useToast();
   const dailyId = params.get('daily');
+  const challengesOn = useChallengesEnabled();
+  const [challenging, setChallenging] = useState(false);
 
   const local = useMemo<SessionSummaryData | null>(() => {
     const s = (state as SessionSummaryData | null) ?? loadSummary();
@@ -185,12 +188,18 @@ const SessionSummary = () => {
 
       {/* Share */}
       {result && !incomplete && (
+        <>
         <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
           <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap rounded-md bg-muted px-3 py-2 font-sans text-sm leading-relaxed text-heading">
             {shareText(result).split('\n').slice(0, -1).join('\n')}
           </pre>
-          <Button variant="outline" onClick={() => void share()} className="shrink-0"><Share2 /> Share result</Button>
+          <div className="flex shrink-0 flex-col gap-2">
+            <Button variant="outline" onClick={() => void share()}><Share2 /> Share result</Button>
+            {challengesOn && dailyId && <Button variant="secondary" onClick={() => setChallenging(true)}><Swords /> Challenge a friend to beat this</Button>}
+          </div>
         </Card>
+        {challengesOn && dailyId && <ChallengeDialog open={challenging} onOpenChange={setChallenging} dailySetId={dailyId} />}
+        </>
       )}
 
       {/* Streak, league and progress updates */}

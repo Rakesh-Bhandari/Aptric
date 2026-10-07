@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { ArrowRight, BarChart3, BookOpen, Home, LogOut, Settings, Shield, Swords, User, X } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, Home, LogOut, MessagesSquare, Settings, Shield, Swords, Trophy, User, Users, X } from 'lucide-react';
 import { AptricLogo } from '@/components/brand/AptricLogo';
 import { AptricMark } from '@/components/brand/AptricMark';
 import { Avatar } from '@/components/ui/avatar';
@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useAuthDialog } from '@/context/AuthDialogContext';
 import { useSession } from '@/context/SessionContext';
 import { displayName } from '@/lib/format';
-import { SETTINGS_PATH } from '@/lib/routes';
+import { useChallengesEnabled, useCommunityEnabled, useGroupsEnabled, usePostsEnabled } from '@/lib/queries';
+import { CHALLENGES_PATH, COMMUNITY_PATH, FRIENDS_PATH, LEAGUES_PATH, SETTINGS_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary';
 import { HeaderOverlayContext, type HeaderOverlayTone } from './headerOverlay';
@@ -42,6 +43,10 @@ export const SkipLink = () => (
 
 const UserMenu = () => {
   const { profile, isAdmin, signOut } = useSession();
+  const community = useCommunityEnabled();
+  const posts = usePostsEnabled();
+  const challenges = useChallengesEnabled();
+  const groups = useGroupsEnabled();
   if (!profile) return null;
   const name = profile.display_name || profile.handle;
   const item =
@@ -68,6 +73,10 @@ const UserMenu = () => {
           </div>
           <Dropdown.Separator className="my-1 h-px bg-border" />
           <Dropdown.Item asChild className={item}><Link to="/profile"><User /> Profile</Link></Dropdown.Item>
+          {groups && <Dropdown.Item asChild className={item}><Link to={LEAGUES_PATH}><Trophy /> Leagues</Link></Dropdown.Item>}
+          {challenges && <Dropdown.Item asChild className={item}><Link to={CHALLENGES_PATH}><Swords /> Challenges</Link></Dropdown.Item>}
+          {posts && <Dropdown.Item asChild className={item}><Link to={COMMUNITY_PATH}><MessagesSquare /> Community</Link></Dropdown.Item>}
+          {community && <Dropdown.Item asChild className={item}><Link to={FRIENDS_PATH}><Users /> Friends</Link></Dropdown.Item>}
           <Dropdown.Item asChild className={item}><Link to={SETTINGS_PATH}><Settings /> Settings</Link></Dropdown.Item>
           {isAdmin && <Dropdown.Item asChild className={item}><Link to="/admin"><Shield /> Admin</Link></Dropdown.Item>}
           <Dropdown.Separator className="my-1 h-px bg-border" />
@@ -198,7 +207,7 @@ export const AppShell = () => {
         {signedIn && (
           <nav
             aria-label="Main"
-            className="fixed inset-x-0 bottom-0 z-40 border-t bg-header pb-safe shadow-top supports-[backdrop-filter]:bg-header/90 supports-[backdrop-filter]:backdrop-blur-md md:hidden"
+            className="fixed inset-x-0 bottom-0 z-40 border-t bg-header pb-safe shadow-top supports-[backdrop-filter]:bg-header/97 supports-[backdrop-filter]:backdrop-blur-md md:hidden"
           >
             <ul className="mx-auto grid max-w-md grid-cols-5">
               {NAV.map(({ to, label, icon: Icon, end }) => (

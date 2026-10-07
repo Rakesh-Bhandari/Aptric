@@ -11,8 +11,10 @@ select set_eq(
   $$select jobname, schedule from cron.job where jobname like 'aptric-%'$$,
   $$values ('aptric-daily-sets', '0 18 * * *'), ('aptric-streaks', '5 * * * *'),
            ('aptric-league-rollover', '35 18 * * 0'), ('aptric-ratings', '15 * * * *'),
-           ('aptric-leaderboards', '*/5 * * * *'), ('aptric-purge-auth-tokens', '40 3 * * *')$$,
-  'six cron jobs are scheduled (UTC)');
+           ('aptric-leaderboards', '*/5 * * * *'), ('aptric-purge-auth-tokens', '40 3 * * *'),
+           ('aptric-friend-events-prune', '25 3 * * *'), ('aptric-posts-cleanup', '*/15 * * * *'),
+           ('aptric-challenges-settle', '*/10 * * * *')$$,
+  'nine cron jobs are scheduled (UTC)');
 
 -- ---------------------------------------------------------------------------
 -- Daily set fixtures

@@ -1,20 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarClock, ChevronRight, Crown, ListChecks, Medal, Swords, Timer, Trophy, Users } from 'lucide-react';
+import { CalendarClock, ChevronRight, Crown, ListChecks, Medal, Plus, Swords, Timer, Trophy, UserPlus, Users } from 'lucide-react';
 import { ContestStateBadge } from '@/components/compete/ContestStateBadge';
+import { FollowButton } from '@/components/community/FollowButton';
+import { ScopeSwitch, type Scope } from '@/components/community/ScopeSwitch';
 import { LiveIndicator, PlayerLink, StandingRow, YouChip, ZoneDivider } from '@/components/compete/standings';
 import { TierEmblem } from '@/components/compete/TierEmblem';
 import { formatCountdown, formatSpan, useNow } from '@/components/compete/time';
 import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Page, PageHeader } from '@/components/ui/page';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { entryRelationship } from '@/lib/community';
 import { displayName, formatDateTime, formatRelative, plural } from '@/lib/format';
 import { leagueZone } from '@/lib/game';
-import { useContests, useLeaderboard, useMyLeague } from '@/lib/queries';
+import { FRIENDS_PATH } from '@/lib/routes';
+import { useCommunityEnabled, useContests, useContestsEnabled, useLeaderboard, useMyContests, useMyLeague } from '@/lib/queries';
+import { HOST_PATH } from '@/lib/routes';
+import { VISIBILITY_SHORT } from '@/lib/hosting';
 import type { Board, ContestSummary, LeaderboardEntry, MyLeague } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -154,10 +161,13 @@ const BOARDS: { value: Board; label: string; metric: (e: LeaderboardEntry) => st
   { value: 'rating', label: 'Rating', metric: (e) => `${e.rating}` },
 ];
 
-const LeaderboardRow = ({ e, metric }: { e: LeaderboardEntry; metric: string }) => (
+const LeaderboardRow = ({ e, metric, community = false }: { e: LeaderboardEntry; metric: string; community?: boolean }) => (
   <StandingRow rank={e.rank} me={e.is_me} player={<PlayerLink handle={e.handle} name={displayName(e)} avatar={e.avatar_url} showHandle={false} />}>
     <span className="block font-bold tabular-nums text-heading">{metric}</span>
     <span className="text-xs text-muted-foreground">Level {e.level}</span>
+    {community && !e.is_me && e.handle && (
+      <span className="mt-1 block"><FollowButton handle={e.handle} relationship={entryRelationship(e)} /></span>
+    )}
   </StandingRow>
 );
 
@@ -219,10 +229,13 @@ const BoardSwitcher = ({ value, onChange }: { value: Board; onChange: (b: Board)
 
 const LeaderboardsTab = () => {
   const [board, setBoard] = useState<Board>('weekly');
+  const [scope, setScope] = useState<Scope>('all');
   const [pages, setPages] = useState(1);
+  const community = useCommunityEnabled();
+  const friends = community && scope === 'friends';
   const def = BOARDS.find((b) => b.value === board)!;
-  const lb = useLeaderboard(board, 0);
-  const more = useLeaderboard(board, 50);
+  const lb = useLeaderboard(board, 0, friends);
+  const more = useLeaderboard(board, 50, friends);
   const listRef = useRef<HTMLOListElement>(null);
   const [myRowVisible, setMyRowVisible] = useState(false);
 
@@ -247,20 +260,30 @@ const LeaderboardsTab = () => {
 
   return (
     <div className="space-y-4">
-      <BoardSwitcher value={board} onChange={(b) => { setBoard(b); setPages(1); }} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <BoardSwitcher value={board} onChange={(b) => { setBoard(b); setPages(1); }} />
+        {community && <ScopeSwitch label="Who to show" value={scope} onChange={(s) => { setScope(s); setPages(1); }} />}
+      </div>
       {lb.isError && <ErrorState error={lb.error} onRetry={() => void lb.refetch()} />}
       {!lb.data && !lb.isError && <div className="space-y-4"><Skeleton className="h-56 rounded-lg" /><ListSkeleton rows={5} /></div>}
-      {lb.data && entries.length === 0 && (
+      {lb.data && entries.length === 0 && (friends ? (
+        <EmptyState
+          icon={<Users />} title="No friends on this board yet"
+          action={<Button variant="outline" asChild><Link to={FRIENDS_PATH}><UserPlus /> Find people to follow</Link></Button>}
+        >
+          Follow people to compare with them here. You show up too once you earn some XP.
+        </EmptyState>
+      ) : (
         <EmptyState icon={<Medal />} title="No one's on this board yet">Be the first: answer a question to earn XP.</EmptyState>
-      )}
+      ))}
       {lb.data && entries.length > 0 && (
         <>
           {top.length > 0 && <Podium top={top} metric={def.metric} label={`${def.label} leaderboard`} />}
           <Card className="overflow-hidden">
             {(rest.length > 0 || extra.length > 0) && (
               <ol ref={listRef} aria-label={`${def.label} leaderboard`} className="divide-y">
-                {rest.map((e) => <LeaderboardRow key={e.user_id} e={e} metric={def.metric(e)} />)}
-                {extra.map((e) => <LeaderboardRow key={e.user_id} e={e} metric={def.metric(e)} />)}
+                {rest.map((e) => <LeaderboardRow key={e.user_id} e={e} metric={def.metric(e)} community={community} />)}
+                {extra.map((e) => <LeaderboardRow key={e.user_id} e={e} metric={def.metric(e)} community={community} />)}
               </ol>
             )}
             <div className={cn('flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-muted-foreground', (rest.length > 0 || extra.length > 0) && 'border-t')}>
@@ -299,10 +322,12 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <ContestStateBadge c={c} />
-          {c.my_entry && c.state !== 'ended' && <span className="text-xs font-semibold text-success">✓ You're in</span>}
+          {c.hosted && <Badge variant="muted">{VISIBILITY_SHORT[c.visibility]}</Badge>}
+          {c.my_entry && c.state !== 'ended' && c.state !== 'cancelled' && <span className="text-xs font-semibold text-success">✓ You're in</span>}
         </div>
         <CardTitle className="pt-1">{c.title}</CardTitle>
         {c.description && <CardDescription className="line-clamp-2">{c.description}</CardDescription>}
+        {c.hosted && c.host?.handle && <p className="text-xs text-muted-foreground">Hosted by @{c.host.handle}{c.is_host ? ' (you)' : ''}</p>}
       </CardHeader>
       <CardContent className="flex-1 space-y-3">
         <p className="flex items-start gap-2 text-sm text-foreground">
@@ -333,12 +358,38 @@ const ContestCard = ({ c }: { c: ContestSummary }) => {
 
 const ContestsTab = () => {
   const contests = useContests();
-  if (contests.isError) return <ErrorState error={contests.error} onRetry={() => void contests.refetch()} />;
-  if (!contests.data) return <div className="grid gap-4 sm:grid-cols-2"><Skeleton className="h-60 rounded-lg" /><Skeleton className="h-60 rounded-lg" /></div>;
-  if (contests.data.length === 0) {
-    return <EmptyState icon={<Swords />} title="No contests right now">Contests are timed events where everyone answers the same questions. Check back soon.</EmptyState>;
-  }
-  return <div className="grid gap-4 sm:grid-cols-2">{contests.data.map((c) => <ContestCard key={c.id} c={c} />)}</div>;
+  const hosting = useContestsEnabled();
+  const mine = useMyContests(hosting);
+  // Contests you host or entered that the public list does not carry (unlisted and league ones).
+  const listed = new Set((contests.data ?? []).map((c) => c.id));
+  const yours = (mine.data ?? []).filter((c) => !listed.has(c.id));
+  const header = hosting && (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm text-muted-foreground">Timed events where everyone answers the same questions.</p>
+      <Button asChild variant="secondary"><Link to={HOST_PATH}><Plus /> Host a contest</Link></Button>
+    </div>
+  );
+  if (contests.isError) return <div className="space-y-4">{header}<ErrorState error={contests.error} onRetry={() => void contests.refetch()} /></div>;
+  if (!contests.data) return <div className="space-y-4">{header}<div className="grid gap-4 sm:grid-cols-2"><Skeleton className="h-60 rounded-lg" /><Skeleton className="h-60 rounded-lg" /></div></div>;
+  return (
+    <div className="space-y-6">
+      {header}
+      {yours.length > 0 && (
+        <section className="space-y-3" aria-labelledby="your-contests">
+          <h2 id="your-contests" className="text-sm font-bold text-heading">Your contests</h2>
+          <div className="grid gap-4 sm:grid-cols-2">{yours.map((c) => <ContestCard key={c.id} c={c} />)}</div>
+        </section>
+      )}
+      {contests.data.length === 0 && yours.length === 0
+        ? <EmptyState icon={<Swords />} title="No contests right now">Contests are timed events where everyone answers the same questions. Check back soon.</EmptyState>
+        : contests.data.length > 0 && (
+          <section className="space-y-3" aria-labelledby="open-contests">
+            {yours.length > 0 && <h2 id="open-contests" className="text-sm font-bold text-heading">Open to everyone</h2>}
+            <div className="grid gap-4 sm:grid-cols-2">{contests.data.map((c) => <ContestCard key={c.id} c={c} />)}</div>
+          </section>
+        )}
+    </div>
+  );
 };
 
 // Page -----------------------------------------------------------------------

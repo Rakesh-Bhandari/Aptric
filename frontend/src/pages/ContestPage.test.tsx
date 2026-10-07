@@ -118,3 +118,60 @@ describe('contest auto-submit on leaving the tab', () => {
     expect(screen.queryByRole('button', { name: /^(start|continue)/i })).not.toBeInTheDocument();
   });
 });
+
+describe('hosted contests', () => {
+  const hosted = (over: Partial<ContestDetail> = {}) => contest({
+    hosted: true, is_host: false, host: { handle: 'aarav', display_name: null, avatar_url: null }, visibility: 'unlisted', group: null,
+    needs_code: false, max_participants: 20, host_plays: false, late_join_until: null, status_note: null, dashboard: null,
+    joined: false, questions: null, ...over,
+  } as Partial<ContestDetail>);
+
+  beforeEach(() => {
+    queryClient.clear();
+    localStorage.clear();
+    vi.mocked(api.getContestStandings).mockResolvedValue({ total: 0, entries: [], me: null });
+  });
+  afterEach(() => vi.resetAllMocks());
+
+  it('a cancelled contest says so and offers no way in', async () => {
+    vi.mocked(api.getContest).mockResolvedValue(hosted({ state: 'cancelled', status_note: 'The host cancelled it.' }));
+    renderPage();
+    expect(await screen.findByRole('heading', { name: /this contest was cancelled/i })).toBeInTheDocument();
+    expect(screen.getByText('The host cancelled it.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /enter and start|register|start/i })).not.toBeInTheDocument();
+  });
+
+  it('the host watches: counts, no entry button, no questions', async () => {
+    vi.mocked(api.getContest).mockResolvedValue(hosted({
+      is_host: true, dashboard: { registrations: 12, started: 9, finished: 4, active_now: 5, capacity: 20 },
+    }));
+    renderPage();
+    expect(await screen.findByRole('heading', { name: /you host this contest/i })).toBeInTheDocument();
+    expect(screen.getByText('Registered').nextSibling).toHaveTextContent('12');
+    expect(screen.queryByRole('button', { name: /enter and start|register/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/answers and explanations/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/you host this contest, so you watch rather than play/i)).toBeInTheDocument();
+  });
+
+  it('entry closed after the late-entry window', async () => {
+    vi.mocked(api.getContest).mockResolvedValue(hosted({ late_join_until: '2026-10-04T10:15:00Z' }));
+    renderPage();
+    expect(await screen.findByText(/entry closed/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /enter and start/i })).not.toBeInTheDocument();
+  });
+
+  it('a contest with an access code needs it before you can enter, and says when it is wrong', async () => {
+    vi.mocked(api.getContest).mockResolvedValue(hosted({ needs_code: true }));
+    vi.mocked(api.joinContest).mockResolvedValue({ ...hosted({ needs_code: true }), entered: false, code: 'wrong' } as never);
+    renderPage();
+    const user = userEvent.setup();
+    const enter = await screen.findByRole('button', { name: /enter and start/i });
+    expect(enter).toBeDisabled();
+    await user.type(screen.getByLabelText('Access code'), 'nope1');
+    expect(enter).toBeEnabled();
+    await user.click(enter);
+    await user.click(await screen.findByRole('button', { name: /i understand, start/i }));
+    expect(await screen.findByText(/that access code isn't right/i)).toBeInTheDocument();
+    expect(api.joinContest).toHaveBeenCalledWith('c1', 'nope1');
+  });
+});

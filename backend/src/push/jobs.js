@@ -65,7 +65,42 @@ export const JOBS = [
              jsonb_build_object('title', c.title, 'id', c.id) as data
       from public.contests c
       join public.profiles p on true
-      where c.is_published and c.starts_at > now() and c.starts_at <= now() + interval '1 hour'
+      where c.is_published and c.host_id is null and c.starts_at > now() and c.starts_at <= now() + interval '1 hour'
+        and ${ELIGIBLE} and ${WANTS('contests')}`),
+  },
+  {
+    type: 'hosted_contest_24h',
+    // A hosted contest starting in 23 to 24 hours (hourly runs: one window each): whoever entered it, and its host.
+    // Hosted contests are never broadcast: unlisted and league contests are only for the people in them.
+    sql: claim(`
+      select p.id as user_id, 'hosted-24h:' || c.id as dedupe_key,
+             jsonb_build_object('title', c.title, 'id', c.id, 'when', '24h') as data
+      from public.contests c
+      join public.profiles p on p.id = c.host_id or exists (select 1 from public.contest_entries e where e.contest_id = c.id and e.user_id = p.id)
+      where c.host_id is not null and c.is_published and c.starts_at > now() + interval '23 hours' and c.starts_at <= now() + interval '24 hours'
+        and ${ELIGIBLE} and ${WANTS('contests')}`),
+  },
+  {
+    type: 'hosted_contest_1h',
+    // Starting within the hour. Not held back for quiet hours: players asked for this contest.
+    sql: claim(`
+      select p.id as user_id, 'hosted-1h:' || c.id as dedupe_key,
+             jsonb_build_object('title', c.title, 'id', c.id, 'when', '1h') as data
+      from public.contests c
+      join public.profiles p on p.id = c.host_id or exists (select 1 from public.contest_entries e where e.contest_id = c.id and e.user_id = p.id)
+      where c.host_id is not null and c.is_published and c.starts_at > now() and c.starts_at <= now() + interval '1 hour'
+        and ${ELIGIBLE} and ${WANTS('contests')}`),
+  },
+  {
+    type: 'hosted_contest_summary',
+    // The host, once their contest has ended (in the last 3 hours, slack for a missed run).
+    sql: claim(`
+      select p.id as user_id, 'hosted-summary:' || c.id as dedupe_key,
+             jsonb_build_object('title', c.title, 'id', c.id,
+               'players', (select count(*) from public.contest_entries e where e.contest_id = c.id and e.user_id <> c.host_id)) as data
+      from public.contests c
+      join public.profiles p on p.id = c.host_id
+      where c.host_id is not null and c.status = 'scheduled' and c.hidden_at is null and c.ends_at <= now() and c.ends_at > now() - interval '3 hours'
         and ${ELIGIBLE} and ${WANTS('contests')}`),
   },
   {
@@ -93,6 +128,121 @@ export const JOBS = [
       join public.league_tiers t on t.tier = p.league_tier
       where l.finalized_at > now() - interval '3 hours' and m.outcome is not null
         and ${ELIGIBLE} and ${WANTS('league')}`),
+  },
+  // Follows. The dedupe key names the other person, never a date, so follow / unfollow / follow
+  // loops (and follow-back spam) notify once per pair while the log keeps the key (60 days).
+  {
+    type: 'follow',
+    // New followers in the last 3 hours who are still followers. Follows that came from an
+    // approved request are the followee's own doing, so they are skipped.
+    sql: claim(`
+      select f.followee_id as user_id, 'follow:' || f.follower_id as dedupe_key, jsonb_build_object('handle', fp.handle) as data
+      from public.follows f
+      join public.profiles p  on p.id  = f.followee_id
+      join public.profiles fp on fp.id = f.follower_id and fp.banned_at is null
+      where f.created_at > now() - interval '3 hours'
+        and not exists (select 1 from public.follow_requests r
+                        where r.follower_id = f.follower_id and r.followee_id = f.followee_id and r.status = 'accepted')
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker_id = p.id and b.blocked_id = fp.id) or (b.blocker_id = fp.id and b.blocked_id = p.id))
+        and ${ELIGIBLE} and ${WANTS('social')}`),
+  },
+  {
+    type: 'follow_request',
+    sql: claim(`
+      select r.followee_id as user_id, 'follow-request:' || r.follower_id as dedupe_key, jsonb_build_object('handle', fp.handle) as data
+      from public.follow_requests r
+      join public.profiles p  on p.id  = r.followee_id
+      join public.profiles fp on fp.id = r.follower_id and fp.banned_at is null
+      where r.status = 'pending' and r.created_at > now() - interval '3 hours'
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker_id = p.id and b.blocked_id = fp.id) or (b.blocker_id = fp.id and b.blocked_id = p.id))
+        and ${ELIGIBLE} and ${WANTS('social')}`),
+  },
+  {
+    type: 'follow_accepted',
+    // The requester hears about an accepted request, if the follow is still there.
+    sql: claim(`
+      select r.follower_id as user_id, 'follow-accepted:' || r.followee_id as dedupe_key, jsonb_build_object('handle', tp.handle) as data
+      from public.follow_requests r
+      join public.profiles p  on p.id  = r.follower_id
+      join public.profiles tp on tp.id = r.followee_id and tp.banned_at is null
+      where r.status = 'accepted' and r.responded_at > now() - interval '3 hours'
+        and exists (select 1 from public.follows f where f.follower_id = r.follower_id and f.followee_id = r.followee_id)
+        and ${ELIGIBLE} and ${WANTS('social')}`),
+  },
+  {
+    type: 'post_expiry',
+    // Opt-in only (no preference row means off). Live posts that expire in 5 to 6 hours: the hourly run
+    // reaches each post once, and the key makes a repeated run harmless.
+    sql: claim(`
+      select x.author_id as user_id, 'post-expiry:' || x.id as dedupe_key, jsonb_build_object('id', x.id) as data
+      from public.posts x
+      join public.profiles p on p.id = x.author_id
+      where x.status = 'visible' and x.expires_at > now() + interval '5 hours' and x.expires_at <= now() + interval '6 hours'
+        and ${ELIGIBLE}
+        and coalesce((select pp.post_expiry from private.push_preferences pp where pp.user_id = p.id), false)`),
+  },
+  // Challenges. Quiet hours: nothing between 22:00 and 07:00 local time (unclaimed rows wait for the next run).
+  {
+    type: 'challenge_received',
+    sql: claim(`
+      select c.opponent_id as user_id, 'challenge:' || c.id as dedupe_key,
+             jsonb_build_object('id', c.id, 'handle', fp.handle, 'score', c.challenger_score, 'total', cardinality(c.question_ids)) as data
+      from public.challenges c
+      join public.profiles p  on p.id  = c.opponent_id
+      join public.profiles fp on fp.id = c.challenger_id and fp.banned_at is null
+      where c.status = 'pending' and c.sent_at > now() - interval '24 hours' and c.accept_by > now()
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker_id = p.id and b.blocked_id = fp.id) or (b.blocker_id = fp.id and b.blocked_id = p.id))
+        and ${LOCAL_HOUR} between 7 and 21
+        and ${ELIGIBLE} and ${WANTS('challenges')}`),
+  },
+  {
+    type: 'challenge_expiring',
+    // Waiting for you (or in play) with 5 to 6 hours left.
+    sql: claim(`
+      select p.id as user_id, 'challenge-expiring:' || c.id as dedupe_key,
+             jsonb_build_object('id', c.id, 'handle', fp.handle) as data
+      from public.challenges c
+      join public.profiles p  on p.id  = c.opponent_id
+      join public.profiles fp on fp.id = c.challenger_id and fp.banned_at is null
+      where ((c.status = 'pending' and c.sent_at is not null and c.accept_by > now() + interval '5 hours' and c.accept_by <= now() + interval '6 hours')
+          or (c.status = 'accepted' and c.complete_by > now() + interval '5 hours' and c.complete_by <= now() + interval '6 hours'))
+        and ${LOCAL_HOUR} between 7 and 21
+        and ${ELIGIBLE} and ${WANTS('challenges')}`),
+  },
+  {
+    type: 'challenge_result',
+    // Both players hear how it ended (finished in the last 24 hours, so a night's quiet hours do not lose it).
+    sql: claim(`
+      select p.id as user_id, 'challenge-result:' || c.id as dedupe_key,
+             jsonb_build_object('id', c.id, 'handle', op.handle, 'total', cardinality(c.question_ids),
+               'outcome', case when c.is_draw then 'draw' when c.winner_id = p.id then 'won' else 'lost' end,
+               'mine',   case when p.id = c.challenger_id then c.challenger_score else c.opponent_score end,
+               'theirs', case when p.id = c.challenger_id then c.opponent_score else c.challenger_score end) as data
+      from public.challenges c
+      join public.profiles p  on p.id in (c.challenger_id, c.opponent_id)
+      join public.profiles op on op.id = case when p.id = c.challenger_id then c.opponent_id else c.challenger_id end and op.banned_at is null
+      where c.status = 'completed' and c.completed_at > now() - interval '24 hours'
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker_id = p.id and b.blocked_id = op.id) or (b.blocker_id = op.id and b.blocked_id = p.id))
+        and ${LOCAL_HOUR} between 7 and 21
+        and ${ELIGIBLE} and ${WANTS('challenges')}`),
+  },
+  {
+    type: 'group_announcement',
+    // Members of a live league hear about a new pinned announcement (not its author), quietly overnight.
+    sql: claim(`
+      select m.user_id, 'group-announcement:' || a.id as dedupe_key,
+             jsonb_build_object('id', a.id, 'group', g.name, 'slug', g.slug, 'body', left(a.body, 120)) as data
+      from public.group_announcements a
+      join public.groups g on g.id = a.group_id and not g.is_archived
+      join public.group_members m on m.group_id = g.id and m.status = 'active' and m.user_id is distinct from a.created_by
+      join public.profiles p on p.id = m.user_id
+      where a.is_pinned and a.created_at > now() - interval '24 hours'
+        and ${LOCAL_HOUR} between 7 and 21
+        and ${ELIGIBLE} and ${WANTS('groups')}`),
   },
 ];
 

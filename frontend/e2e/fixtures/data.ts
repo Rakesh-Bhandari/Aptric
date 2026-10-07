@@ -148,7 +148,7 @@ export const leaderboard = (board: string) => {
   const entries = NAMES.map((n, i) => ({
     rank: i + 1, user_id: n === 'Priya Sharma' ? ME : `u${i}`, handle: handleOf(n), display_name: n, avatar_url: null,
     level: 9 - Math.floor(i / 2), xp: 15_400 - i * 900, weekly_xp: 980 - i * 63, rating: 1620 - i * 31,
-    current_streak: 30 - i * 2, league_tier: 5 - Math.floor(i / 3), is_me: n === 'Priya Sharma',
+    current_streak: 30 - i * 2, league_tier: 5 - Math.floor(i / 3), is_me: n === 'Priya Sharma', following: i === 1,
   }));
   return { board, refreshed_at: iso(-0.2), total: 2_431, entries, me: entries[3] };
 };
@@ -189,6 +189,39 @@ export const playerProfile = (handle: string | null) => ({
     { name: 'Verbal Ability', attempted: 68, correct: 44 },
   ],
   badges,
+  stats_hidden: false,
+  exam_goal: null,
+  is_private: false,
+  follower_count: 18,
+  following_count: 24,
+  relationship: { is_me: !handle || handle === 'priya_s', following: false, followed_by: true, friend: false, requested: false },
+});
+
+// Community: follow / friends ----------------------------------------------------
+
+export const relationship = (over: Record<string, boolean> = {}) => ({
+  is_me: false, following: false, followed_by: false, friend: false, requested: false, ...over,
+});
+
+export const userCard = (handle: string, over: Record<string, unknown> = {}) => ({
+  handle, display_name: null, avatar_url: null, level: 4, current_streak: 6, is_private: false,
+  league_tier: { tier: 3, slug: 'gold', name: 'Gold' }, relationship: relationship(), ...over,
+});
+
+export const followingPage = () => ({
+  restricted: false,
+  items: [userCard('aarav_meht', { relationship: relationship({ following: true, followed_by: true, friend: true }) }),
+    userCard('diya_n', { relationship: relationship({ following: true }) })],
+  next_cursor: null,
+});
+
+export const friendActivity = () => ({
+  items: [
+    { id: 3, kind: 'daily_set', data: { correct: 9, total: 10 }, created_at: iso(-1), user: userCard('aarav_meht', { relationship: relationship({ following: true }) }) },
+    { id: 2, kind: 'streak', data: { days: 7 }, created_at: iso(-5), user: userCard('diya_n', { relationship: relationship({ following: true }) }) },
+    { id: 1, kind: 'league_up', data: { tier: 3, slug: 'gold', name: 'Gold' }, created_at: iso(-30), user: userCard('aarav_meht', { relationship: relationship({ following: true }) }) },
+  ],
+  next_cursor: null,
 });
 
 const node = (id: string, name: string, available: number, attempted: number, correct: number, stars: number) =>
@@ -235,16 +268,23 @@ export const mistakes = () => ({
   })),
 });
 
+/** The fields every contest summary carries; official contests are not hosted. */
+const official = {
+  finished_at: null, violation: null, hosted: false, is_host: false, host: null, visibility: 'public', group: null, needs_code: false,
+  max_participants: null, host_plays: false, late_join_until: null, status_note: null,
+};
+
 export const contests = () => [
-  { id: 'c-live', slug: 'weekend-sprint', title: 'Weekend Sprint #14', description: '20 mixed questions in 30 minutes.', starts_at: iso(-0.5), ends_at: iso(1.5), state: 'live', question_count: 20, participants: 312, my_entry: { score: 640, correct: 8, answered: 9, time_ms: 410_000, rank: 27 } },
-  { id: 'c-up', slug: 'quant-blitz', title: 'Quant Blitz', description: 'Fast arithmetic for bank exams.', starts_at: iso(30), ends_at: iso(31), state: 'upcoming', question_count: 15, participants: 88, my_entry: null },
-  { id: 'c-old', slug: 'reasoning-cup', title: 'Reasoning Cup', description: null, starts_at: iso(-72), ends_at: iso(-71), state: 'ended', question_count: 25, participants: 540, my_entry: { score: 1_120, correct: 18, answered: 25, time_ms: 3_100_000, rank: 41 } },
+  { ...official, id: 'c-live', slug: 'weekend-sprint', title: 'Weekend Sprint #14', description: '20 mixed questions in 30 minutes.', starts_at: iso(-0.5), ends_at: iso(1.5), state: 'live', question_count: 20, participants: 312, my_entry: { score: 640, correct: 8, answered: 9, time_ms: 410_000, rank: 27 } },
+  { ...official, id: 'c-up', slug: 'quant-blitz', title: 'Quant Blitz', description: 'Fast arithmetic for bank exams.', starts_at: iso(30), ends_at: iso(31), state: 'upcoming', question_count: 15, participants: 88, my_entry: null },
+  { ...official, id: 'c-old', slug: 'reasoning-cup', title: 'Reasoning Cup', description: null, starts_at: iso(-72), ends_at: iso(-71), state: 'ended', question_count: 25, participants: 540, my_entry: { score: 1_120, correct: 18, answered: 25, time_ms: 3_100_000, rank: 41 } },
 ];
 
 export const contest = (id: string) => {
-  const base = contests().find((c) => c.id === id) ?? contests()[0];
+  const base = [...contests(), hostedContest(), hostedContest({ id: 'c-code', needs_code: true, title: 'Friday quiz' })].find((c) => c.id === id) ?? contests()[0];
   return {
     ...base,
+    dashboard: null,
     joined: base.my_entry !== null,
     questions: base.state === 'upcoming' ? null : Array.from({ length: 5 }, (_, i) => ({
       ...questionCard(i), position: i + 1,
@@ -343,4 +383,101 @@ export const adminAudit = () => ({
 export const adminAttempts = () => ({
   count: 2,
   rows: [0, 1].map((i) => ({ id: `at${i}`, created_at: iso(-i), question: { id: `aq${i}`, stem: STEMS[i] }, context: 'daily', is_correct: i === 0, used_hint: false, time_ms: 42_000, xp_awarded: i === 0 ? 10 : 0 })),
+});
+
+// Community: 48-hour posts -----------------------------------------------------
+
+/** A live post. `expiresInHours` counts from FIXED_NOW; created_at is 48 hours earlier. */
+export const post = (id: string, expiresInHours: number, over: Record<string, unknown> = {}) => ({
+  id, kind: 'tip', body: `Post ${id}: convert km/h to m/s by multiplying by 5/18.`, spoiler: false, spoiler_locked: false,
+  question: null, topic: { id: 't00', name: 'Speed & Distance' }, exam_tag: null, poll: null,
+  created_at: iso(expiresInHours - 48), expires_at: iso(expiresInHours), like_count: 2, reply_count: 1, my_reaction: null,
+  is_mine: false, status: null, author_verified: false, author: userCard('aarav_meht'), ...over,
+});
+
+export const feedPage = (posts: unknown[] = [post('a', 5.2), post('b', 30)]) => ({
+  items: posts, next_cursor: null, server_now: FIXED_NOW.toISOString(),
+});
+
+export const replies = () => ({
+  items: [{ id: 'r1', post_id: 'a', body: 'Thanks, that helped!', created_at: iso(-1), expires_at: iso(5.2), is_mine: false, can_delete: false, author: userCard('diya_n') }],
+  next_cursor: null, server_now: FIXED_NOW.toISOString(),
+});
+
+export const adminPostReports = () => ({
+  total: 1,
+  items: [{
+    id: 'p-rep', kind: 'tip', body: 'Totally legit tip, message me on a chat app', status: 'hidden', report_count: 3, created_at: iso(-30),
+    expires_at: iso(18), reviewed_at: null, question_id: null,
+    author: { id: 'u9', handle: 'spammy_sam', strikes_30d: 2 }, reports: [{ reason: 'spam', count: 2 }, { reason: 'abuse', count: 1 }],
+  }],
+});
+
+// Community: 1v1 challenges -------------------------------------------------------
+
+export const challenge = (over: Record<string, unknown> = {}) => ({
+  id: 'ch1', status: 'pending', draft: false, role: 'opponent', set_kind: 'daily', question_count: 3,
+  challenger: userCard('aarav_meht', { relationship: relationship({ friend: true, following: true, followed_by: true }) }),
+  opponent: userCard('priya_s'), target: { score: 3, total: 3, time_ms: 72_000 }, created_at: iso(-2), sent_at: iso(-2),
+  accept_by: iso(46), accepted_at: null, complete_by: null, completed_at: null, rematch_of: null, share_token: null,
+  my_run: null, result: null, can_accept: true, server_now: FIXED_NOW.toISOString(), review: null, ...over,
+});
+
+export const challengeRun = (over: Record<string, unknown> = {}) => ({
+  challenge: challenge({ status: 'accepted', can_accept: false, my_run: { started_at: iso(0), deadline_at: iso(0.5), finished_at: null, violation: null, answered: 0 } }),
+  run: { started_at: iso(0), deadline_at: iso(0.5), finished_at: null, violation: null },
+  questions: [0, 1, 2].map((i) => ({ ...questionCard(i), position: i, answer: null, hint_used: false, correct_option_id: null, explanation: null })),
+  server_now: FIXED_NOW.toISOString(), ...over,
+});
+
+// Community: private leagues ------------------------------------------------------
+
+export const group = (over: Record<string, unknown> = {}) => ({
+  id: 'g1', name: 'Section B', slug: 'section-b-x7k2', kind: 'class', join_mode: 'invite', verified: false, domain: null,
+  max_members: 100, member_count: 2, is_archived: false, season_start: null, season_end: null, weekly_reset: true,
+  created_at: iso(-72), my_role: 'member', my_status: 'active', announcement: null, ...over,
+});
+
+export const groupBoard = (win = 'weekly') => ({
+  group: group(), window: { name: win, from: '2026-10-05', to: '2026-10-11' }, total: 2,
+  entries: [
+    { rank: 1, user: userCard('aarav_meht'), xp: 420, correct: 31, streak: 6, role: 'owner', is_me: false, rank_delta: 1 },
+    { rank: 2, user: userCard('priya_s'), xp: 380, correct: 28, streak: 3, role: 'member', is_me: true, rank_delta: -1 },
+  ],
+  me: { rank: 2, xp: 380, correct: 28, rank_delta: -1 }, most_improved: null,
+});
+
+// Community: user-hosted contests ------------------------------------------------------
+
+/** An unlisted contest hosted by someone else, starting in 3 hours (not yet joined). */
+export const hostedContest = (over: Record<string, unknown> = {}) => ({
+  ...official, id: 'c-hosted', slug: 'friday-quiz-1234', title: 'Friday quiz', description: 'Quant only. Good luck!', starts_at: iso(3), ends_at: iso(4), state: 'upcoming',
+  question_count: 6, participants: 3, my_entry: null, hosted: true, host: { handle: 'aarav_meht', display_name: 'Aarav Mehta', avatar_url: null },
+  visibility: 'unlisted', max_participants: 50, late_join_until: iso(3.25), ...over,
+});
+
+export const hostStatus = (over: Record<string, unknown> = {}) => ({
+  ok: true, reasons: [], via_group: false, level: 6, min_level: 5, verified: true, age_days: 60, min_age_days: 30, post_strikes: 0, host_strikes: 0,
+  quota: { used: 1, limit: 2, max_participants: 50 }, groups: [], ...over,
+});
+
+export const hostContest = (over: Record<string, unknown> = {}) => ({
+  ...hostedContest({ is_host: true, host: { handle: 'priya_sha', display_name: 'Priya Sharma', avatar_url: null }, participants: 0 }),
+  status: 'draft', review_state: 'none', hidden: false, late_join_minutes: 15, has_code: false, created_at: iso(-1), published_at: null, settled: false,
+  questions: [0, 1, 2, 3, 4].map((i) => ({ position: i, question_id: `hq${i}`, stem: `Hosted question ${i + 1}`, difficulty: 'easy', seen: i === 0 })),
+  seen_count: 1, dashboard: { registrations: 0, started: 0, finished: 0, active_now: null, capacity: 50 }, ...over,
+});
+
+export const pickedQuestions = (n = 5) => Array.from({ length: n }, (_, i) => ({
+  id: `hq${i}`, stem: `Hosted question ${i + 1}`, difficulty: 'easy', subtopic: 'Ratios', seen: i === 0,
+}));
+
+export const adminHostedContests = () => ({
+  total: 1,
+  items: [{
+    id: 'hc1', title: 'Open cup', description: 'A public contest', starts_at: iso(5), ends_at: iso(6), state: 'upcoming', status: 'scheduled', visibility: 'public',
+    review_state: 'pending', hidden: false, status_note: null, created_at: iso(-1), participants: 0,
+    host: { id: 'u9', handle: 'aarav_meht', level: 8, host_strikes: 1, post_strikes: 0 },
+    questions: [{ position: 0, stem: 'What is 2 + 2?', difficulty: 'easy' }], reports: [],
+  }],
 });

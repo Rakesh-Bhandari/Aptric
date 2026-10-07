@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2 } from 'lucide-react';
+import { Ban, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatRelative } from '@/lib/format';
 import type { ContestSummary } from '@/lib/types';
@@ -23,6 +23,9 @@ export const ContestStateBadge = ({ c, onDark = false, className }: { c: Pick<Co
         <CalendarClock /> Starts {formatRelative(c.starts_at)}
       </Badge>
     );
+  }
+  if (c.state === 'cancelled') {
+    return <Badge variant="danger" className={cn(onDark && 'bg-white/12 text-navy-foreground', className)}><Ban /> Cancelled</Badge>;
   }
   return <Badge variant="muted" className={cn(onDark && 'bg-white/12 text-navy-muted-foreground', className)}><CheckCircle2 /> Ended</Badge>;
 };

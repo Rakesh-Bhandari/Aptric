@@ -28,7 +28,7 @@ vi.mock('@/context/PreferencesContext', () => ({
 const toast = { success: vi.fn(), error: vi.fn() };
 vi.mock('@/context/ToastContext', () => ({ useToast: () => toast }));
 
-const PREFS = { daily: true, streak: true, contests: true, league: false };
+const PREFS = { daily: true, streak: true, contests: true, league: false, social: true, post_expiry: false, challenges: true, groups: true };
 const renderSettings = () => render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><Settings /></MemoryRouter></QueryClientProvider>);
 
 describe('Settings notifications', () => {

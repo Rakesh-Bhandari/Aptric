@@ -53,6 +53,8 @@ const PG_STATUS = {
   '23503': 400, // foreign_key_violation
   '23514': 400, // check_violation
   P0001: 400,   // raise exception without a code
+  '54000': 409, // program_limit_exceeded (a cap such as "following up to 1,000")
+  SP422: 422,   // a post that gives away a question's answer and was not marked as a spoiler
 };
 
 
@@ -68,6 +70,14 @@ export function errorHandler(err, req, res, next) {
   }
   if (err?.type === 'entity.too.large') {
     return res.status(413).json({ error: { code: 'too_large', message: 'Request body is too large.' } });
+  }
+  // A per-player cap enforced inside a SQL function (private.social_limit); `details` is the retry delay.
+  if (err instanceof DbError && err.code === 'RL429') {
+    const retry = Math.max(1, Number.parseInt(err.details ?? '', 10) || 60);
+    res.set('Retry-After', String(retry));
+    return res.status(429).json({
+      error: { code: 'over_request_rate_limit', message: 'Too many requests. Please wait a moment and try again.', retry_after_seconds: retry },
+    });
   }
   if (err instanceof DbError && err.isSqlState && PG_STATUS[err.code]) {
     return res.status(PG_STATUS[err.code]).json({ error: { code: err.code, message: err.message } });

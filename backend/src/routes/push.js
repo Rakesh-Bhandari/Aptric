@@ -3,7 +3,7 @@
 //   GET   /push/config        → { enabled, publicKey, preferences }
 //   POST  /push/subscribe     { endpoint, keys: { p256dh, auth } }   this browser starts receiving
 //   POST  /push/unsubscribe   { endpoint }                           this browser stops
-//   PATCH /push/preferences   { daily?, streak?, contests?, league? } booleans
+//   PATCH /push/preferences   { daily?, streak?, contests?, league?, social?, post_expiry?, challenges?, groups? } booleans
 //   POST  /push/test                                                 sends a test to all their browsers
 //
 // What is sent, and when, lives in ../push/jobs.js (run by GET /cron/push).
@@ -16,8 +16,10 @@ import { requireUser } from '../middleware/auth.js';
 import { hit } from '../middleware/rateLimit.js';
 import { allowedEndpoint, pushEnabled, send } from '../push/sender.js';
 
-export const PREFERENCES = ['daily', 'streak', 'contests', 'league'];
-const DEFAULTS = Object.fromEntries(PREFERENCES.map((k) => [k, true]));
+export const PREFERENCES = ['daily', 'streak', 'contests', 'league', 'social', 'post_expiry', 'challenges', 'groups'];
+// Everything is on until switched off, except "your post is about to expire", which is opt-in.
+const OPT_IN = new Set(['post_expiry']);
+const DEFAULTS = Object.fromEntries(PREFERENCES.map((k) => [k, !OPT_IN.has(k)]));
 
 /** The { endpoint, p256dh, auth } of a POST /push/subscribe body, or 400. */
 export function validateSubscription(body, hosts) {

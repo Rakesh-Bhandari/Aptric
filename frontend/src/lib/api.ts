@@ -1,10 +1,15 @@
 import type { Database } from '@db/database.types';
 import { api } from './http';
 import type {
+  Group, GroupAnnouncement, GroupBoard, GroupChallengeResult, GroupMember, GroupRequest, GroupWindow, JoinResult, NewGroup,
+  Challenge, ChallengeAnswerResult, ChallengeDetail, ChallengePage, ChallengeRun, ChallengeSetKind, ChallengeTab, ContestViolation as RunViolation,
+  FeedName, FeedSort, MutedUser, NewPost, Post, PostPage, PostReportReason, Reaction, Reply, ReplyPage,
+  ActivityPage, BlockedUser, FollowRequest, FollowStatus, Privacy, UserPage, UserReportReason, VisibilityLevel,
   Activity, AnswerResult, AttemptContext, Board, CatalogTopic, ContestAnswerResult, ContestDetail, ContestStandings,
   ContestSummary, ContestViolation, DailyResult, Difficulty, ExamTag, HintResult, Leaderboard, Mistakes, MyLeague,
   PlacementAnswer, PlacementResult, PlacementStart, PlayerProfile, PracticeBatch, PracticeMode, Profile,
   SectionNode, TodaySet, TopicPreferences, Entitlements,
+  ContestJoinResult, ContestReportReason, HostContest, HostDraft, HostHub, HostStatus, PickedQuestion,
 } from './types';
 
 type Functions = Database['public']['Functions'];
@@ -57,15 +62,16 @@ export const finishPlacement = (testId: string, answers: PlacementAnswer[]) =>
 
 // Standings ------------------------------------------------------------------
 export const getMyLeague = () => rpc<MyLeague>('get_my_league');
-export const getLeaderboard = (board: Board, pageSize = 50, offset = 0) =>
-  rpc<Leaderboard>('get_leaderboard', { board, page_size: pageSize, page_offset: offset });
+export const getLeaderboard = (board: Board, pageSize = 50, offset = 0, friendsOnly = false) =>
+  rpc<Leaderboard>('get_leaderboard', { board, page_size: pageSize, page_offset: offset, friends_only: friendsOnly || undefined });
 export const getPlayerProfile = (handle: string | null = null) =>
   rpc<PlayerProfile>('get_player_profile', handle ? { target_handle: handle } : {});
 
 // Contests -------------------------------------------------------------------
 export const listContests = () => rpc<ContestSummary[]>('list_contests');
 export const getContest = (id: string) => rpc<ContestDetail>('get_contest', { contest_id: id });
-export const joinContest = (id: string) => rpc<ContestSummary>('join_contest', { contest_id: id });
+export const joinContest = (id: string, accessCode?: string) =>
+  rpc<ContestJoinResult>('join_contest', { contest_id: id, access_code: accessCode?.trim() || undefined });
 export const submitContestAnswer = (p: { contestId: string; questionId: string; optionId: string; timeMs: number | null }) =>
   rpc<ContestAnswerResult>('submit_contest_answer', {
     contest_id: p.contestId, question_id: p.questionId, option_id: p.optionId, time_ms: p.timeMs ?? undefined,
@@ -73,8 +79,134 @@ export const submitContestAnswer = (p: { contestId: string; questionId: string; 
 /** Closes the attempt (idempotent): the first call records the reason, later ones change nothing. */
 export const finishContest = (contestId: string, violation?: ContestViolation) =>
   rpc<ContestSummary>('finish_contest', { contest_id: contestId, violation });
-export const getContestStandings = (id: string, pageSize = 50, offset = 0) =>
-  rpc<ContestStandings>('get_contest_standings', { contest_id: id, page_size: pageSize, page_offset: offset });
+export const getContestStandings = (id: string, pageSize = 50, offset = 0, friendsOnly = false, groupId: string | null = null) =>
+  rpc<ContestStandings>('get_contest_standings', {
+    contest_id: id, page_size: pageSize, page_offset: offset, friends_only: friendsOnly || undefined, group_id: groupId ?? undefined,
+  });
+
+// Community: user-hosted contests ---------------------------------------------------
+export const listMyContests = () => rpc<ContestSummary[]>('list_my_contests');
+export const listGroupContests = (groupId: string) => rpc<ContestSummary[]>('list_group_contests', { target_group_id: groupId });
+export const getHostStatus = () => rpc<HostStatus>('get_host_status');
+export const listMyHostedContests = () => rpc<HostHub>('list_my_hosted_contests');
+export const hostGetContest = (id: string) => rpc<HostContest>('host_get_contest', { target_contest_id: id });
+export const hostPickQuestions = (p: { sectionId?: string; topicId?: string; subtopicId?: string; difficulty?: Difficulty; count: number; excludeIds?: string[] }) =>
+  rpc<PickedQuestion[]>('host_pick_questions', {
+    section_id: p.sectionId, topic_id: p.topicId, subtopic_id: p.subtopicId, difficulty: p.difficulty,
+    question_count: p.count, exclude_ids: p.excludeIds?.length ? p.excludeIds : undefined,
+  });
+export const hostSaveContest = (id: string | null, d: HostDraft) =>
+  rpc<HostContest>('host_save_contest', {
+    target_contest_id: id ?? undefined, title: d.title, description: d.description, starts_at: d.starts_at, ends_at: d.ends_at,
+    question_ids: d.question_ids, visibility: d.visibility, group_id: d.group_id ?? undefined, access_code: d.access_code ?? undefined,
+    clear_access_code: d.clear_access_code || undefined, max_participants: d.max_participants ?? undefined,
+    late_join_minutes: d.late_join_minutes, host_plays: d.host_plays,
+  });
+export const hostPublishContest = (id: string) => rpc<HostContest>('host_publish_contest', { target_contest_id: id });
+export const hostUnpublishContest = (id: string) => rpc<HostContest>('host_unpublish_contest', { target_contest_id: id });
+export const hostCancelContest = (id: string, reason?: string) => rpc<HostContest>('host_cancel_contest', { target_contest_id: id, reason: reason || undefined });
+export const hostDeleteDraft = (id: string) => rpc<{ deleted: true }>('host_delete_draft', { target_contest_id: id });
+export const reportContest = (id: string, reason: ContestReportReason, detail?: string) =>
+  rpc<{ reported: true }>('report_contest', { contest_id: id, reason, detail: detail || undefined });
+
+// Community: follow / friends --------------------------------------------------
+export const followUser = (handle: string) => rpc<{ status: FollowStatus }>('follow_user', { target_handle: handle });
+export const unfollowUser = (handle: string) => rpc<{ status: FollowStatus }>('unfollow_user', { target_handle: handle });
+export const removeFollower = (handle: string) => rpc<{ status: 'removed' }>('remove_follower', { target_handle: handle });
+export const respondFollowRequest = (id: string, accept: boolean) =>
+  rpc<{ status: 'accepted' | 'declined' }>('respond_follow_request', { request_id: id, accept });
+export const getFollowRequests = () => rpc<{ items: FollowRequest[] }>('get_follow_requests');
+export const blockUser = (handle: string) => rpc<{ blocked: true }>('block_user', { target_handle: handle });
+export const unblockUser = (handle: string) => rpc<{ blocked: false }>('unblock_user', { target_handle: handle });
+export const getBlocks = () => rpc<{ items: BlockedUser[] }>('get_blocks');
+export const reportUser = (handle: string, reason: UserReportReason, details?: string) =>
+  rpc<{ ok: true }>('report_user', { target_handle: handle, reason, details: details?.trim() || undefined });
+export const getFollowers = (handle: string, cursor: string | null = null) =>
+  rpc<UserPage>('get_followers', { target_handle: handle, cursor: cursor ?? undefined });
+export const getFollowing = (handle: string, cursor: string | null = null) =>
+  rpc<UserPage>('get_following', { target_handle: handle, cursor: cursor ?? undefined });
+export const searchUsers = (q: string, cursor: string | null = null) =>
+  rpc<UserPage>('search_users', { q, cursor: cursor ?? undefined });
+export const getSuggestedUsers = () => rpc<{ items: UserPage['items'] }>('get_suggested_users');
+export const getFriendActivity = (cursor: string | null = null) =>
+  rpc<ActivityPage>('get_friend_activity', { cursor: cursor ?? undefined });
+export const getPrivacy = () => rpc<Privacy>('get_privacy');
+export const setPrivacy = (patch: Partial<Privacy>) =>
+  rpc<Privacy>('set_privacy', patch as Functions['set_privacy']['Args']);
+export type { VisibilityLevel };
+export const muteUser = (handle: string) => rpc<{ muted: true }>('mute_user', { target_handle: handle });
+export const unmuteUser = (handle: string) => rpc<{ muted: false }>('unmute_user', { target_handle: handle });
+export const getMutes = () => rpc<{ items: MutedUser[] }>('get_mutes');
+
+// Community: 48-hour posts ------------------------------------------------------
+export const getFeed = (p: { feed: FeedName; sort: FeedSort; topicId?: string | null; cursor?: string | null; groupId?: string | null }) =>
+  rpc<PostPage>('get_feed', { feed: p.feed, sort: p.sort, topic_id: p.topicId ?? undefined, cursor: p.cursor ?? undefined, group_id: p.groupId ?? undefined });
+export const getPost = (id: string) => rpc<{ post: Post; server_now: string }>('get_post', { target_post_id: id });
+export const createPost = (post: NewPost) =>
+  rpc<{ post: Post; server_now: string }>('create_post', post as Functions['create_post']['Args']);
+export const deletePost = (id: string) => rpc<{ deleted: true }>('delete_post', { target_post_id: id });
+export const getReplies = (postId: string, cursor: string | null = null) =>
+  rpc<ReplyPage>('get_replies', { target_post_id: postId, cursor: cursor ?? undefined });
+export const createReply = (postId: string, body: string) => rpc<Reply>('create_reply', { target_post_id: postId, body });
+export const deleteReply = (id: string) => rpc<{ deleted: true }>('delete_reply', { target_reply_id: id });
+export const reactPost = (id: string, reaction: Reaction | null) =>
+  rpc<{ like_count: number; my_reaction: Reaction | null }>('react_post', { target_post_id: id, reaction: reaction ?? undefined });
+export const votePoll = (id: string, option: number) => rpc<Post['poll']>('vote_poll', { target_post_id: id, option_idx: option });
+export const reportPost = (id: string, reason: PostReportReason, details?: string) =>
+  rpc<{ ok: true }>('report_post', { target_post_id: id, reason, details: details?.trim() || undefined });
+
+// Community: 1v1 challenges ---------------------------------------------------------
+export const createChallenge = (p: { setKind: ChallengeSetKind; setRef?: string; opponent?: string; questionIds?: string[] }) =>
+  rpc<Challenge>('create_challenge', { set_kind: p.setKind, set_ref: p.setRef, opponent_handle: p.opponent, question_ids: p.questionIds });
+export const startChallengeRun = (id: string) => rpc<ChallengeRun>('start_challenge_run', { target_challenge_id: id });
+export const acceptChallenge = (p: { id?: string; token?: string }) =>
+  rpc<ChallengeRun>('accept_challenge', { target_challenge_id: p.id, token: p.token });
+export const declineChallenge = (id: string) => rpc<Challenge>('decline_challenge', { target_challenge_id: id });
+export const cancelChallenge = (id: string) => rpc<Challenge>('cancel_challenge', { target_challenge_id: id });
+export const getChallengeRun = (id: string) => rpc<ChallengeRun>('get_challenge_run', { target_challenge_id: id });
+export const submitChallengeAnswer = (p: { id: string; questionId: string; optionId: string }) =>
+  rpc<ChallengeAnswerResult>('submit_challenge_answer', { target_challenge_id: p.id, question_id: p.questionId, option_id: p.optionId });
+export const finishChallengeRun = (id: string, violation?: RunViolation) =>
+  rpc<Challenge>('finish_challenge_run', { target_challenge_id: id, violation });
+export const getChallenge = (p: { id?: string; token?: string }) =>
+  rpc<ChallengeDetail>('get_challenge', { target_challenge_id: p.id, token: p.token });
+export const listChallenges = (tab: ChallengeTab, cursor: string | null = null) =>
+  rpc<ChallengePage>('list_challenges', { tab, cursor: cursor ?? undefined });
+export const requestRematch = (id: string) => rpc<Challenge>('request_rematch', { target_challenge_id: id });
+
+// Community: private leagues ---------------------------------------------------------
+export const getMyGroups = () => rpc<{ items: Group[] }>('get_my_groups');
+export const getGroup = (p: { id?: string; slug?: string }) => rpc<Group>('get_group', { target_group_id: p.id, target_slug: p.slug });
+export const createGroup = (g: NewGroup) => rpc<Group>('create_group', g);
+export const joinGroup = (code: string) => rpc<JoinResult>('join_group', { code });
+export const leaveGroup = (id: string) => rpc<{ left: true }>('leave_group', { target_group_id: id });
+export const getGroupLeaderboard = (p: { id: string; win: GroupWindow; from?: string; to?: string; pageSize?: number; offset?: number }) =>
+  rpc<GroupBoard>('get_group_leaderboard', {
+    target_group_id: p.id, win: p.win, from_date: p.from, to_date: p.to, page_size: p.pageSize ?? 50, page_offset: p.offset ?? 0,
+  });
+export const getGroupActivity = (id: string, cursor: string | null = null) =>
+  rpc<ActivityPage>('get_group_activity', { target_group_id: id, cursor: cursor ?? undefined });
+export const getGroupChallenges = (id: string) => rpc<{ items: GroupChallengeResult[] }>('get_group_challenges', { target_group_id: id });
+export const getGroupAnnouncements = (id: string) => rpc<{ items: GroupAnnouncement[] }>('get_group_announcements', { target_group_id: id });
+export const getGroupMembers = (id: string) => rpc<{ items: GroupMember[] }>('get_group_members', { target_group_id: id });
+export const getGroupRequests = (id: string) => rpc<{ items: GroupRequest[] }>('get_group_requests', { target_group_id: id });
+export const getGroupInvite = (id: string) => rpc<{ code: string }>('get_group_invite', { target_group_id: id });
+export const rotateGroupCode = (id: string) => rpc<{ code: string }>('rotate_group_code', { target_group_id: id });
+export const updateGroup = (id: string, patch: {
+  name?: string; join_mode?: Group['join_mode']; allowed_email_domain?: string; max_members?: number;
+  season_start?: string; season_end?: string; clear_season?: boolean; weekly_reset?: boolean;
+}) => rpc<Group>('update_group', { target_group_id: id, ...patch });
+export const respondGroupRequest = (id: string, handle: string, approve: boolean) =>
+  rpc<{ status: string }>('respond_group_request', { target_group_id: id, target_handle: handle, approve });
+export const removeGroupMember = (id: string, handle: string) => rpc<{ removed: true }>('remove_group_member', { target_group_id: id, target_handle: handle });
+export const setGroupMemberRole = (id: string, handle: string, role: 'admin' | 'member') =>
+  rpc<{ role: string }>('set_group_member_role', { target_group_id: id, target_handle: handle, new_role: role });
+export const postGroupAnnouncement = (id: string, body: string) => rpc<{ id: string }>('post_group_announcement', { target_group_id: id, body });
+export const deleteGroupAnnouncement = (id: string, announcementId: string) =>
+  rpc<{ deleted: true }>('delete_group_announcement', { target_group_id: id, announcement_id: announcementId });
+export const archiveGroup = (id: string) => rpc<Group>('archive_group', { target_group_id: id });
+export const exportGroupResults = (p: { id: string; win: GroupWindow; from?: string; to?: string }) =>
+  rpc<{ filename: string; csv: string }>('export_group_results', { target_group_id: p.id, win: p.win, from_date: p.from, to_date: p.to });
 
 // Profile and settings -------------------------------------------------------
 export const fetchProfile = (): Promise<Profile> => api<Profile>('GET', '/me/profile');
@@ -99,7 +231,7 @@ export const getTopicPreferences = () => api<TopicPreferences>('GET', '/me/prefe
 export const saveTopicPreferences = (prefs: TopicPreferences) => api<TopicPreferences>('PATCH', '/me/preferences', prefs);
 
 // Push notifications ---------------------------------------------------------
-export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean };
+export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean; social: boolean; post_expiry: boolean; challenges: boolean; groups: boolean };
 export type PushConfig = { enabled: boolean; publicKey: string | null; preferences: PushPreferences };
 export type PushSubscriptionJSON = { endpoint: string; keys: { p256dh: string; auth: string } };
 

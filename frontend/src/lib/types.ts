@@ -168,6 +168,8 @@ export interface LeaderboardEntry {
   current_streak: number;
   league_tier: number;
   is_me?: boolean;
+  /** Whether you follow this player (the Follow button). */
+  following?: boolean;
 }
 
 export interface Leaderboard {
@@ -198,11 +200,19 @@ export interface PlayerProfile {
   max_streak_freezes: number | null;
   next_freeze_xp: number | null;
   league_tier: { tier: number; slug: string; name: string } | null;
-  solved: number;
-  attempts: number;
-  correct: number;
+  /** null when the player's accuracy is hidden from you (stats_hidden). */
+  solved: number | null;
+  attempts: number | null;
+  correct: number | null;
   sections: { name: string; attempted: number; correct: number }[];
   badges: Badge[];
+  stats_hidden: boolean;
+  /** Only when the player lets you see their exam target. */
+  exam_goal: string | null;
+  is_private: boolean;
+  follower_count: number;
+  following_count: number;
+  relationship: Relationship;
 }
 
 export interface PlacementStart {
@@ -301,7 +311,8 @@ export interface Activity {
   recent_sets: { daily_set_id: string; set_date: string; total: number; answered: number; correct: number; xp: number }[];
 }
 
-export type ContestState = 'upcoming' | 'live' | 'ended';
+export type ContestState = 'upcoming' | 'live' | 'ended' | 'cancelled';
+export type ContestVisibility = 'public' | 'unlisted' | 'group';
 
 export interface ContestEntry {
   score: number;
@@ -328,6 +339,50 @@ export interface ContestSummary {
   /** Set once the attempt is closed; answers are refused after that. */
   finished_at: string | null;
   violation: ContestViolation | null;
+  /** Hosted by a player (false: run by Aptric). */
+  hosted: boolean;
+  is_host: boolean;
+  host: { handle: string | null; display_name: string | null; avatar_url: string | null } | null;
+  visibility: ContestVisibility;
+  /** The league it is for; only members of that league get this. */
+  group: { id: string; name: string; slug: string } | null;
+  /** An access code is needed to enter (never the code itself). */
+  needs_code: boolean;
+  max_participants: number | null;
+  /** The host also plays, for fun: unrated, no XP. */
+  host_plays: boolean;
+  /** Entry closes at this time (null: until the end). */
+  late_join_until: string | null;
+  /** A moderator's or the host's note (only the host and admins get it). */
+  status_note: string | null;
+}
+
+/** What the host sees about their own contest: counts while it runs, aggregates after the end. Never anyone's answers. */
+export interface HostQuestionStat {
+  position: number;
+  question_id: string;
+  stem: string;
+  difficulty: Difficulty;
+  answers: number;
+  accuracy: number | null;
+}
+
+export interface HostDashboard {
+  registrations: number;
+  started: number;
+  finished: number;
+  active_now: number | null;
+  capacity: number | null;
+  average_time_ms?: number | null;
+  average_score?: number | null;
+  questions?: HostQuestionStat[];
+  hardest?: HostQuestionStat | null;
+}
+
+/** The answer to "enter this contest": entered, or why not (a code is needed or was wrong). */
+export interface ContestJoinResult extends ContestSummary {
+  entered: boolean;
+  code?: 'required' | 'wrong';
 }
 
 export interface ContestQuestion extends QuestionCard {
@@ -340,6 +395,7 @@ export interface ContestQuestion extends QuestionCard {
 export interface ContestDetail extends ContestSummary {
   joined: boolean;
   questions: ContestQuestion[] | null;
+  dashboard: HostDashboard | null;
 }
 
 export interface ContestAnswerResult extends ContestSummary {
@@ -358,12 +414,18 @@ export interface ContestStanding {
   answered: number;
   time_ms: number;
   is_me: boolean;
+  /** The host (plays for fun: unrated, no XP). */
+  is_host?: boolean;
+  /** Whether you follow this player. */
+  following?: boolean;
 }
 
 export interface ContestStandings {
+  /** The contest has ended: this order will not change. */
+  final?: boolean;
   total: number;
   entries: ContestStanding[];
-  me: Omit<ContestStanding, 'user_id' | 'handle' | 'display_name' | 'avatar_url' | 'is_me'> | null;
+  me: Omit<ContestStanding, 'user_id' | 'handle' | 'display_name' | 'avatar_url' | 'is_me' | 'following'> | null;
 }
 
 export interface ExamTag {
@@ -411,4 +473,450 @@ export interface Entitlements {
   limits: Record<string, number>;
   /** Free plans show ads; paid plans don't. */
   show_ads: boolean;
+}
+
+// Community: follow / friends ------------------------------------------------
+
+export type VisibilityLevel = 'everyone' | 'followers' | 'friends' | 'nobody';
+
+/** How the signed-in player relates to someone else. */
+export interface Relationship {
+  is_me: boolean;
+  following: boolean;
+  followed_by: boolean;
+  /** Mutual follows. */
+  friend: boolean;
+  /** A follow request is waiting (or was declined, which reads the same). */
+  requested: boolean;
+}
+
+/** The small public card used by search, follower lists and the activity feed. */
+export interface UserCard {
+  handle: string;
+  /** Only when the player chose to show their name. */
+  display_name: string | null;
+  avatar_url: string | null;
+  level: number;
+  current_streak: number;
+  is_private: boolean;
+  league_tier: { tier: number; slug: string; name: string } | null;
+  relationship: Relationship;
+}
+
+export interface UserPage {
+  restricted?: boolean;
+  items: UserCard[];
+  next_cursor: string | null;
+}
+
+export interface FollowRequest extends UserCard {
+  id: string;
+  requested_at: string;
+}
+
+export type FollowStatus = 'following' | 'requested' | 'none';
+
+export type ActivityKind = 'daily_set' | 'league_up' | 'streak' | 'challenge_won';
+
+export interface ActivityItem {
+  id: number;
+  kind: ActivityKind;
+  data: Record<string, unknown>;
+  created_at: string;
+  user: UserCard;
+}
+
+export interface ActivityPage {
+  items: ActivityItem[];
+  next_cursor: string | null;
+}
+
+export interface BlockedUser {
+  handle: string;
+  avatar_url: string | null;
+  blocked_at: string;
+}
+
+export interface Privacy {
+  is_private: boolean;
+  stats_visibility: VisibilityLevel;
+  exam_visibility: VisibilityLevel;
+  college_visibility: VisibilityLevel;
+  name_visibility: VisibilityLevel;
+  share_activity: boolean;
+  discoverable: boolean;
+}
+
+export type UserReportReason = 'spam' | 'abuse' | 'impersonation' | 'personal_info' | 'other';
+
+// Community: 48-hour posts -----------------------------------------------------
+
+export type PostKind = 'question' | 'tip' | 'win' | 'study_buddy' | 'poll';
+export type Reaction = 'up' | 'fire' | 'idea';
+export type FeedName = 'following' | 'topic' | 'everyone' | 'mine' | 'group';
+export type FeedSort = 'new' | 'hot';
+export type PostReportReason = 'spam' | 'abuse' | 'answer_leak' | 'personal_info' | 'other';
+
+/** A question a post links to: its stem only, never the options or the answer. */
+export interface PostQuestion {
+  id: string;
+  stem: string;
+  difficulty: Difficulty;
+  subtopic_id: string;
+  attempted: boolean;
+}
+
+export interface Post {
+  id: string;
+  kind: PostKind;
+  /** null while a spoiler is locked: you have not attempted the linked question yet. */
+  body: string | null;
+  spoiler: boolean;
+  spoiler_locked: boolean;
+  question: PostQuestion | null;
+  topic: { id: string; name: string } | null;
+  exam_tag: string | null;
+  poll: { options: { text: string; votes: number }[]; my_vote: number | null } | null;
+  created_at: string;
+  /** created_at + 48 hours. The post is gone from every feed when this passes. */
+  expires_at: string;
+  like_count: number;
+  reply_count: number;
+  my_reaction: Reaction | null;
+  is_mine: boolean;
+  /** Only on your own posts: 'hidden' means waiting for a moderator. */
+  status: 'visible' | 'hidden' | 'removed' | null;
+  /** Verified authors may include links. */
+  author_verified: boolean;
+  author: UserCard;
+}
+
+export interface PostPage {
+  items: Post[];
+  next_cursor: string | null;
+  /** The server's clock when the page was built, for the countdown. */
+  server_now: string;
+}
+
+export interface Reply {
+  id: string;
+  post_id: string;
+  body: string;
+  created_at: string;
+  expires_at: string;
+  is_mine: boolean;
+  can_delete: boolean;
+  author: UserCard;
+}
+
+export interface ReplyPage {
+  items: Reply[];
+  next_cursor: string | null;
+  server_now: string;
+}
+
+export interface NewPost {
+  kind: PostKind;
+  body: string;
+  question_id?: string;
+  topic_id?: string;
+  exam_tag?: string;
+  contains_spoiler?: boolean;
+  poll_options?: string[];
+}
+
+export interface MutedUser {
+  handle: string;
+  avatar_url: string | null;
+  muted_at: string;
+}
+
+/** One reported (or hidden / removed) post in the admin queue. */
+export interface AdminPostReport {
+  id: string;
+  kind: PostKind;
+  body: string;
+  status: 'visible' | 'hidden' | 'removed';
+  report_count: number;
+  created_at: string;
+  expires_at: string;
+  reviewed_at: string | null;
+  question_id: string | null;
+  author: { id: string; handle: string; strikes_30d: number };
+  reports: { reason: PostReportReason; count: number }[];
+}
+
+// Community: 1v1 challenges ----------------------------------------------------
+
+export type ChallengeStatus = 'pending' | 'accepted' | 'completed' | 'declined' | 'expired' | 'cancelled';
+export type ChallengeSetKind = 'daily' | 'practice_topic' | 'custom_set';
+export type ChallengeTab = 'incoming' | 'outgoing' | 'completed';
+
+export interface ChallengeSide {
+  score: number;
+  time_ms: number;
+  hints: number;
+}
+
+/** A challenge as you may see it. The question list is never in here. */
+export interface Challenge {
+  id: string;
+  status: ChallengeStatus;
+  /** The challenger is still playing their own set; nobody else can see it yet. */
+  draft: boolean;
+  role: 'challenger' | 'opponent' | 'viewer';
+  set_kind: ChallengeSetKind;
+  question_count: number;
+  challenger: UserCard;
+  opponent: UserCard | null;
+  /** The challenger's locked-in result: what the opponent has to beat. */
+  target: { score: number; total: number; time_ms: number } | null;
+  created_at: string;
+  sent_at: string | null;
+  accept_by: string | null;
+  accepted_at: string | null;
+  complete_by: string | null;
+  completed_at: string | null;
+  rematch_of: string | null;
+  /** Only the challenger gets the link token. */
+  share_token: string | null;
+  my_run: { started_at: string; deadline_at: string; finished_at: string | null; violation: string | null; answered: number } | null;
+  result: { winner: 'challenger' | 'opponent' | 'draw'; challenger: ChallengeSide; opponent: ChallengeSide } | null;
+  can_accept: boolean;
+  server_now: string;
+}
+
+export interface ChallengeReviewItem {
+  question: QuestionCard;
+  correct_option_id: string;
+  explanation: string;
+  mine: { selected_option_id: string | null; is_correct: boolean } | null;
+}
+
+export interface ChallengeDetail extends Challenge {
+  /** Once your own run is over: the questions with the key and your answers. */
+  review: ChallengeReviewItem[] | null;
+}
+
+export interface ChallengeQuestion extends QuestionCard {
+  position: number;
+  answer: { selected_option_id: string | null; is_correct: boolean } | null;
+  hint_used: boolean;
+  correct_option_id: string | null;
+  explanation: string | null;
+}
+
+export interface ChallengeRun {
+  challenge: Challenge;
+  run: { started_at: string; deadline_at: string; finished_at: string | null; violation: string | null };
+  questions: ChallengeQuestion[];
+  server_now: string;
+}
+
+export interface ChallengePage {
+  items: Challenge[];
+  next_cursor: string | null;
+  server_now: string;
+}
+
+export interface ChallengeAnswerResult {
+  is_correct: boolean;
+  answered: number;
+  finished: boolean;
+  challenge: Challenge;
+}
+
+// Community: private leagues ---------------------------------------------------
+
+export type GroupKind = 'college' | 'batch' | 'friends' | 'coaching';
+export type GroupJoinMode = 'invite_code' | 'approval' | 'email_domain';
+export type GroupRole = 'owner' | 'admin' | 'member';
+export type GroupWindow = 'weekly' | 'monthly' | 'season' | 'all_time' | 'custom';
+
+export interface Group {
+  id: string;
+  name: string;
+  slug: string;
+  kind: GroupKind;
+  join_mode: GroupJoinMode;
+  /** Joining needs a verified email on `domain`. */
+  verified: boolean;
+  domain: string | null;
+  max_members: number;
+  member_count: number;
+  is_archived: boolean;
+  season_start: string | null;
+  season_end: string | null;
+  weekly_reset: boolean;
+  created_at: string;
+  my_role: GroupRole | null;
+  my_status: 'active' | 'pending' | 'removed' | null;
+  /** The pinned notice (members only). */
+  announcement: { id: string; body: string; created_at: string } | null;
+}
+
+export interface JoinResult {
+  status: 'active' | 'pending' | 'not_found';
+  group?: Group;
+}
+
+export interface GroupEntry {
+  rank: number;
+  user: UserCard;
+  xp: number;
+  correct: number;
+  streak: number;
+  role: GroupRole;
+  is_me: boolean;
+  /** Places gained (+) or lost (-) against the window before; null when there is nothing to compare. */
+  rank_delta: number | null;
+}
+
+export interface GroupBoard {
+  group: Group;
+  window: { name: GroupWindow; from: string | null; to: string | null };
+  total: number;
+  entries: GroupEntry[];
+  me: { rank: number; xp: number; correct: number; rank_delta: number | null } | null;
+  most_improved: { user: UserCard; gain: number } | null;
+}
+
+export interface GroupMember extends UserCard {
+  role: GroupRole;
+  joined_at: string;
+}
+
+export interface GroupRequest extends UserCard {
+  requested_at: string;
+}
+
+export interface GroupAnnouncement {
+  id: string;
+  body: string;
+  pinned: boolean;
+  created_at: string;
+  author: UserCard | null;
+}
+
+export interface GroupChallengeResult {
+  id: string;
+  completed_at: string;
+  question_count: number;
+  challenger: UserCard;
+  opponent: UserCard;
+  challenger_score: number;
+  opponent_score: number;
+  winner: 'challenger' | 'opponent' | 'draw';
+}
+
+export interface NewGroup {
+  name: string;
+  kind: GroupKind;
+  join_mode: GroupJoinMode;
+  allowed_email_domain?: string;
+  max_members?: number;
+}
+
+// Community: user-hosted contests ----------------------------------------------------
+
+export type HostReason = 'banned' | 'suspended' | 'level' | 'email' | 'age' | 'strikes';
+export type HostedStatus = 'draft' | 'scheduled' | 'cancelled';
+export type ReviewState = 'none' | 'pending' | 'approved' | 'rejected';
+
+export interface HostQuota {
+  used: number;
+  limit: number;
+  max_participants: number;
+}
+
+/** Can this player host, and if not, what is missing. */
+export interface HostGate {
+  ok: boolean;
+  reasons: HostReason[];
+  via_group: boolean;
+  level: number;
+  min_level: number;
+  verified: boolean;
+  age_days: number;
+  min_age_days: number;
+  post_strikes: number;
+  host_strikes: number;
+}
+
+export interface HostStatus extends HostGate {
+  quota: HostQuota;
+  /** Leagues you run (you can host for these even below the general bar). */
+  groups: { id: string; name: string; slug: string; gate: boolean }[];
+}
+
+export interface HostQuestion {
+  position: number;
+  question_id: string;
+  stem: string;
+  difficulty: Difficulty;
+  /** The host has answered it before (shown only to the host). */
+  seen: boolean;
+}
+
+export interface PickedQuestion {
+  id: string;
+  stem: string;
+  difficulty: Difficulty;
+  subtopic: string;
+  seen: boolean;
+}
+
+export interface HostContest extends ContestSummary {
+  status: HostedStatus;
+  review_state: ReviewState;
+  hidden: boolean;
+  late_join_minutes: number | null;
+  has_code: boolean;
+  created_at: string;
+  published_at: string | null;
+  settled: boolean;
+  questions: HostQuestion[];
+  seen_count: number;
+  dashboard: HostDashboard;
+}
+
+export interface HostHub {
+  status: HostGate & { quota: HostQuota };
+  items: Omit<HostContest, 'questions'>[];
+}
+
+export interface HostDraft {
+  title: string;
+  description: string;
+  starts_at: string;
+  ends_at: string;
+  question_ids: string[];
+  visibility: ContestVisibility;
+  group_id: string | null;
+  access_code: string | null;
+  clear_access_code: boolean;
+  max_participants: number | null;
+  late_join_minutes: number;
+  host_plays: boolean;
+}
+
+export type ContestReportReason = 'spam' | 'offensive' | 'cheating' | 'wrong_info' | 'other';
+
+export interface AdminHostedContest {
+  id: string;
+  title: string;
+  description: string | null;
+  starts_at: string;
+  ends_at: string;
+  state: ContestState;
+  status: HostedStatus;
+  visibility: ContestVisibility;
+  review_state: ReviewState;
+  hidden: boolean;
+  status_note: string | null;
+  created_at: string;
+  participants: number;
+  host: { id: string; handle: string | null; level: number; host_strikes: number; post_strikes: number };
+  questions: { position: number; stem: string; difficulty: Difficulty }[];
+  reports: { reason: ContestReportReason; count: number }[];
 }

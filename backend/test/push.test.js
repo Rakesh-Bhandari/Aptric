@@ -31,6 +31,10 @@ test('validateSubscription wants an allowed endpoint and both keys', () => {
 
 test('validatePushPreferences takes known booleans only', () => {
   assert.deepEqual(validatePushPreferences({ daily: false, league: true }), ['daily', 'league']);
+  assert.deepEqual(validatePushPreferences({ social: false }), ['social']);
+  assert.deepEqual(validatePushPreferences({ post_expiry: true }), ['post_expiry']);
+  assert.deepEqual(validatePushPreferences({ challenges: false }), ['challenges']);
+  assert.deepEqual(validatePushPreferences({ groups: false }), ['groups']);
   assert.throws(() => validatePushPreferences({}), /Nothing/);
   assert.throws(() => validatePushPreferences({ marketing: true }), /Cannot change marketing/);
   assert.throws(() => validatePushPreferences({ daily: 'no' }), /true or false/);
@@ -54,11 +58,31 @@ test('messageFor words each notification and links into the app', () => {
   assert.equal(messageFor('league', { outcome: 'promoted', tier: 'Gold', final_rank: 2 }).title, 'Promoted to Gold!');
   assert.equal(messageFor('league', { outcome: 'demoted', tier: 'Silver', final_rank: 29 }).title, 'Moved down to Silver');
   assert.equal(messageFor('league', { outcome: null }), null);
+  assert.equal(messageFor('follow', { handle: 'asha' }).url, '/u/asha');
+  assert.equal(messageFor('follow', { handle: 'asha' }).title, '@asha followed you');
+  assert.equal(messageFor('follow_request', { handle: 'asha' }).url, '/friends?tab=requests');
+  assert.equal(messageFor('follow_accepted', { handle: 'asha' }).tag, 'follow-accepted-asha');
+  assert.equal(messageFor('post_expiry', { id: 'p1' }).tag, 'post-expiry-p1');
+  assert.equal(messageFor('challenge_received', { id: 'c1', handle: 'asha', score: 8, total: 10 }).title, '@asha challenged you: beat 8/10');
+  assert.equal(messageFor('challenge_received', { id: 'c1', handle: 'asha', score: 8, total: 10 }).url, '/challenges/c1');
+  assert.equal(messageFor('challenge_result', { id: 'c1', handle: 'asha', outcome: 'won', mine: 8, theirs: 7, total: 10 }).title, 'You beat @asha!');
+  assert.equal(messageFor('challenge_result', { id: 'c1', handle: 'asha', outcome: 'lost', mine: 6, theirs: 7, total: 10 }).body, '6/10 to 7/10. Ask for a rematch.');
+  assert.equal(messageFor('challenge_result', { outcome: 'nonsense' }), null);
+  assert.equal(messageFor('group_announcement', { id: 'a1', group: 'IIT-X 2026', slug: 'iit-x-2026-ab12c', body: 'Season starts Monday' }).url, '/leagues/iit-x-2026-ab12c');
+  assert.equal(messageFor('group_announcement', { id: 'a1', group: 'IIT-X 2026', slug: 's', body: 'Hello' }).title, 'IIT-X 2026: new announcement');
+  assert.equal(messageFor('hosted_contest_24h', { title: 'Friday quiz', id: 'c1' }).title, 'Friday quiz starts in 24 hours');
+  assert.equal(messageFor('hosted_contest_1h', { title: 'Friday quiz', id: 'c1' }).url, '/compete/contests/c1');
+  assert.equal(messageFor('hosted_contest_summary', { title: 'Friday quiz', id: 'c1', players: 12 }).body, '12 players took part. See your summary.');
+  assert.equal(messageFor('hosted_contest_summary', { title: 'Friday quiz', id: 'c1', players: 1 }).body, '1 player took part. See your summary.');
+  assert.equal(messageFor('hosted_contest_summary', { title: 'Friday quiz', id: 'c1', players: 0 }).url, '/compete/host/c1');
   assert.equal(messageFor('nope'), null);
 });
 
 test('every job claims its rows in push_log before returning subscriptions', () => {
-  assert.deepEqual(JOBS.map((j) => j.type), ['daily', 'streak', 'contest_start', 'contest_end', 'league']);
+  assert.deepEqual(JOBS.map((j) => j.type), [
+    'daily', 'streak', 'contest_start', 'hosted_contest_24h', 'hosted_contest_1h', 'hosted_contest_summary', 'contest_end', 'league', 'follow', 'follow_request', 'follow_accepted', 'post_expiry',
+    'challenge_received', 'challenge_expiring', 'challenge_result', 'group_announcement',
+  ]);
   for (const job of JOBS) {
     assert.match(job.sql, /insert into private\.push_log/);
     assert.match(job.sql, /on conflict do nothing/);
