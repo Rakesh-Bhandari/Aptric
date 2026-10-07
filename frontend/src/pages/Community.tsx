@@ -10,7 +10,7 @@ import { Page, PageHeader } from '@/components/ui/page';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { clockSkew, livePosts, msLeft, quantizeMs } from '@/lib/posts';
-import { useEntitlements, useFeed, usePostsEnabled, useTopics } from '@/lib/queries';
+import { useEntitlements, useFeed, useGroupsEnabled, usePostsEnabled, useTopics } from '@/lib/queries';
 import type { FeedName, FeedSort } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +18,7 @@ const FEEDS: { value: FeedName; label: string }[] = [
   { value: 'everyone', label: 'Everyone' },
   { value: 'following', label: 'Following' },
   { value: 'topic', label: 'Topic' },
+  { value: 'group', label: 'My leagues' },
   { value: 'mine', label: 'My posts' },
 ];
 
@@ -25,6 +26,7 @@ const EMPTY: Record<FeedName, { title: string; text: string }> = {
   everyone: { title: 'No posts right now', text: 'Posts last 48 hours, so the feed is always fresh. Start the conversation.' },
   following: { title: 'Nothing from people you follow', text: 'Follow people from the Friends page, or switch to Everyone.' },
   topic: { title: 'Nothing on this topic', text: 'Be the first to post about it.' },
+  group: { title: 'Nothing from your leagues', text: 'Posts from people in your private leagues show up here. Join a league with its invite code.' },
   mine: { title: "You haven't posted in the last 48 hours", text: 'Posts disappear after 48 hours. Share a tip, a win or a question.' },
 };
 
@@ -88,7 +90,9 @@ const Feed = ({ feed, sort, topicId }: { feed: FeedName; sort: FeedSort; topicId
 const CommunityInner = () => {
   const [params, setParams] = useSearchParams();
   const topics = useTopics();
-  const feed: FeedName = FEEDS.some((f) => f.value === params.get('feed')) ? (params.get('feed') as FeedName) : 'everyone';
+  const groupsOn = useGroupsEnabled();
+  const feeds = FEEDS.filter((f) => f.value !== 'group' || groupsOn);
+  const feed: FeedName = feeds.some((f) => f.value === params.get('feed')) ? (params.get('feed') as FeedName) : 'everyone';
   const sort: FeedSort = params.get('sort') === 'hot' ? 'hot' : 'new';
   const topicId = params.get('topic');
   const linkedQuestion = params.get('question');
@@ -121,7 +125,7 @@ const CommunityInner = () => {
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="radiogroup" aria-label="Which posts" className="inline-flex max-w-full overflow-x-auto rounded-full bg-muted p-1">
-          {FEEDS.map((f) => (
+          {feeds.map((f) => (
             <button
               key={f.value} type="button" role="radio" aria-checked={feed === f.value}
               onClick={() => set({ feed: f.value === 'everyone' ? null : f.value })}

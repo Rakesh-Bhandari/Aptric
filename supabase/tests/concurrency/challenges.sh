@@ -8,6 +8,7 @@
 #   1. one share link can be accepted by exactly one of five players at the same moment,
 #   2. the same two players can create at most 3 challenges a day, however many requests arrive together,
 #   3. the daily XP cap (5 rewarded challenges per player) holds when many challenges finish at once,
+#   4. a private league never goes past its size when many players join with the code together,
 # and removes everything it created. A failing check exits non-zero.
 set -uo pipefail
 PSQL=(psql -X -q -v ON_ERROR_STOP=1 -t -A)
@@ -19,14 +20,19 @@ as() { # as <user handle> <sql>: runs one statement as that player
 }
 
 cleanup() {
-  "${PSQL[@]}" <<'SQL' >/dev/null 2>&1
-delete from public.challenges where challenger_id in (select id from public.profiles where handle like 'race\_%')
-   or opponent_id in (select id from public.profiles where handle like 'race\_%');
-delete from public.xp_events where user_id in (select id from public.profiles where handle like 'race\_%');
-delete from public.follows where follower_id in (select id from public.profiles where handle like 'race\_%');
-delete from public.daily_sets where id = 'dddddddd-0000-0000-0000-00000000aace';
-delete from public.questions where stem like 'Race question%';
-delete from private.accounts where email like 'race\_%@example.com';
+  # One statement at a time, so a failure cannot stop the rest.
+  while IFS= read -r stmt; do "${PSQL[@]}" -c "$stmt" >/dev/null 2>&1; done <<'SQL'
+delete from public.challenges where challenger_id in (select id from public.profiles where handle like 'race\_%') or opponent_id in (select id from public.profiles where handle like 'race\_%')
+delete from public.attempts where user_id in (select id from public.profiles where handle like 'race\_%')
+delete from public.xp_events where user_id in (select id from public.profiles where handle like 'race\_%')
+delete from public.groups where owner_id in (select id from public.profiles where handle like 'race\_%')
+delete from public.follows where follower_id in (select id from public.profiles where handle like 'race\_%')
+delete from public.daily_set_items where daily_set_id = 'dddddddd-0000-0000-0000-00000000aace'
+delete from public.daily_sets where id = 'dddddddd-0000-0000-0000-00000000aace'
+delete from public.questions where stem like 'Race question%'
+delete from public.subtopics where id = 'aaaaaaaa-0000-0000-0000-00000000ace2'
+delete from public.topics where id = 'aaaaaaaa-0000-0000-0000-00000000ace1'
+delete from private.accounts where email like 'race\_%@example.com'
 SQL
 }
 trap cleanup EXIT
@@ -106,5 +112,21 @@ wait
 check "rewarded challenges per player per day (g)" "$("${PSQL[@]}" -c "select count(*) from public.xp_events where reason = 'challenge_play' and user_id = (select id from public.profiles where handle = 'race_g')")" "5"
 check "rewarded challenges per player per day (h)" "$("${PSQL[@]}" -c "select count(*) from public.xp_events where reason = 'challenge_play' and user_id = (select id from public.profiles where handle = 'race_h')")" "5"
 check "winner bonuses stay within the cap" "$("${PSQL[@]}" -c "select count(*) from public.xp_events where reason = 'challenge_win'")" "5"
+
+# 4. League size: a verified owner makes a league of 3, then five players join with the code at once -> two get in
+"${PSQL[@]}" >/dev/null <<'SQL'
+update private.accounts set email_verified_at = now() where email = 'race_a@example.com';
+SQL
+gid=$("${PSQL[@]}" <<'SQL' | tail -1
+select set_config('request.jwt.claims', json_build_object('sub', (select id from public.profiles where handle = 'race_a'), 'role', 'authenticated')::text, false);
+select public.create_group('Race league', 'friends', 'invite_code', null, 3) ->> 'id';
+SQL
+)
+"${PSQL[@]}" -c "update public.groups set max_members = 3 where id = '$gid'" >/dev/null
+gcode=$("${PSQL[@]}" -c "select invite_code from public.groups where id = '$gid'")
+for h in b c d e f g; do ( as "race_$h" "select public.join_group('$gcode')" > "/tmp/race_j$h.out" ) & done
+wait
+for h in b c d e f g; do rm -f "/tmp/race_j$h.out"; done
+check "league never exceeds its size" "$("${PSQL[@]}" -c "select count(*) from public.group_members where group_id = '$gid' and status = 'active'")" "3"
 
 exit $fail

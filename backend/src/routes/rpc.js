@@ -22,12 +22,17 @@ const WORD = /^[a-z_]{1,24}$/;
 const FEED_WORD = /^[a-z_]{1,12}$/;
 // A challenge share link token: 16 characters from a fixed alphabet.
 const TOKEN = /^[A-Za-z0-9]{16}$/;
+// A league invite code (10 characters), a league slug, and an email domain.
+const CODE = /^[A-Za-z0-9]{10}$/;
+const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const DOMAIN = /^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+$/;
 
 // name -> { args: { arg: sql type }, set: returns rows (setof / table), void: returns nothing,
 //           admin: the route itself refuses non-admins before the call,
 //           limit: [bucket, window seconds, max calls] per player, counted before the call (429 when spent),
 //           flag: the plan feature that switches it on (plans.features; dark until set),
 //           flagArgs: { arg: flag } a truthy argument needs that feature too,
+//           flagValues: { arg: { value: flag } } an argument with that value needs that feature too,
 //           check: { arg: RegExp } a string argument must match (400 otherwise),
 //           max: { arg: n } a string argument has at most n characters }
 export const RPCS = {
@@ -105,7 +110,7 @@ export const RPCS = {
   mute_user: { limit: ['rpc_block', 60, 20], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
   unmute_user: { limit: ['rpc_block', 60, 20], check: { target_handle: HANDLE }, args: { target_handle: 'text' } },
   get_mutes: { args: {} },
-  get_feed: { check: { feed: FEED_WORD, sort: FEED_WORD, cursor: CURSOR_LONG }, args: { feed: 'text', sort: 'text', topic_id: 'uuid', cursor: 'text' } },
+  get_feed: { check: { feed: FEED_WORD, sort: FEED_WORD, cursor: CURSOR_LONG }, args: { feed: 'text', sort: 'text', topic_id: 'uuid', cursor: 'text', group_id: 'uuid' } },
   get_post: { args: { target_post_id: 'uuid' } },
   get_replies: { check: { cursor: CURSOR }, args: { target_post_id: 'uuid', cursor: 'text' } },
   // Community: 1v1 challenges (flag community_challenges). The questions are served only to a player whose own run
@@ -125,6 +130,41 @@ export const RPCS = {
   get_challenge: { limit: ['rpc_challenge_read', 60, 120], check: { token: TOKEN }, args: { target_challenge_id: 'uuid', token: 'text' } },
   list_challenges: { check: { tab: WORD, cursor: CURSOR }, args: { tab: 'text', cursor: 'text' } },
   request_rematch: { limit: ['rpc_challenge', 60, 10], args: { target_challenge_id: 'uuid' } },
+  // Community: private leagues (flag community_groups). Joining is limited here as well as in SQL: a code must
+  // not be guessable. Owners and admins never receive answers: no function returns them.
+  create_group: {
+    limit: ['rpc_group', 3600, 20], max: { name: 80, allowed_email_domain: 100 }, check: { kind: WORD, join_mode: WORD, allowed_email_domain: DOMAIN },
+    args: { name: 'text', kind: 'text', join_mode: 'text', allowed_email_domain: 'text', max_members: 'integer' },
+  },
+  join_group: { limit: ['rpc_group_join', 3600, 20], check: { code: CODE }, args: { code: 'text' } },
+  leave_group: { limit: ['rpc_group', 3600, 30], args: { target_group_id: 'uuid' } },
+  get_my_groups: { args: {} },
+  get_group: { check: { target_slug: SLUG }, max: { target_slug: 60 }, args: { target_group_id: 'uuid', target_slug: 'text' } },
+  get_group_leaderboard: {
+    check: { win: WORD },
+    args: { target_group_id: 'uuid', win: 'text', from_date: 'date', to_date: 'date', page_size: 'integer', page_offset: 'integer' },
+  },
+  get_group_activity: { check: { cursor: CURSOR }, args: { target_group_id: 'uuid', cursor: 'text' } },
+  get_group_challenges: { args: { target_group_id: 'uuid' } },
+  get_group_announcements: { args: { target_group_id: 'uuid' } },
+  update_group: {
+    limit: ['rpc_group', 3600, 60], max: { name: 80, allowed_email_domain: 100 }, check: { join_mode: WORD, allowed_email_domain: DOMAIN },
+    args: {
+      target_group_id: 'uuid', name: 'text', join_mode: 'text', allowed_email_domain: 'text', max_members: 'integer',
+      season_start: 'date', season_end: 'date', clear_season: 'boolean', weekly_reset: 'boolean',
+    },
+  },
+  get_group_invite: { limit: ['rpc_group', 3600, 60], args: { target_group_id: 'uuid' } },
+  rotate_group_code: { limit: ['rpc_group', 3600, 30], args: { target_group_id: 'uuid' } },
+  get_group_requests: { args: { target_group_id: 'uuid' } },
+  get_group_members: { args: { target_group_id: 'uuid' } },
+  respond_group_request: { limit: ['rpc_group', 3600, 120], check: { target_handle: HANDLE }, args: { target_group_id: 'uuid', target_handle: 'text', approve: 'boolean' } },
+  remove_group_member: { limit: ['rpc_group', 3600, 120], check: { target_handle: HANDLE }, args: { target_group_id: 'uuid', target_handle: 'text' } },
+  set_group_member_role: { limit: ['rpc_group', 3600, 60], check: { target_handle: HANDLE, new_role: WORD }, args: { target_group_id: 'uuid', target_handle: 'text', new_role: 'text' } },
+  post_group_announcement: { limit: ['rpc_group', 3600, 30], max: { body: 400 }, args: { target_group_id: 'uuid', body: 'text' } },
+  delete_group_announcement: { limit: ['rpc_group', 3600, 60], args: { target_group_id: 'uuid', announcement_id: 'uuid' } },
+  archive_group: { limit: ['rpc_group', 3600, 10], args: { target_group_id: 'uuid' } },
+  export_group_results: { limit: ['rpc_group', 3600, 30], check: { win: WORD }, args: { target_group_id: 'uuid', win: 'text', from_date: 'date', to_date: 'date' } },
   // Moderation: the route refuses non-admins, the SQL checks again and audits every action.
   admin_list_post_reports: { admin: true, check: { only_status: WORD }, args: { only_status: 'text', page_size: 'integer', page_offset: 'integer' } },
   admin_moderate_post: { admin: true, check: { action: WORD }, max: { note: 500 }, args: { target_post_id: 'uuid', action: 'text', note: 'text' } },
@@ -189,6 +229,16 @@ for (const name of [
   'create_challenge', 'start_challenge_run', 'accept_challenge', 'decline_challenge', 'cancel_challenge', 'get_challenge_run',
   'submit_challenge_answer', 'challenge_hint', 'finish_challenge_run', 'get_challenge', 'list_challenges', 'request_rematch',
 ]) RPCS[name].flag = CHALLENGES_FLAG;
+// Private leagues are a fourth switch; so is the college / batch feed of posts.
+export const GROUPS_FLAG = 'community_groups';
+for (const name of [
+  'create_group', 'join_group', 'leave_group', 'get_my_groups', 'get_group', 'get_group_leaderboard', 'get_group_activity',
+  'get_group_challenges', 'get_group_announcements', 'update_group', 'get_group_invite', 'rotate_group_code', 'get_group_requests',
+  'get_group_members', 'respond_group_request', 'remove_group_member', 'set_group_member_role', 'post_group_announcement',
+  'delete_group_announcement', 'archive_group', 'export_group_results',
+]) RPCS[name].flag = GROUPS_FLAG;
+// A flag that depends on an argument's value: the posts feed of your leagues.
+RPCS.get_feed.flagValues = { feed: { group: GROUPS_FLAG } };
 // The Friends filter is the part of two older functions that belongs to the community feature.
 RPCS.get_leaderboard.flagArgs = { friends_only: COMMUNITY_FLAG };
 RPCS.get_contest_standings.flagArgs = { friends_only: COMMUNITY_FLAG };
@@ -199,6 +249,10 @@ export function requiredFlags(name, body = {}) {
   if (!spec) return [];
   const flags = new Set(spec.flag ? [spec.flag] : []);
   for (const [arg, flag] of Object.entries(spec.flagArgs ?? {})) if (body?.[arg]) flags.add(flag);
+  for (const [arg, byValue] of Object.entries(spec.flagValues ?? {})) {
+    const flag = Object.hasOwn(byValue, String(body?.[arg])) ? byValue[String(body[arg])] : null;
+    if (flag) flags.add(flag);
+  }
   return [...flags];
 }
 

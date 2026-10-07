@@ -1968,6 +1968,36 @@ export type Database = {
       request_rematch: { Args: { target_challenge_id: string }; Returns: Json };
       start_challenge_run: { Args: { target_challenge_id: string }; Returns: Json };
       submit_challenge_answer: { Args: { option_id: string; question_id: string; target_challenge_id: string }; Returns: Json };
+      archive_group: { Args: { target_group_id: string }; Returns: Json };
+      create_group: { Args: { allowed_email_domain?: string; join_mode?: string; kind: string; max_members?: number; name: string }; Returns: Json };
+      delete_group_announcement: { Args: { announcement_id: string; target_group_id: string }; Returns: Json };
+      export_group_results: { Args: { from_date?: string; target_group_id: string; to_date?: string; win?: string }; Returns: Json };
+      get_group: { Args: { target_group_id?: string; target_slug?: string }; Returns: Json };
+      get_group_activity: { Args: { cursor?: string; target_group_id: string }; Returns: Json };
+      get_group_announcements: { Args: { target_group_id: string }; Returns: Json };
+      get_group_challenges: { Args: { target_group_id: string }; Returns: Json };
+      get_group_invite: { Args: { target_group_id: string }; Returns: Json };
+      get_group_leaderboard: {
+        Args: { from_date?: string; page_offset?: number; page_size?: number; target_group_id: string; to_date?: string; win?: string };
+        Returns: Json;
+      };
+      get_group_members: { Args: { target_group_id: string }; Returns: Json };
+      get_group_requests: { Args: { target_group_id: string }; Returns: Json };
+      get_my_groups: { Args: Record<PropertyKey, never>; Returns: Json };
+      join_group: { Args: { code: string }; Returns: Json };
+      leave_group: { Args: { target_group_id: string }; Returns: Json };
+      post_group_announcement: { Args: { body: string; target_group_id: string }; Returns: Json };
+      remove_group_member: { Args: { target_group_id: string; target_handle: string }; Returns: Json };
+      respond_group_request: { Args: { approve: boolean; target_group_id: string; target_handle: string }; Returns: Json };
+      rotate_group_code: { Args: { target_group_id: string }; Returns: Json };
+      set_group_member_role: { Args: { new_role: string; target_group_id: string; target_handle: string }; Returns: Json };
+      update_group: {
+        Args: {
+          allowed_email_domain?: string; clear_season?: boolean; join_mode?: string; max_members?: number; name?: string;
+          season_end?: string; season_start?: string; target_group_id: string; weekly_reset?: boolean;
+        };
+        Returns: Json;
+      };
       block_user: { Args: { target_handle: string }; Returns: Json };
       create_post: {
         Args: {
@@ -1984,7 +2014,7 @@ export type Database = {
       create_reply: { Args: { body: string; target_post_id: string }; Returns: Json };
       delete_post: { Args: { target_post_id: string }; Returns: Json };
       delete_reply: { Args: { target_reply_id: string }; Returns: Json };
-      get_feed: { Args: { cursor?: string; feed?: string; sort?: string; topic_id?: string }; Returns: Json };
+      get_feed: { Args: { cursor?: string; feed?: string; group_id?: string; sort?: string; topic_id?: string }; Returns: Json };
       get_mutes: { Args: Record<PropertyKey, never>; Returns: Json };
       get_post: { Args: { target_post_id: string }; Returns: Json };
       get_replies: { Args: { cursor?: string; target_post_id: string }; Returns: Json };

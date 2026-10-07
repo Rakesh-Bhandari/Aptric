@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { ArrowRight, BarChart3, BookOpen, Home, LogOut, MessagesSquare, Settings, Shield, Swords, User, Users, X } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, Home, LogOut, MessagesSquare, Settings, Shield, Swords, Trophy, User, Users, X } from 'lucide-react';
 import { AptricLogo } from '@/components/brand/AptricLogo';
 import { AptricMark } from '@/components/brand/AptricMark';
 import { Avatar } from '@/components/ui/avatar';
@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useAuthDialog } from '@/context/AuthDialogContext';
 import { useSession } from '@/context/SessionContext';
 import { displayName } from '@/lib/format';
-import { useChallengesEnabled, useCommunityEnabled, usePostsEnabled } from '@/lib/queries';
-import { CHALLENGES_PATH, COMMUNITY_PATH, FRIENDS_PATH, SETTINGS_PATH } from '@/lib/routes';
+import { useChallengesEnabled, useCommunityEnabled, useGroupsEnabled, usePostsEnabled } from '@/lib/queries';
+import { CHALLENGES_PATH, COMMUNITY_PATH, FRIENDS_PATH, LEAGUES_PATH, SETTINGS_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary';
 import { HeaderOverlayContext, type HeaderOverlayTone } from './headerOverlay';
@@ -46,6 +46,7 @@ const UserMenu = () => {
   const community = useCommunityEnabled();
   const posts = usePostsEnabled();
   const challenges = useChallengesEnabled();
+  const groups = useGroupsEnabled();
   if (!profile) return null;
   const name = profile.display_name || profile.handle;
   const item =
@@ -72,6 +73,7 @@ const UserMenu = () => {
           </div>
           <Dropdown.Separator className="my-1 h-px bg-border" />
           <Dropdown.Item asChild className={item}><Link to="/profile"><User /> Profile</Link></Dropdown.Item>
+          {groups && <Dropdown.Item asChild className={item}><Link to={LEAGUES_PATH}><Trophy /> Leagues</Link></Dropdown.Item>}
           {challenges && <Dropdown.Item asChild className={item}><Link to={CHALLENGES_PATH}><Swords /> Challenges</Link></Dropdown.Item>}
           {posts && <Dropdown.Item asChild className={item}><Link to={COMMUNITY_PATH}><MessagesSquare /> Community</Link></Dropdown.Item>}
           {community && <Dropdown.Item asChild className={item}><Link to={FRIENDS_PATH}><Users /> Friends</Link></Dropdown.Item>}

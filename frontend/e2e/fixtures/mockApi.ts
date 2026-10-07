@@ -23,6 +23,8 @@ export interface MockOptions {
   communityPosts?: boolean;
   /** Turns on 1v1 challenges (plans.features.community_challenges). */
   communityChallenges?: boolean;
+  /** Turns on private leagues (plans.features.community_groups). */
+  communityGroups?: boolean;
   /** Fields merged into the signed-in profile (e.g. onboarded_at: null for onboarding). */
   profile?: Record<string, unknown>;
 }
@@ -61,6 +63,14 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
       }
       case 'list_challenges': return { items: body.tab === 'incoming' ? [d.challenge()] : [], next_cursor: null, server_now: d.FIXED_NOW.toISOString() };
       case 'get_challenge': return d.challenge();
+      case 'get_my_groups': return { items: [d.group()] };
+      case 'get_group': return d.group();
+      case 'get_group_leaderboard': return d.groupBoard(String(body.win ?? 'weekly'));
+      case 'get_group_activity': return { items: [], next_cursor: null };
+      case 'get_group_challenges': return { items: [] };
+      case 'get_group_announcements': return { items: [] };
+      case 'get_group_members': return { items: [] };
+      case 'get_group_requests': return { items: [] };
       case 'get_feed': return d.feedPage();
       case 'get_replies': return d.replies();
       case 'get_mutes': return { items: [] };
@@ -93,7 +103,7 @@ function respond(method: string, path: string, body: Record<string, unknown>, op
   }
 
   if (p === '/me/entitlements') {
-    return { plan: 'free', name: 'Free', features: { ads: true, community_follow: opts.community === true, community_posts: opts.communityPosts === true, community_challenges: opts.communityChallenges === true }, limits: {}, show_ads: true };
+    return { plan: 'free', name: 'Free', features: { ads: true, community_follow: opts.community === true, community_posts: opts.communityPosts === true, community_challenges: opts.communityChallenges === true, community_groups: opts.communityGroups === true }, limits: {}, show_ads: true };
   }
   if (p === '/push/config') return { enabled: false, publicKey: null, preferences: { daily: true, streak: true, contests: true, league: true, social: true } };
   if (p === '/tutor/history') return { available: true, messages: [] };

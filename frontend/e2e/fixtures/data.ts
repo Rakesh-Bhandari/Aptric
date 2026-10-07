@@ -422,3 +422,20 @@ export const challengeRun = (over: Record<string, unknown> = {}) => ({
   questions: [0, 1, 2].map((i) => ({ ...questionCard(i), position: i, answer: null, hint_used: false, correct_option_id: null, explanation: null })),
   server_now: FIXED_NOW.toISOString(), ...over,
 });
+
+// Community: private leagues ------------------------------------------------------
+
+export const group = (over: Record<string, unknown> = {}) => ({
+  id: 'g1', name: 'Section B', slug: 'section-b-x7k2', kind: 'class', join_mode: 'invite', verified: false, domain: null,
+  max_members: 100, member_count: 2, is_archived: false, season_start: null, season_end: null, weekly_reset: true,
+  created_at: iso(-72), my_role: 'member', my_status: 'active', announcement: null, ...over,
+});
+
+export const groupBoard = (win = 'weekly') => ({
+  group: group(), window: { name: win, from: '2026-10-05', to: '2026-10-11' }, total: 2,
+  entries: [
+    { rank: 1, user: userCard('aarav_meht'), xp: 420, correct: 31, streak: 6, role: 'owner', is_me: false, rank_delta: 1 },
+    { rank: 2, user: userCard('priya_s'), xp: 380, correct: 28, streak: 3, role: 'member', is_me: true, rank_delta: -1 },
+  ],
+  me: { rank: 2, xp: 380, correct: 28, rank_delta: -1 }, most_improved: null,
+});

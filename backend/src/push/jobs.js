@@ -195,6 +195,20 @@ export const JOBS = [
         and ${LOCAL_HOUR} between 7 and 21
         and ${ELIGIBLE} and ${WANTS('challenges')}`),
   },
+  {
+    type: 'group_announcement',
+    // Members of a live league hear about a new pinned announcement (not its author), quietly overnight.
+    sql: claim(`
+      select m.user_id, 'group-announcement:' || a.id as dedupe_key,
+             jsonb_build_object('id', a.id, 'group', g.name, 'slug', g.slug, 'body', left(a.body, 120)) as data
+      from public.group_announcements a
+      join public.groups g on g.id = a.group_id and not g.is_archived
+      join public.group_members m on m.group_id = g.id and m.status = 'active' and m.user_id is distinct from a.created_by
+      join public.profiles p on p.id = m.user_id
+      where a.is_pinned and a.created_at > now() - interval '24 hours'
+        and ${LOCAL_HOUR} between 7 and 21
+        and ${ELIGIBLE} and ${WANTS('groups')}`),
+  },
 ];
 
 const CHUNK = 25;

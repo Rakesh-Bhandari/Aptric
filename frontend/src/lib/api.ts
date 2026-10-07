@@ -1,6 +1,7 @@
 import type { Database } from '@db/database.types';
 import { api } from './http';
 import type {
+  Group, GroupAnnouncement, GroupBoard, GroupChallengeResult, GroupMember, GroupRequest, GroupWindow, JoinResult, NewGroup,
   Challenge, ChallengeAnswerResult, ChallengeDetail, ChallengePage, ChallengeRun, ChallengeSetKind, ChallengeTab, ContestViolation as RunViolation,
   FeedName, FeedSort, MutedUser, NewPost, Post, PostPage, PostReportReason, Reaction, Reply, ReplyPage,
   ActivityPage, BlockedUser, FollowRequest, FollowStatus, Privacy, UserPage, UserReportReason, VisibilityLevel,
@@ -111,8 +112,8 @@ export const unmuteUser = (handle: string) => rpc<{ muted: false }>('unmute_user
 export const getMutes = () => rpc<{ items: MutedUser[] }>('get_mutes');
 
 // Community: 48-hour posts ------------------------------------------------------
-export const getFeed = (p: { feed: FeedName; sort: FeedSort; topicId?: string | null; cursor?: string | null }) =>
-  rpc<PostPage>('get_feed', { feed: p.feed, sort: p.sort, topic_id: p.topicId ?? undefined, cursor: p.cursor ?? undefined });
+export const getFeed = (p: { feed: FeedName; sort: FeedSort; topicId?: string | null; cursor?: string | null; groupId?: string | null }) =>
+  rpc<PostPage>('get_feed', { feed: p.feed, sort: p.sort, topic_id: p.topicId ?? undefined, cursor: p.cursor ?? undefined, group_id: p.groupId ?? undefined });
 export const getPost = (id: string) => rpc<{ post: Post; server_now: string }>('get_post', { target_post_id: id });
 export const createPost = (post: NewPost) =>
   rpc<{ post: Post; server_now: string }>('create_post', post as Functions['create_post']['Args']);
@@ -146,6 +147,40 @@ export const listChallenges = (tab: ChallengeTab, cursor: string | null = null) 
   rpc<ChallengePage>('list_challenges', { tab, cursor: cursor ?? undefined });
 export const requestRematch = (id: string) => rpc<Challenge>('request_rematch', { target_challenge_id: id });
 
+// Community: private leagues ---------------------------------------------------------
+export const getMyGroups = () => rpc<{ items: Group[] }>('get_my_groups');
+export const getGroup = (p: { id?: string; slug?: string }) => rpc<Group>('get_group', { target_group_id: p.id, target_slug: p.slug });
+export const createGroup = (g: NewGroup) => rpc<Group>('create_group', g);
+export const joinGroup = (code: string) => rpc<JoinResult>('join_group', { code });
+export const leaveGroup = (id: string) => rpc<{ left: true }>('leave_group', { target_group_id: id });
+export const getGroupLeaderboard = (p: { id: string; win: GroupWindow; from?: string; to?: string; pageSize?: number; offset?: number }) =>
+  rpc<GroupBoard>('get_group_leaderboard', {
+    target_group_id: p.id, win: p.win, from_date: p.from, to_date: p.to, page_size: p.pageSize ?? 50, page_offset: p.offset ?? 0,
+  });
+export const getGroupActivity = (id: string, cursor: string | null = null) =>
+  rpc<ActivityPage>('get_group_activity', { target_group_id: id, cursor: cursor ?? undefined });
+export const getGroupChallenges = (id: string) => rpc<{ items: GroupChallengeResult[] }>('get_group_challenges', { target_group_id: id });
+export const getGroupAnnouncements = (id: string) => rpc<{ items: GroupAnnouncement[] }>('get_group_announcements', { target_group_id: id });
+export const getGroupMembers = (id: string) => rpc<{ items: GroupMember[] }>('get_group_members', { target_group_id: id });
+export const getGroupRequests = (id: string) => rpc<{ items: GroupRequest[] }>('get_group_requests', { target_group_id: id });
+export const getGroupInvite = (id: string) => rpc<{ code: string }>('get_group_invite', { target_group_id: id });
+export const rotateGroupCode = (id: string) => rpc<{ code: string }>('rotate_group_code', { target_group_id: id });
+export const updateGroup = (id: string, patch: {
+  name?: string; join_mode?: Group['join_mode']; allowed_email_domain?: string; max_members?: number;
+  season_start?: string; season_end?: string; clear_season?: boolean; weekly_reset?: boolean;
+}) => rpc<Group>('update_group', { target_group_id: id, ...patch });
+export const respondGroupRequest = (id: string, handle: string, approve: boolean) =>
+  rpc<{ status: string }>('respond_group_request', { target_group_id: id, target_handle: handle, approve });
+export const removeGroupMember = (id: string, handle: string) => rpc<{ removed: true }>('remove_group_member', { target_group_id: id, target_handle: handle });
+export const setGroupMemberRole = (id: string, handle: string, role: 'admin' | 'member') =>
+  rpc<{ role: string }>('set_group_member_role', { target_group_id: id, target_handle: handle, new_role: role });
+export const postGroupAnnouncement = (id: string, body: string) => rpc<{ id: string }>('post_group_announcement', { target_group_id: id, body });
+export const deleteGroupAnnouncement = (id: string, announcementId: string) =>
+  rpc<{ deleted: true }>('delete_group_announcement', { target_group_id: id, announcement_id: announcementId });
+export const archiveGroup = (id: string) => rpc<Group>('archive_group', { target_group_id: id });
+export const exportGroupResults = (p: { id: string; win: GroupWindow; from?: string; to?: string }) =>
+  rpc<{ filename: string; csv: string }>('export_group_results', { target_group_id: p.id, win: p.win, from_date: p.from, to_date: p.to });
+
 // Profile and settings -------------------------------------------------------
 export const fetchProfile = (): Promise<Profile> => api<Profile>('GET', '/me/profile');
 
@@ -169,7 +204,7 @@ export const getTopicPreferences = () => api<TopicPreferences>('GET', '/me/prefe
 export const saveTopicPreferences = (prefs: TopicPreferences) => api<TopicPreferences>('PATCH', '/me/preferences', prefs);
 
 // Push notifications ---------------------------------------------------------
-export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean; social: boolean; post_expiry: boolean; challenges: boolean };
+export type PushPreferences = { daily: boolean; streak: boolean; contests: boolean; league: boolean; social: boolean; post_expiry: boolean; challenges: boolean; groups: boolean };
 export type PushConfig = { enabled: boolean; publicKey: string | null; preferences: PushPreferences };
 export type PushSubscriptionJSON = { endpoint: string; keys: { p256dh: string; auth: string } };
 

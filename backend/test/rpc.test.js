@@ -148,3 +148,34 @@ test('challenge functions are validated, rate limited and behind their own switc
     assert.ok(RPCS[name].limit, `${name} is rate limited at the API`);
   }
 });
+
+test('league functions are validated, rate limited and behind their own switch', async () => {
+  const { GROUPS_FLAG, POSTS_FLAG } = await import('../src/routes/rpc.js');
+  const uuid = '11111111-1111-4111-8111-111111111111';
+  for (const name of ['create_group', 'join_group', 'get_group_leaderboard', 'update_group', 'rotate_group_code', 'export_group_results', 'archive_group']) {
+    assert.deepEqual(requiredFlags(name, {}), [GROUPS_FLAG], name);
+  }
+  // The college / batch feed needs both the posts switch and the leagues switch; the others only posts.
+  assert.deepEqual(requiredFlags('get_feed', { feed: 'group' }).sort(), [GROUPS_FLAG, POSTS_FLAG].sort());
+  assert.deepEqual(requiredFlags('get_feed', { feed: 'everyone' }), [POSTS_FLAG]);
+  assert.match(buildCall('join_group', { code: 'abcdefghjk' }).text, /join_group\(code => \$1::text\)/);
+  for (const bad of ['short', 'abcdefghjkm', "abcdefghj'", 'abcdefgh j', '../../../', 5]) {
+    assert.throws(() => buildCall('join_group', { code: bad }), (e) => e.status === 400, String(bad));
+  }
+  assert.throws(() => buildCall('create_group', { name: 'x'.repeat(81), kind: 'batch' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('create_group', { name: 'IIT-X', kind: 'batch; drop' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('create_group', { name: 'IIT-X', kind: 'batch', allowed_email_domain: 'not a domain' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('create_group', { name: 'IIT-X', kind: 'batch', owner_id: uuid }), (e) => e.status === 400, 'no mass assignment');
+  assert.throws(() => buildCall('create_group', { name: 'IIT-X', kind: 'batch', invite_code: 'aaaaaaaaaa' }), (e) => e.status === 400, 'the code is never client-chosen');
+  assert.doesNotThrow(() => buildCall('create_group', { name: 'IIT-X', kind: 'college', join_mode: 'email_domain', allowed_email_domain: 'iitx.ac.in', max_members: 300 }));
+  assert.throws(() => buildCall('get_group', { target_slug: 'Not A Slug' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('get_group_leaderboard', { target_group_id: uuid, win: 'all time' }), (e) => e.status === 400);
+  assert.match(buildCall('get_group_leaderboard', { target_group_id: uuid, win: 'custom', from_date: '2026-10-01', to_date: '2026-10-31' }).text, /from_date => \$3::date, to_date => \$4::date/);
+  assert.throws(() => buildCall('post_group_announcement', { target_group_id: uuid, body: 'x'.repeat(401) }), (e) => e.status === 400);
+  assert.throws(() => buildCall('set_group_member_role', { target_group_id: uuid, target_handle: 'asha', new_role: 'owner!' }), (e) => e.status === 400);
+  assert.throws(() => buildCall('update_group', { target_group_id: uuid, is_archived: false }), (e) => e.status === 400, 'archiving is its own call');
+  assert.ok(RPCS.join_group.limit[2] <= 20, 'joining by code is rate limited at the API too');
+  for (const name of ['create_group', 'join_group', 'update_group', 'rotate_group_code', 'archive_group', 'remove_group_member']) {
+    assert.ok(RPCS[name].limit, `${name} is rate limited at the API`);
+  }
+});

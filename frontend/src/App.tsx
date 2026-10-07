@@ -23,6 +23,9 @@ const Progress = lazy(() => import('@/pages/Progress'));
 const Friends = lazy(() => import('@/pages/Friends'));
 const Community = lazy(() => import('@/pages/Community'));
 const Challenges = lazy(() => import('@/pages/Challenges'));
+const Leagues = lazy(() => import('@/pages/Leagues'));
+const JoinLeaguePage = lazy(() => import('@/pages/Leagues').then((m) => ({ default: m.JoinLeaguePage })));
+const League = lazy(() => import('@/pages/League'));
 const ChallengePage = lazy(() => import('@/pages/ChallengePage'));
 const ChallengeLinkPage = lazy(() => import('@/pages/ChallengePage').then((m) => ({ default: m.ChallengeLinkPage })));
 const FollowersPage = lazy(() => import('@/pages/Friends').then((m) => ({ default: () => <m.FollowListPage mode="followers" /> })));
@@ -104,6 +107,9 @@ const router = createBrowserRouter([
               { path: 'u/:handle/following', element: <FollowingPage /> },
               { path: 'friends', element: <Friends /> },
               { path: 'community', element: <Community /> },
+              { path: 'leagues', element: <Leagues /> },
+              { path: 'leagues/join', element: <JoinLeaguePage /> },
+              { path: 'leagues/:slug', element: <League /> },
               { path: 'challenges', element: <Challenges /> },
               { path: 'challenges/:id', element: <ChallengePage /> },
               { path: 'c/:token', element: <ChallengeLinkPage /> },

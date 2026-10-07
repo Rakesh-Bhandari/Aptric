@@ -503,7 +503,7 @@ export type UserReportReason = 'spam' | 'abuse' | 'impersonation' | 'personal_in
 
 export type PostKind = 'question' | 'tip' | 'win' | 'study_buddy' | 'poll';
 export type Reaction = 'up' | 'fire' | 'idea';
-export type FeedName = 'following' | 'topic' | 'everyone' | 'mine';
+export type FeedName = 'following' | 'topic' | 'everyone' | 'mine' | 'group';
 export type FeedSort = 'new' | 'hot';
 export type PostReportReason = 'spam' | 'abuse' | 'answer_leak' | 'personal_info' | 'other';
 
@@ -674,4 +674,95 @@ export interface ChallengeAnswerResult {
   answered: number;
   finished: boolean;
   challenge: Challenge;
+}
+
+// Community: private leagues ---------------------------------------------------
+
+export type GroupKind = 'college' | 'batch' | 'friends' | 'coaching';
+export type GroupJoinMode = 'invite_code' | 'approval' | 'email_domain';
+export type GroupRole = 'owner' | 'admin' | 'member';
+export type GroupWindow = 'weekly' | 'monthly' | 'season' | 'all_time' | 'custom';
+
+export interface Group {
+  id: string;
+  name: string;
+  slug: string;
+  kind: GroupKind;
+  join_mode: GroupJoinMode;
+  /** Joining needs a verified email on `domain`. */
+  verified: boolean;
+  domain: string | null;
+  max_members: number;
+  member_count: number;
+  is_archived: boolean;
+  season_start: string | null;
+  season_end: string | null;
+  weekly_reset: boolean;
+  created_at: string;
+  my_role: GroupRole | null;
+  my_status: 'active' | 'pending' | 'removed' | null;
+  /** The pinned notice (members only). */
+  announcement: { id: string; body: string; created_at: string } | null;
+}
+
+export interface JoinResult {
+  status: 'active' | 'pending' | 'not_found';
+  group?: Group;
+}
+
+export interface GroupEntry {
+  rank: number;
+  user: UserCard;
+  xp: number;
+  correct: number;
+  streak: number;
+  role: GroupRole;
+  is_me: boolean;
+  /** Places gained (+) or lost (-) against the window before; null when there is nothing to compare. */
+  rank_delta: number | null;
+}
+
+export interface GroupBoard {
+  group: Group;
+  window: { name: GroupWindow; from: string | null; to: string | null };
+  total: number;
+  entries: GroupEntry[];
+  me: { rank: number; xp: number; correct: number; rank_delta: number | null } | null;
+  most_improved: { user: UserCard; gain: number } | null;
+}
+
+export interface GroupMember extends UserCard {
+  role: GroupRole;
+  joined_at: string;
+}
+
+export interface GroupRequest extends UserCard {
+  requested_at: string;
+}
+
+export interface GroupAnnouncement {
+  id: string;
+  body: string;
+  pinned: boolean;
+  created_at: string;
+  author: UserCard | null;
+}
+
+export interface GroupChallengeResult {
+  id: string;
+  completed_at: string;
+  question_count: number;
+  challenger: UserCard;
+  opponent: UserCard;
+  challenger_score: number;
+  opponent_score: number;
+  winner: 'challenger' | 'opponent' | 'draw';
+}
+
+export interface NewGroup {
+  name: string;
+  kind: GroupKind;
+  join_mode: GroupJoinMode;
+  allowed_email_domain?: string;
+  max_members?: number;
 }

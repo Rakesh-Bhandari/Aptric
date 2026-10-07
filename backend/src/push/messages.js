@@ -66,6 +66,8 @@ export function messageFor(type, data = {}) {
       if (!title) return null;
       return { title, body: `${data.mine}/${data.total} to ${data.theirs}/${data.total}. Ask for a rematch.`, url: `/challenges/${data.id}`, tag: `challenge-${data.id}` };
     }
+    case 'group_announcement':
+      return { title: `${data.group}: new announcement`, body: data.body, url: `/leagues/${data.slug}`, tag: `group-${data.id}` };
     default:
       return null;
   }

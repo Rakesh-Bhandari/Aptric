@@ -28,3 +28,8 @@ export const discussHref = (questionId: string) => `${COMMUNITY_PATH}?compose=1&
 /** 1v1 challenges: the lists, one challenge, and the share link. */
 export const CHALLENGES_PATH = '/challenges';
 export const challengeHref = (id: string) => `/challenges/${id}`;
+
+/** Private leagues: the hub, one league, and the invite link (/leagues/join?code=...). */
+export const LEAGUES_PATH = '/leagues';
+export const leagueHref = (slug: string) => `/leagues/${slug}`;
+export const inviteHref = (code: string, origin = window.location.origin) => `${origin}/leagues/join?code=${code}`;
