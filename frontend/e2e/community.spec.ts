@@ -20,7 +20,7 @@ test('a post shows its countdown, turns amber under 6 hours and leaves the list 
   await expect(feed).toContainText('Post a: convert');
   const soon = feed.getByRole('listitem').first().locator('time');
   await expect(soon).toContainText('expires in 5h 12m');
-  await expect(soon).toHaveAttribute('aria-label', 'expires in 5 hours 12 minutes');
+  await expect(soon.locator('.sr-only')).toHaveText('expires in 5 hours 12 minutes');
   await expect(soon).toHaveClass(/bg-warning-soft/);
   const later = feed.getByRole('listitem').nth(1).locator('time');
   await expect(later).toContainText('expires in 30h 00m');

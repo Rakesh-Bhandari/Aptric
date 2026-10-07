@@ -9,7 +9,6 @@ import { Select } from '@/components/ui/input';
 import { Page, PageHeader } from '@/components/ui/page';
 import { LoadingRegion, Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { clockSkew, livePosts, msLeft, quantizeMs } from '@/lib/posts';
 import { useEntitlements, useFeed, usePostsEnabled, useTopics } from '@/lib/queries';
 import type { FeedName, FeedSort } from '@/lib/types';
@@ -121,11 +120,18 @@ const CommunityInner = () => {
         actions={<Button onClick={() => setComposing(true)}><PenSquare /> New post</Button>}
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs value={feed} onValueChange={(v) => set({ feed: v === 'everyone' ? null : v })}>
-          <TabsList aria-label="Which posts">
-            {FEEDS.map((f) => <TabsTrigger key={f.value} value={f.value}>{f.label}</TabsTrigger>)}
-          </TabsList>
-        </Tabs>
+        <div role="radiogroup" aria-label="Which posts" className="inline-flex max-w-full overflow-x-auto rounded-full bg-muted p-1">
+          {FEEDS.map((f) => (
+            <button
+              key={f.value} type="button" role="radio" aria-checked={feed === f.value}
+              onClick={() => set({ feed: f.value === 'everyone' ? null : f.value })}
+              className={cn('min-h-11 whitespace-nowrap rounded-full px-3 text-sm font-semibold transition-colors duration-200 sm:px-4',
+                feed === f.value ? 'bg-card text-accent-text shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
         <SortSwitch value={sort} onChange={(s) => set({ sort: s === 'new' ? null : s })} />
       </div>
       {feed === 'topic' && (

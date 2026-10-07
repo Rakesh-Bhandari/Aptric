@@ -37,7 +37,7 @@ export const Countdown = ({ expiresAt, ms }: { expiresAt: string; ms: number }) 
   const urgent = isUrgent(ms);
   return (
     <time
-      dateTime={expiresAt} aria-label={speakTimeLeft(ms)}
+      dateTime={expiresAt}
       className={cn(
         'inline-flex h-6 min-w-[8.75rem] shrink-0 items-center justify-end gap-1 whitespace-nowrap text-xs tabular-nums',
         urgent ? 'rounded-full bg-warning-soft px-2 font-semibold text-warning-soft-foreground' : 'text-muted-foreground',
@@ -45,6 +45,7 @@ export const Countdown = ({ expiresAt, ms }: { expiresAt: string; ms: number }) 
     >
       <Clock className="size-3.5" aria-hidden />
       <span aria-hidden>expires in {formatTimeLeft(ms)}</span>
+      <span className="sr-only">{speakTimeLeft(ms)}</span>
     </time>
   );
 };
