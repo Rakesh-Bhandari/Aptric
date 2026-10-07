@@ -263,9 +263,9 @@ const ChallengeInner = ({ token = false }: { token?: boolean }) => {
               </div>
             )}
             <div className="flex flex-wrap justify-center gap-2 text-xs font-semibold">
-              <Badge variant="muted">{plural(c.question_count, 'question')}</Badge>
-              {left !== null && <Badge variant={left < 6 * 3_600_000 ? 'warning' : 'muted'}><Clock aria-hidden /> {left > 0 ? `${formatTimeLeft(left)} left` : 'time is up'}</Badge>}
-              {c.status === 'pending' && c.accept_by && <Badge variant="muted">Expires {formatRelative(c.accept_by)}</Badge>}
+              <Badge variant="muted" className="bg-white/15 text-navy-foreground">{plural(c.question_count, 'question')}</Badge>
+              {left !== null && <Badge variant={left < 6 * 3_600_000 ? 'warning' : 'muted'} className={left < 6 * 3_600_000 ? undefined : 'bg-white/15 text-navy-foreground'}><Clock aria-hidden /> {left > 0 ? `${formatTimeLeft(left)} left` : 'time is up'}</Badge>}
+              {c.status === 'pending' && c.accept_by && <Badge variant="muted" className="bg-white/15 text-navy-foreground">Expires {formatRelative(c.accept_by)}</Badge>}
             </div>
           </div>
         </Card>
