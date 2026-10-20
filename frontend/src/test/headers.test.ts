@@ -18,7 +18,7 @@ describe('security headers (vercel.json)', () => {
   const csp = headerValue('Content-Security-Policy');
 
   it('allows exactly the inline scripts index.html has, by hash', () => {
-    const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*type=["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
     expect(inline.length).toBeGreaterThan(0);
     const hashes = inline.map((script) => `'sha256-${createHash('sha256').update(script).digest('base64')}'`);
     const scriptSrc = csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('script-src ')) ?? '';

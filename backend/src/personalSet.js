@@ -135,7 +135,7 @@ export function selectQuestions({ seed, mix, pool, preferred = [], excluded = []
   if (fresh.length >= slots.length) candidates = fresh;
 
   // Row order from the database is not stable, so fix one before drawing random numbers.
-  candidates = candidates.toSorted((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  candidates = [...candidates].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const liked = new Set(preferred);
   const random = seededRandom(seed);
   // Efraimidis-Spirakis: the larger u^(1/weight), the earlier the pick.

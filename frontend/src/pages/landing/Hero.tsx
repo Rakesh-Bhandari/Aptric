@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthDialog } from '@/context/AuthDialogContext';
@@ -58,7 +59,7 @@ export const Hero = () => {
             <Button size="lg" className="px-7" onClick={() => openAuth({ mode: 'signup', next: '/' })}>
               Get Started <ArrowRight aria-hidden />
             </Button>
-            <a href="#features" onClick={learnMore} className={outlinePill}>Learn More</a>
+            <Link to="/resources" className={outlinePill}>Explore Free Resources</Link>
           </div>
           <button
             type="button"

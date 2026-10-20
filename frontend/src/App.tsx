@@ -40,6 +40,11 @@ const PlacementRetake = lazy(() => import('@/pages/Onboarding').then((m) => ({ d
 const AuthCallback = lazy(() => import('@/pages/AuthCallback'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const Terms = lazy(() => import('@/pages/Terms'));
+const ResourceHub = lazy(() => import('@/pages/resources/ResourceHub').then((m) => ({ default: m.ResourceHub })));
+const SectionPage = lazy(() => import('@/pages/resources/SectionPage').then((m) => ({ default: m.SectionPage })));
+const TopicPage = lazy(() => import('@/pages/resources/TopicPage').then((m) => ({ default: m.TopicPage })));
+const TrialIntro = lazy(() => import('@/pages/trial/TrialIntro').then((m) => ({ default: m.TrialIntro })));
+const TrialSolve = lazy(() => import('@/pages/trial/TrialSolve').then((m) => ({ default: m.TrialSolve })));
 // Dev-only token preview; import.meta.env.DEV is false in builds, so the chunk is dropped.
 const StyleGuide = import.meta.env.DEV ? lazy(() => import('@/pages/dev/StyleGuide')) : null;
 
@@ -93,6 +98,11 @@ const router = createBrowserRouter([
             children: [{ element: <RequireAuth />, children: [{ index: true, element: <Today /> }] }],
           },
           { path: 'terms', element: <Terms /> },
+          { path: 'resources', element: <ResourceHub /> },
+          { path: 'resources/:sectionSlug', element: <SectionPage /> },
+          { path: 'resources/:sectionSlug/:subtopicSlug', element: <TopicPage /> },
+          { path: 'resources/:sectionSlug/:topicSlug/:subtopicSlug', element: <TopicPage /> },
+          { path: 'free-trial', element: <TrialIntro /> },
           ...(StyleGuide ? [{ path: 'dev/styleguide', element: <StyleGuide /> }] : []),
           { path: 'auth/callback', element: <AuthCallback /> },
           { path: 'auth/reset-password', element: <ResetPassword /> },
@@ -166,6 +176,7 @@ const router = createBrowserRouter([
               { path: 'onboarding/placement', element: <PlacementRetake /> },
             ],
           },
+          { path: 'free-trial/solve', element: <TrialSolve /> },
         ],
       },
     ],

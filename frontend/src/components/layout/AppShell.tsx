@@ -25,11 +25,13 @@ const NAV = [
   { to: '/profile', label: 'Profile', icon: User },
 ];
 
-// Visitors' header links: anchors into the landing page (Landing scrolls to the hash).
+// Visitors' header links: anchors into the landing page + public resources & trial.
 const VISITOR_NAV = [
   { to: '/#features', label: 'Features' },
   { to: '/#how-it-works', label: 'How it works' },
   { to: '/#sections', label: 'Sections' },
+  { to: '/resources', label: 'Resources' },
+  { to: '/free-trial', label: 'Free Trial' },
 ];
 
 export const SkipLink = () => (
@@ -114,15 +116,27 @@ export const AppShell = () => {
   const transparent = overlay !== null && !scrolled;
 
   const footerLinks: FooterLink[] = signedIn
-    ? [{ label: 'Practice', to: '/practice' }, { label: 'Compete', to: '/compete' }, { label: 'Terms & privacy', to: '/terms' }]
+    ? [{ label: 'Practice', to: '/practice' }, { label: 'Compete', to: '/compete' }, { label: 'Resources', to: '/resources' }, { label: 'Terms & privacy', to: '/terms' }]
     : [
       { label: 'Sign in', onClick: () => openAuth({ mode: 'signin', next: '/' }) },
       { label: 'Create account', onClick: () => openAuth({ mode: 'signup', next: '/' }) },
+      { label: 'Free Resources', to: '/resources' },
+      { label: '10-Q Trial', to: '/free-trial' },
       { label: 'Terms & privacy', to: '/terms' },
     ];
-  // Visitors get the rich footer: anchors into the landing page, account actions, legal.
+  // Visitors get the rich footer: anchors into the landing page, resources, account actions, legal.
   const footerColumns: FooterColumn[] | undefined = signedIn ? undefined : [
     { title: 'Explore', links: VISITOR_NAV },
+    {
+      title: 'Learn',
+      links: [
+        { label: 'Resources Hub', to: '/resources' },
+        { label: '10-Question Trial', to: '/free-trial' },
+        { label: 'Quantitative Aptitude', to: '/resources/quantitative-aptitude' },
+        { label: 'Logical Reasoning', to: '/resources/logical-reasoning' },
+        { label: 'Verbal Ability', to: '/resources/verbal-ability' },
+      ],
+    },
     { title: 'Account', links: footerLinks.slice(0, 2) },
     { title: 'Company', links: [{ label: 'Terms & privacy', to: '/terms' }, { label: 'Contact us', href: 'mailto:aptricofficials@gmail.com' }] },
   ];

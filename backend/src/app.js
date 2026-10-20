@@ -14,6 +14,7 @@ import cronRoutes from './routes/cron.js';
 import meRoutes from './routes/me.js';
 import pushRoutes from './routes/push.js';
 import rpcRoutes from './routes/rpc.js';
+import trialRoutes from './routes/trial.js';
 import tutorRoutes from './routes/tutor.js';
 
 const DEV_ORIGINS = ['http://localhost:6969', 'http://localhost:5173', 'http://127.0.0.1:6969', 'http://127.0.0.1:5173'];
@@ -142,6 +143,7 @@ export function createApp() {
   app.use('/admin', adminRoutes);
   app.use('/push', pushRoutes);
   app.use('/cron', cronRoutes);
+  app.use('/trial', trialRoutes);
   app.use('/', meRoutes);
 
   app.use(notFoundHandler);

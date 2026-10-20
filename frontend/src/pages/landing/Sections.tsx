@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowRight, BarChart3, BookOpen, BookText, Calculator, CalendarCheck, Cpu, Flame, Layers, Lightbulb, PieChart, Puzzle, Swords, Trophy,
 } from 'lucide-react';
@@ -112,11 +113,11 @@ export const HowItWorks = () => (
 
 // Topic names come from the question bank's taxonomy (supabase/migrations/*_taxonomy_seed.sql).
 const SECTIONS = [
-  { icon: Calculator, name: 'Quantitative Aptitude', topics: ['Arithmetic', 'Algebra', 'Time, Work & Distance', 'Geometry & Mensuration', 'Counting & Probability'] },
-  { icon: Puzzle, name: 'Logical Reasoning', topics: ['Arrangements & Puzzles', 'Deductive Reasoning', 'Clocks & Calendars', 'Non-Verbal Reasoning'] },
-  { icon: BookText, name: 'Verbal Ability', topics: ['Reading', 'Grammar & Usage', 'Vocabulary'] },
-  { icon: PieChart, name: 'Data Interpretation', topics: ['Charts', 'Tables & Caselets', 'Mixed Graphs'] },
-  { icon: Cpu, name: 'Technical Aptitude', topics: ['Output Prediction', 'OOP', 'DBMS', 'Operating Systems', 'Computer Networks'] },
+  { icon: Calculator, name: 'Quantitative Aptitude', slug: 'quantitative-aptitude', topics: ['Arithmetic', 'Algebra', 'Time, Work & Distance', 'Geometry & Mensuration', 'Counting & Probability'] },
+  { icon: Puzzle, name: 'Logical Reasoning', slug: 'logical-reasoning', topics: ['Arrangements & Puzzles', 'Deductive Reasoning', 'Clocks & Calendars', 'Non-Verbal Reasoning'] },
+  { icon: BookText, name: 'Verbal Ability', slug: 'verbal-ability', topics: ['Reading', 'Grammar & Usage', 'Vocabulary'] },
+  { icon: PieChart, name: 'Data Interpretation', slug: 'data-interpretation', topics: ['Charts', 'Tables & Caselets', 'Mixed Graphs'] },
+  { icon: Cpu, name: 'Technical Aptitude', slug: 'technical-aptitude', topics: ['Output Prediction', 'OOP', 'DBMS', 'Operating Systems', 'Computer Networks'] },
 ];
 
 export const SectionsShowcase = () => (
@@ -125,23 +126,33 @@ export const SectionsShowcase = () => (
       Easy, medium and hard questions, tagged by exam, with Markdown and proper maths.
     </SectionHeading>
     <ul className="mx-auto mt-10 grid max-w-5xl gap-4 sm:mt-12 sm:grid-cols-2 lg:grid-cols-6">
-      {SECTIONS.map(({ icon: Icon, name, topics }, i) => (
+      {SECTIONS.map(({ icon: Icon, name, slug, topics }, i) => (
         <li
           key={name} data-reveal style={delay(i)}
           // Three cards on the first row and two centred-width cards on the second (lg).
-          className={cn('rounded-lg border bg-card p-5 shadow-sm transition-[box-shadow,border-color] duration-200 ease-out hover:border-primary/30 hover:shadow-md lg:col-span-2', i >= 3 && 'lg:col-span-3')}
+          className={cn('flex flex-col justify-between rounded-lg border bg-card p-5 shadow-sm transition-[box-shadow,border-color] duration-200 ease-out hover:border-primary/30 hover:shadow-md lg:col-span-2', i >= 3 && 'lg:col-span-3')}
         >
-          <div className="flex items-center gap-3">
-            <div className={cn('grid size-10 shrink-0 place-items-center rounded-md', tint(i).tile)}>
-              <Icon className="size-5" aria-hidden />
+          <div>
+            <div className="flex items-center gap-3">
+              <div className={cn('grid size-10 shrink-0 place-items-center rounded-md', tint(i).tile)}>
+                <Icon className="size-5" aria-hidden />
+              </div>
+              <h3 className="font-bold leading-tight tracking-tight text-heading">{name}</h3>
             </div>
-            <h3 className="font-bold leading-tight tracking-tight text-heading">{name}</h3>
+            <ul aria-label={`${name} topics`} className="mt-4 flex flex-wrap gap-1.5">
+              {topics.map((t) => (
+                <li key={t} className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', tint(i).chip)}>{t}</li>
+              ))}
+            </ul>
           </div>
-          <ul aria-label={`${name} topics`} className="mt-4 flex flex-wrap gap-1.5">
-            {topics.map((t) => (
-              <li key={t} className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', tint(i).chip)}>{t}</li>
-            ))}
-          </ul>
+          <div className="mt-5 border-t pt-3">
+            <Link
+              to={`/resources/${slug}`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary transition-colors hover:text-primary/80 hover:underline"
+            >
+              Study notes & formulas <ArrowRight className="size-3.5" aria-hidden />
+            </Link>
+          </div>
         </li>
       ))}
     </ul>
@@ -169,10 +180,16 @@ export const FinalCta = () => {
             <Button size="lg" className="px-7" onClick={() => openAuth({ mode: 'signup', next: '/' })}>
               Get Started <ArrowRight aria-hidden />
             </Button>
+            <Link to="/free-trial" className={outlineOnNavy}>
+              Try 10 Free Questions
+            </Link>
             <button type="button" className={outlineOnNavy} onClick={() => openAuth({ mode: 'signin', next: '/' })}>
               Sign in
             </button>
           </div>
+          <p className="mt-4 text-xs text-chrome-muted-foreground/80">
+            No account required to study. <Link to="/resources" className="underline hover:text-white">Browse public notes & formulas</Link>.
+          </p>
         </div>
       </div>
     </section>

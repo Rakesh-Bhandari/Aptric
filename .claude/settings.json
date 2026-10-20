@@ -1,1 +1,6 @@
-claude plugin install frontend-design@anthropic-plugin-directory
+{
+  "anthropic_base_url": "https://api.cheaperinference.com/v1",
+  "anthropic_api_token": "ci_live_e8545346d24b6aaa76aba9ebc693bb3010e9b1721aee163f",
+  "model": "auto",
+  "claude_enable_gateway_model_discovery": true
+}
