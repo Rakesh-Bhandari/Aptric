@@ -222,6 +222,10 @@ export const NUMBER_SYSTEM_CONTENT: EducationalTopicContent = {
       answer:
         'Factor the divisor into two mutually co-prime numbers whose divisibility rules you know. For 88, check both 8 and 11. For 99, check both 9 and 11. If the number passes both tests, it is guaranteed to be divisible by the composite product.',
     },
+    {
+      question: 'How do I count trailing zeroes in a factorial?',
+      answer: 'Count the factors of 5: floor(n/5) + floor(n/25) + floor(n/125) and so on until the divisor exceeds n. Factors of 2 are more plentiful, so factors of 5 determine the number of trailing zeroes.',
+    },
   ],
   relatedTopics: [
     {
@@ -237,6 +241,5 @@ export const NUMBER_SYSTEM_CONTENT: EducationalTopicContent = {
       description: 'Uses integer sum and factor division principles for central tendency analysis.',
     },
   ],
-  lastUpdated: 'October 2026',
-  editorialReview: 'Independently verified by Aptric Quantitative Editorial Team for placement exam standards.',
+  editorialReview: 'Editorial review pending; this material has not been independently certified.',
 };

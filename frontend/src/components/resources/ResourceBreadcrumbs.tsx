@@ -13,7 +13,7 @@ interface ResourceBreadcrumbsProps {
 
 export const ResourceBreadcrumbs: React.FC<ResourceBreadcrumbsProps> = ({ items }) => {
   return (
-    <nav aria-label="Breadcrumb" className="mb-6 flex items-center text-sm text-[var(--muted)]">
+    <nav aria-label="Breadcrumb" className="mb-6 flex items-center text-sm text-[var(--foreground)]">
       <ol className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         <li className="inline-flex items-center">
           <Link

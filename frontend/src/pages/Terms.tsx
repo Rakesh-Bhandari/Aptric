@@ -1,5 +1,6 @@
 import { CalendarClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const SECTIONS: { id: string; title: string; body?: string; items?: string[] }[] = [
   {
@@ -59,7 +60,13 @@ const SECTIONS: { id: string; title: string; body?: string; items?: string[] }[]
 const LAST_UPDATED = 'March 2025';
 
 /** Long-form legal page: a readable column, numbered sections with blue anchors, and a contents list on wide screens. */
-const Terms = () => (
+const Terms = () => {
+  usePageMeta({
+    title: 'Terms and Conditions',
+    description: 'Read Aptric terms covering account responsibilities, acceptable use, learning content, privacy, and contact information.',
+    canonicalPath: '/terms',
+  });
+  return (
   <div className="bg-background">
     <header className="border-b bg-background bg-gradient-hero">
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
@@ -131,6 +138,7 @@ const Terms = () => (
       </article>
     </div>
   </div>
-);
+  );
+};
 
 export default Terms;

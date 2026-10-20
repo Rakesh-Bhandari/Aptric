@@ -21,8 +21,7 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { getEducationalTopicContent } from '@/lib/resources/contentRegistry';
 
 export const TopicPage: React.FC = () => {
-  const { sectionSlug, subtopicSlug, topicSlug } = useParams<{
-    sectionSlug?: string;
+  const { subtopicSlug, topicSlug } = useParams<{
     topicSlug?: string;
     subtopicSlug?: string;
   }>();
@@ -31,15 +30,12 @@ export const TopicPage: React.FC = () => {
   const resolvedSubtopicSlug = subtopicSlug || topicSlug;
   const content = resolvedSubtopicSlug ? getEducationalTopicContent(resolvedSubtopicSlug) : undefined;
 
-  if (!content) {
-    return <Navigate to="/resources" replace />;
-  }
-
   usePageMeta({
-    title: `${content.title} – Aptric Resources`,
-    description: `${content.introduction.slice(0, 155)}... Complete study guide with formulas, step-by-step worked examples, and verified practice problems.`,
-    canonicalPath: `/resources/${content.sectionSlug}/${content.topicSlug}/${content.subtopicSlug}`,
-    structuredData: [
+    title: content ? `${content.title} – Aptric Resources` : 'Free Aptitude Resources – Aptric',
+    description: content ? `${content.introduction.slice(0, 155)}... Study guide with formulas, step-by-step worked examples, and practice problems.` : 'Browse free aptitude learning resources and topic guides.',
+    canonicalPath: content ? `/resources/${content.sectionSlug}/${content.topicSlug}/${content.subtopicSlug}` : '/resources',
+    noindex: true, // Do not index article drafts until a competent editor completes the review.
+    structuredData: content ? [
       {
         '@context': 'https://schema.org',
         '@type': 'LearningResource',
@@ -78,8 +74,12 @@ export const TopicPage: React.FC = () => {
           },
         ],
       },
-    ],
+    ] : undefined,
   });
+
+  if (!content) {
+    return <Navigate to="/resources" replace />;
+  }
 
   const tocSections: TocSection[] = [
     { id: 'introduction', label: 'Overview' },
@@ -115,7 +115,7 @@ export const TopicPage: React.FC = () => {
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--accent)]">
                 {content.sectionName} › {content.topicName}
               </span>
-              <span className="text-xs text-[var(--muted)] flex items-center gap-1">
+              <span className="text-xs text-[var(--muted-foreground)] flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" /> 12 min read
               </span>
             </div>
@@ -142,12 +142,12 @@ export const TopicPage: React.FC = () => {
           <section id="introduction" className="space-y-4">
             <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Introduction</h2>
             <div className="text-sm sm:text-base text-[var(--foreground)] leading-relaxed space-y-3">
-              <Markdown content={content.introduction} />
+              <Markdown text={content.introduction} />
             </div>
 
             {content.prerequisites && content.prerequisites.length > 0 && (
               <div className="p-4 rounded-xl bg-[var(--secondary)]/40 border border-[var(--border)]">
-                <span className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider block mb-2">
+                <span className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider block mb-2">
                   Prerequisites for this Topic:
                 </span>
                 <ul className="flex flex-wrap gap-2 text-xs">
@@ -161,7 +161,7 @@ export const TopicPage: React.FC = () => {
                           {p.title}
                         </Link>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--muted)]">
+                        <span className="px-2.5 py-1 rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]">
                           {p.title}
                         </span>
                       )}
@@ -185,7 +185,7 @@ export const TopicPage: React.FC = () => {
                     {concept.heading}
                   </h3>
                   <div className="text-sm sm:text-base text-[var(--foreground)] leading-relaxed">
-                    <Markdown content={concept.body} />
+                    <Markdown text={concept.body} />
                   </div>
                 </div>
               ))}
@@ -201,7 +201,7 @@ export const TopicPage: React.FC = () => {
             {content.definitionsAndNotation.length > 0 && (
               <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--card)]">
                 <table className="w-full text-left text-xs sm:text-sm">
-                  <thead className="bg-[var(--secondary)] text-[var(--muted)] border-b border-[var(--border)]">
+                  <thead className="bg-[var(--secondary)] text-[var(--muted-foreground)] border-b border-[var(--border)]">
                     <tr>
                       <th className="p-3 font-semibold w-1/3">Term / Symbol</th>
                       <th className="p-3 font-semibold">Rigorous Definition</th>
@@ -211,10 +211,10 @@ export const TopicPage: React.FC = () => {
                     {content.definitionsAndNotation.map((def, idx) => (
                       <tr key={idx}>
                         <td className="p-3 font-medium align-top">
-                          <Markdown content={def.term} />
+                          <Markdown text={def.term} />
                         </td>
                         <td className="p-3 leading-relaxed">
-                          <Markdown content={def.definition} />
+                          <Markdown text={def.definition} />
                         </td>
                       </tr>
                     ))}
@@ -233,11 +233,11 @@ export const TopicPage: React.FC = () => {
                     {form.name}
                   </span>
                   <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] text-sm sm:text-base font-semibold overflow-x-auto text-[var(--foreground)]">
-                    <Markdown content={`$$${form.formula}$$`} />
+                    <Markdown text={`$$${form.formula}$$`} />
                   </div>
-                  <p className="text-xs text-[var(--muted)] leading-relaxed">{form.explanation}</p>
+                  <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">{form.explanation}</p>
                   {form.assumptions && (
-                    <p className="text-[11px] text-[var(--muted)] italic">
+                    <p className="text-[11px] text-[var(--muted-foreground)] italic">
                       Condition: {form.assumptions}
                     </p>
                   )}
@@ -252,7 +252,7 @@ export const TopicPage: React.FC = () => {
               <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">
                 Step-by-Step Worked Examples
               </h2>
-              <span className="text-xs text-[var(--muted)] font-medium">Difficulty Progression</span>
+              <span className="text-xs text-[var(--muted-foreground)] font-medium">Difficulty Progression</span>
             </div>
 
             <div className="space-y-6">
@@ -267,7 +267,7 @@ export const TopicPage: React.FC = () => {
                     </h3>
                     <div className="flex items-center gap-2">
                       {ex.examContext && (
-                        <span className="text-[11px] text-[var(--muted)] hidden sm:inline">
+                        <span className="text-[11px] text-[var(--muted-foreground)] hidden sm:inline">
                           {ex.examContext}
                         </span>
                       )}
@@ -286,14 +286,14 @@ export const TopicPage: React.FC = () => {
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-[var(--secondary)]/50 border border-[var(--border)] text-sm sm:text-base font-medium text-[var(--foreground)]">
-                    <Markdown content={ex.question} />
+                    <Markdown text={ex.question} />
                   </div>
 
                   <div className="text-xs sm:text-sm text-[var(--foreground)] space-y-2 leading-relaxed">
                     <span className="font-semibold text-xs text-[var(--accent)] block uppercase tracking-wider">
                       Step-by-Step Reasoning:
                     </span>
-                    <Markdown content={ex.solution} />
+                    <Markdown text={ex.solution} />
                   </div>
 
                   <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 space-y-1">
@@ -301,7 +301,7 @@ export const TopicPage: React.FC = () => {
                       <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                       <span>Independent Verification:</span>
                     </div>
-                    <Markdown content={ex.verification} />
+                    <Markdown text={ex.verification} />
                   </div>
 
                   <div className="text-right text-xs font-bold text-[var(--foreground)]">
@@ -330,7 +330,7 @@ export const TopicPage: React.FC = () => {
                     </h3>
                   </div>
                   <div className="text-xs sm:text-sm text-[var(--foreground)] leading-relaxed">
-                    <Markdown content={alt.description} />
+                    <Markdown text={alt.description} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
                     <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300">
@@ -359,7 +359,7 @@ export const TopicPage: React.FC = () => {
                   <li key={index} className="flex items-start gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0 mt-2" />
                     <div className="leading-relaxed">
-                      <Markdown content={tip} />
+                      <Markdown text={tip} />
                     </div>
                   </li>
                 ))}
@@ -382,7 +382,7 @@ export const TopicPage: React.FC = () => {
                   <h3 className="font-bold text-xs sm:text-sm text-rose-600 dark:text-rose-400">
                     Trap: {cm.mistake}
                   </h3>
-                  <p className="text-xs text-[var(--muted)] leading-relaxed">
+                  <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
                     <span className="font-semibold text-[var(--foreground)]">Why it happens:</span>{' '}
                     {cm.whyItHappens}
                   </p>
@@ -401,7 +401,7 @@ export const TopicPage: React.FC = () => {
             </h2>
             <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--card)]">
               <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-[var(--secondary)] text-[var(--muted)] border-b border-[var(--border)]">
+                <thead className="bg-[var(--secondary)] text-[var(--muted-foreground)] border-b border-[var(--border)]">
                   <tr>
                     <th className="p-3 font-semibold">Level</th>
                     <th className="p-3 font-semibold">Problem Characteristics</th>
@@ -413,7 +413,7 @@ export const TopicPage: React.FC = () => {
                     <tr key={idx}>
                       <td className="p-3 font-semibold text-[var(--accent)]">{item.level}</td>
                       <td className="p-3 leading-relaxed">{item.characteristics}</td>
-                      <td className="p-3 text-[var(--muted)]">{item.typicalExam}</td>
+                      <td className="p-3 text-[var(--muted-foreground)]">{item.typicalExam}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -429,7 +429,7 @@ export const TopicPage: React.FC = () => {
                   <BookCheck className="w-5 h-5 text-emerald-500" />
                   <span>Practice Checkpoint</span>
                 </h2>
-                <p className="text-xs text-[var(--muted)]">
+                <p className="text-xs text-[var(--muted-foreground)]">
                   5 original diagnostic questions with instant verification.
                 </p>
               </div>
@@ -452,7 +452,7 @@ export const TopicPage: React.FC = () => {
                   <li key={idx} className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                     <div className="leading-relaxed">
-                      <Markdown content={item} />
+                      <Markdown text={item} />
                     </div>
                   </li>
                 ))}
@@ -475,7 +475,7 @@ export const TopicPage: React.FC = () => {
                   <h3 className="font-semibold text-sm sm:text-base text-[var(--foreground)]">
                     {faq.question}
                   </h3>
-                  <p className="text-xs sm:text-sm text-[var(--muted)] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[var(--muted-foreground)] leading-relaxed">
                     {faq.answer}
                   </p>
                 </div>
@@ -484,9 +484,9 @@ export const TopicPage: React.FC = () => {
           </section>
 
           {/* Editorial Metadata Note */}
-          <footer className="pt-6 border-t border-[var(--border)] text-xs text-[var(--muted)] flex flex-wrap items-center justify-between gap-3">
-            <span>Last reviewed: {content.lastUpdated}</span>
-            <span>{content.editorialReview}</span>
+          <footer className="pt-6 border-t border-[var(--border)] text-xs text-[var(--muted-foreground)] flex flex-wrap items-center justify-between gap-3">
+            {content.lastUpdated && <span>Last updated: {content.lastUpdated}</span>}
+            <span>{content.editorialReview ?? 'Editorial review pending.'}</span>
           </footer>
 
           {/* Deterministic Previous / Next Navigation */}
@@ -499,7 +499,7 @@ export const TopicPage: React.FC = () => {
                 to={content.previousSubtopic.href}
                 className="flex flex-col p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--primary)]/50 transition-all text-left group"
               >
-                <span className="text-[11px] font-semibold text-[var(--muted)] flex items-center gap-1 mb-1">
+                <span className="text-[11px] font-semibold text-[var(--muted-foreground)] flex items-center gap-1 mb-1">
                   <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                   <span>Previous Topic</span>
                 </span>
@@ -514,7 +514,7 @@ export const TopicPage: React.FC = () => {
                 to={content.nextSubtopic.href}
                 className="flex flex-col p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--primary)]/50 transition-all text-right group"
               >
-                <span className="text-[11px] font-semibold text-[var(--muted)] flex items-center justify-end gap-1 mb-1">
+                <span className="text-[11px] font-semibold text-[var(--muted-foreground)] flex items-center justify-end gap-1 mb-1">
                   <span>Next Topic</span>
                   <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </span>
@@ -539,7 +539,7 @@ export const TopicPage: React.FC = () => {
             <h3 className="font-bold text-sm text-[var(--foreground)]">
               Solve Real Exam Questions
             </h3>
-            <p className="text-xs text-[var(--muted)] leading-relaxed">
+            <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
               Test your skills with 10 questions in the official Aptric solver. Completely free.
             </p>
             <Link

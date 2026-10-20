@@ -1,10 +1,10 @@
-import { ArrowRight, CheckCircle2, Clock, RotateCcw, Sparkles, Target, Trophy, UserPlus } from 'lucide-react';
+import { ArrowRight, RotateCcw, Sparkles, Trophy, UserPlus } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SessionHeader, type SegmentState } from '@/components/solve/SessionHeader';
 import { SolveScreen, type Reveal, type SolveQuestion } from '@/components/solve/SolveScreen';
 import { usePageMeta } from '@/hooks/usePageMeta';
-import { fetchTrialQuestion, fetchTrialSummary, startTrial, submitTrialAnswer } from '@/lib/trial';
+import { fetchTrialQuestion, fetchTrialSummary, startTrial, submitTrialAnswer, type TrialSummaryResponse } from '@/lib/trial';
 
 export const TrialSolve: React.FC = () => {
   const navigate = useNavigate();
@@ -15,11 +15,12 @@ export const TrialSolve: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [segmentResults, setSegmentResults] = useState<SegmentState[]>([]);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
-  const [summaryData, setSummaryData] = useState<any>(null);
+  const [summaryData, setSummaryData] = useState<TrialSummaryResponse['summary'] | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   usePageMeta({
     title: isCompleted ? 'Trial Completed – Results Breakdown' : `Question ${currentIndex + 1} of 10 – Free Solver Trial`,
-    description: 'Solve 10 authentic aptitude questions with verified step-by-step explanations.',
+    description: 'Solve 10 original aptitude practice questions with server-graded answers and stored explanations.',
     canonicalPath: '/free-trial/solve',
     noindex: true, // As specified by SEO requirements: do not index transient solving session states
   });
@@ -28,17 +29,27 @@ export const TrialSolve: React.FC = () => {
   useEffect(() => {
     const initSession = async () => {
       let token = sessionStorage.getItem('aptric.trial_token');
-      if (!token) {
-        try {
+      try {
+        if (token) {
+          const state = await fetchTrialSummary(token);
+          setSummaryData(state.summary);
+          setCurrentIndex(Math.min(state.summary.attemptedCount, 9));
+          if (state.summary.isComplete) {
+            setIsCompleted(true);
+            setLoading(false);
+            return;
+          }
+        } else {
           const res = await startTrial();
           token = res.sessionToken;
           sessionStorage.setItem('aptric.trial_token', token);
-        } catch {
-          token = 'local_offline_trial_session_' + Date.now();
-          sessionStorage.setItem('aptric.trial_token', token);
         }
+        setErrorMessage(null);
+        setSessionToken(token);
+      } catch {
+        setErrorMessage('The free trial could not connect to the server or this session has expired. Start a new trial to continue.');
+        setLoading(false);
       }
-      setSessionToken(token);
     };
 
     initSession();
@@ -54,6 +65,7 @@ export const TrialSolve: React.FC = () => {
     fetchTrialQuestion(sessionToken, currentIndex)
       .then((res) => {
         if (!cancelled) {
+          setErrorMessage(null);
           setCurrentQuestion(res.question);
           setTotalQuestions(res.totalQuestions || 10);
           setLoading(false);
@@ -61,7 +73,11 @@ export const TrialSolve: React.FC = () => {
       })
       .catch((err) => {
         console.error('Failed to load trial question:', err);
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setCurrentQuestion(null);
+          setErrorMessage('This trial session could not be loaded. It may have expired. Start a new trial to continue.');
+          setLoading(false);
+        }
       });
 
     return () => {
@@ -96,22 +112,34 @@ export const TrialSolve: React.FC = () => {
     } else {
       // Completed all 10 questions!
       setLoading(true);
-      if (sessionToken) {
-        try {
-          const res = await fetchTrialSummary(sessionToken);
-          setSummaryData(res.summary);
-        } catch (err) {
-          console.error('Failed to fetch summary:', err);
-        }
+      if (!sessionToken) {
+        setErrorMessage('The trial session is missing. Start a new trial to continue.');
+        setLoading(false);
+        return;
       }
-      setIsCompleted(true);
-      setLoading(false);
+      try {
+        const res = await fetchTrialSummary(sessionToken);
+        if (!res.summary.isComplete) {
+          setErrorMessage('The server has not recorded all 10 answers yet. Please retry in a moment.');
+          setLoading(false);
+          return;
+        }
+        setSummaryData(res.summary);
+        setErrorMessage(null);
+        setIsCompleted(true);
+      } catch {
+        setErrorMessage('Your answers were saved, but the final summary could not be loaded. Press the completion button again to retry.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const handleRestart = async () => {
     sessionStorage.removeItem('aptric.trial_token');
     setIsCompleted(false);
+    setCurrentQuestion(null);
+    setErrorMessage(null);
     setCurrentIndex(0);
     setSegmentResults([]);
     setSummaryData(null);
@@ -122,13 +150,14 @@ export const TrialSolve: React.FC = () => {
       setSessionToken(res.sessionToken);
       sessionStorage.setItem('aptric.trial_token', res.sessionToken);
     } catch {
-      setSessionToken('local_offline_trial_session_' + Date.now());
+      setErrorMessage('A new trial session could not be started. Please try again shortly.');
+      setLoading(false);
     }
   };
 
   if (isCompleted) {
-    const correctCount = segmentResults.filter((s) => s === 'correct').length;
-    const accuracy = Math.round((correctCount / totalQuestions) * 100);
+    const correctCount = summaryData?.correctCount ?? 0;
+    const accuracy = summaryData?.accuracyPercent ?? 0;
 
     return (
       <div className="min-h-screen bg-[var(--background)] flex flex-col justify-center items-center px-4 py-12">
@@ -149,19 +178,19 @@ export const TrialSolve: React.FC = () => {
           {/* Score Cards */}
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3.5 rounded-2xl bg-[var(--secondary)]/40 border border-[var(--border)]">
-              <span className="text-xs text-[var(--muted)] block mb-1">Score</span>
+              <span className="text-xs text-[var(--muted-foreground)] block mb-1">Score</span>
               <span className="text-xl sm:text-2xl font-black text-[var(--foreground)]">
                 {correctCount} / {totalQuestions}
               </span>
             </div>
             <div className="p-3.5 rounded-2xl bg-[var(--secondary)]/40 border border-[var(--border)]">
-              <span className="text-xs text-[var(--muted)] block mb-1">Accuracy</span>
+              <span className="text-xs text-[var(--muted-foreground)] block mb-1">Accuracy</span>
               <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
                 {accuracy}%
               </span>
             </div>
             <div className="p-3.5 rounded-2xl bg-[var(--secondary)]/40 border border-[var(--border)]">
-              <span className="text-xs text-[var(--muted)] block mb-1">Level Est.</span>
+              <span className="text-xs text-[var(--muted-foreground)] block mb-1">Level Est.</span>
               <span className="text-xl sm:text-2xl font-black text-[var(--accent)]">
                 {accuracy >= 80 ? 'Master' : accuracy >= 50 ? 'Prepared' : 'Beginner'}
               </span>
@@ -174,8 +203,8 @@ export const TrialSolve: React.FC = () => {
               <span className="text-xs font-semibold text-[var(--foreground)] block">
                 Subject Accuracy:
               </span>
-              <div className="space-y-1.5 text-xs text-[var(--muted)]">
-                {Object.entries(summaryData.sectionStats).map(([section, stats]: any) => (
+              <div className="space-y-1.5 text-xs text-[var(--muted-foreground)]">
+                {Object.entries(summaryData.sectionStats).map(([section, stats]) => (
                   <div key={section} className="flex justify-between items-center py-0.5">
                     <span className="truncate pr-2">{section}</span>
                     <span className="font-semibold text-[var(--foreground)]">
@@ -196,7 +225,7 @@ export const TrialSolve: React.FC = () => {
                 Continue Your Daily Preparation
               </h3>
             </div>
-            <p className="text-xs text-[var(--muted)] leading-relaxed">
+            <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
               Create a free Aptric account to save your daily streak, unlock personalized questions adapted to your weak topics, compete in friendly weekly leagues, and chat with the AI tutor.
             </p>
             <Link
@@ -213,7 +242,7 @@ export const TrialSolve: React.FC = () => {
             <button
               type="button"
               onClick={handleRestart}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Try Another 10 Questions</span>
@@ -231,12 +260,25 @@ export const TrialSolve: React.FC = () => {
     );
   }
 
+  if (errorMessage && !loading && !currentQuestion) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center px-4">
+        <div className="max-w-md rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-center space-y-4">
+          <h1 className="text-lg font-bold text-[var(--foreground)]">Trial unavailable</h1>
+          <p role="alert" className="text-sm text-[var(--muted-foreground)]">{errorMessage}</p>
+          <button type="button" onClick={handleRestart} className="rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white">Start a new trial</button>
+          <Link to="/resources" className="block text-sm text-[var(--accent)] hover:underline">Browse free resources instead</Link>
+        </div>
+      </div>
+    );
+  }
+
   if (loading || !currentQuestion) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-3 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-[var(--muted)]">Loading question {currentIndex + 1}...</p>
+          <p className="text-xs text-[var(--muted-foreground)]">Loading question {currentIndex + 1}...</p>
         </div>
       </div>
     );
@@ -255,6 +297,7 @@ export const TrialSolve: React.FC = () => {
       />
 
       <main className="max-w-2xl mx-auto px-4 py-6">
+        {errorMessage && <p role="alert" className="mb-4 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400">{errorMessage}</p>}
         <SolveScreen
           key={currentQuestion.id}
           question={currentQuestion}

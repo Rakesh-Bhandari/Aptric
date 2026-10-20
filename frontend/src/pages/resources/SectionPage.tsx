@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, ChevronRight, Zap } from 'lucide-react';
+import { BookOpen, ChevronRight, Zap } from 'lucide-react';
 import React from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ResourceBreadcrumbs } from '@/components/resources/ResourceBreadcrumbs';
@@ -9,24 +9,24 @@ export const SectionPage: React.FC = () => {
   const { sectionSlug } = useParams<{ sectionSlug: string }>();
   const section = sectionSlug ? getSectionBySlug(sectionSlug) : undefined;
 
-  if (!section) {
-    return <Navigate to="/resources" replace />;
-  }
-
   usePageMeta({
-    title: `${section.name} Study Notes & Practice Topics`,
-    description: `Complete, verified study materials and formula guides for ${section.name}. Covers ${section.topics
+    title: section ? `${section.name} Study Notes & Practice Topics` : 'Free Aptitude Resources – Aptric',
+    description: section ? `Free study materials and formula guides for ${section.name}. Covers ${section.topics
       .map((t) => t.name)
-      .join(', ')} for placements and competitive exams.`,
-    canonicalPath: `/resources/${section.slug}`,
-    structuredData: {
+      .join(', ')} for placements and competitive exams.` : 'Browse free aptitude learning resources and topic guides.',
+    canonicalPath: section ? `/resources/${section.slug}` : '/resources',
+    structuredData: section ? {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
       name: `${section.name} Resources – Aptric`,
       description: section.description,
       url: `https://aptric.app/resources/${section.slug}`,
-    },
+    } : undefined,
   });
+
+  if (!section) {
+    return <Navigate to="/resources" replace />;
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
@@ -36,7 +36,7 @@ export const SectionPage: React.FC = () => {
         <h1 className="text-3xl sm:text-4xl font-extrabold text-[var(--foreground)] tracking-tight mb-3">
           {section.name}
         </h1>
-        <p className="text-base sm:text-lg text-[var(--muted)] max-w-3xl leading-relaxed">
+        <p className="text-base sm:text-lg text-[var(--muted-foreground)] max-w-3xl leading-relaxed">
           {section.description}
         </p>
       </header>
@@ -50,9 +50,9 @@ export const SectionPage: React.FC = () => {
                 <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">
                   {topic.name}
                 </h2>
-                <p className="text-xs sm:text-sm text-[var(--muted)]">{topic.description}</p>
+                <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">{topic.description}</p>
               </div>
-              <span className="text-xs font-medium text-[var(--muted)]">
+              <span className="text-xs font-medium text-[var(--muted-foreground)]">
                 {topic.subtopics.length} Subtopics
               </span>
             </div>
@@ -68,9 +68,9 @@ export const SectionPage: React.FC = () => {
                     <h3 className="font-semibold text-sm sm:text-base text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors">
                       {st.name}
                     </h3>
-                    <ChevronRight className="w-4 h-4 text-[var(--muted)] group-hover:text-[var(--accent)] group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-[var(--muted-foreground)] group-hover:text-[var(--accent)] group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
-                  <p className="text-xs text-[var(--muted)] leading-relaxed line-clamp-2 mb-3">
+                  <p className="text-xs text-[var(--muted-foreground)] leading-relaxed line-clamp-2 mb-3">
                     {st.description}
                   </p>
                   <div className="mt-auto flex items-center gap-1.5 text-[11px] font-medium text-[var(--accent)]">
@@ -90,7 +90,7 @@ export const SectionPage: React.FC = () => {
           <h3 className="text-lg font-bold text-[var(--foreground)] mb-1">
             Ready to test your {section.name} skills?
           </h3>
-          <p className="text-xs sm:text-sm text-[var(--muted)]">
+          <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">
             Practice 10 real questions in our timed solver with instant explanations.
           </p>
         </div>

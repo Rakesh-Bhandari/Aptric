@@ -1,5 +1,5 @@
 // /trial: Anonymous 10-Question Trial Engine
-// Serves a reviewed pool of 28 high-quality aptitude questions without requiring login.
+// Serves a server-side pool of 28 original aptitude practice questions without requiring login.
 // Uses signed session tokens to strictly enforce question sequences, prevent answer key leakage,
 // and record accurate trial scores. Anonymous AI tutor is strictly disabled.
 
@@ -9,26 +9,16 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
 import { badRequest, HttpError } from '../http.js';
 import { limitByIp } from '../middleware/rateLimit.js';
+import { query } from '../db.js';
 
 const router = Router();
 const TRIAL_ISSUER = 'aptric:trial';
 const TRIAL_EXPIRY_SECONDS = 7200; // 2 hours
 
-interface TrialPoolQuestion {
-  id: string;
-  stem: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  est_seconds: number;
-  section: string;
-  topic: string;
-  subtopic: string;
-  options: { id: string; text: string }[];
-  correctOptionId: string;
-  explanation: string;
-}
+// Question records stay server-side; response objects are explicitly allowlisted.
 
-// 28 reviewed, original questions covering QA, LR, VA, DI, and TA
-const TRIAL_QUESTION_POOL: TrialPoolQuestion[] = [
+// 28 original questions covering QA, LR, VA, DI, and TA; editorial review is required before production publication.
+const TRIAL_QUESTION_POOL = [
   // --- Quantitative Aptitude ---
   {
     id: 'tr-qa-01',
@@ -516,199 +506,217 @@ const TRIAL_QUESTION_POOL: TrialPoolQuestion[] = [
   },
 ];
 
-// Helper: randomly pick N items from array
-function pickRandomSubset<T>(array: T[], count: number): T[] {
-  const shuffled = [...array].sort(() => 0.5 - Math.random());
+// Uniform sampling without replacement.
+function pickRandomSubset(array, count) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   return shuffled.slice(0, count);
 }
 
-// Token signing & verification
-function signTrialSession(payload: object) {
-  return jwt.sign(payload, config.jwtSecret, {
+function signTrialSession(sessionId) {
+  return jwt.sign({ sid: sessionId }, config.jwtSecret, {
     algorithm: 'HS256',
     issuer: TRIAL_ISSUER,
     expiresIn: TRIAL_EXPIRY_SECONDS,
   });
 }
 
-function verifyTrialSession(token: string) {
+function verifyTrialSession(token) {
   try {
-    return jwt.verify(token, config.jwtSecret, {
+    const claims = jwt.verify(token, config.jwtSecret, {
       algorithms: ['HS256'],
       issuer: TRIAL_ISSUER,
-    }) as any;
+    });
+    return claims && typeof claims === 'object' && typeof claims.sid === 'string' ? claims : null;
   } catch {
     return null;
   }
 }
 
+async function loadTrialSession(token) {
+  const claims = verifyTrialSession(token);
+  if (!claims) throw new HttpError(401, 'invalid_session', 'Your trial session has expired or is invalid. Please restart.');
+  const { rows } = await query(
+    `select id, question_ids, answers, expires_at, completed_at
+       from public.anonymous_trial_sessions
+      where id = $1::uuid and expires_at > now()`,
+    [claims.sid],
+  );
+  const session = rows[0];
+  if (!session || !Array.isArray(session.question_ids) || session.question_ids.length !== 10 || !Array.isArray(session.answers)) {
+    throw new HttpError(401, 'invalid_session', 'Your trial session has expired or is invalid. Please restart.');
+  }
+  return { claims, session };
+}
+
 /**
  * POST /trial/start
- * Initializes a new 10-question trial session with an opaque signed token.
+ * Selects 10 questions and persists server-authoritative progress. The browser
+ * receives only a short-lived signed session token, never question IDs or keys.
  */
-router.post('/start', limitByIp('trial:start', 3600, 40), (req, res) => {
-  // Select balanced sample of 10 questions from the 28-question pool
+router.post('/start', limitByIp('trial:start', 3600, 40), async (req, res) => {
   const qa = pickRandomSubset(TRIAL_QUESTION_POOL.filter((q) => q.section === 'Quantitative Aptitude'), 3);
   const lr = pickRandomSubset(TRIAL_QUESTION_POOL.filter((q) => q.section === 'Logical Reasoning'), 2);
   const va = pickRandomSubset(TRIAL_QUESTION_POOL.filter((q) => q.section === 'Verbal Ability'), 2);
   const di = pickRandomSubset(TRIAL_QUESTION_POOL.filter((q) => q.section === 'Data Interpretation'), 1);
   const ta = pickRandomSubset(TRIAL_QUESTION_POOL.filter((q) => q.section === 'Technical Aptitude'), 2);
-
-  const selectedQuestions = [...qa, ...lr, ...va, ...di, ...ta].sort(() => 0.5 - Math.random());
-  const questionIds = selectedQuestions.map((q) => q.id);
+  const selectedQuestions = pickRandomSubset([...qa, ...lr, ...va, ...di, ...ta], 10);
+  const questionIds = selectedQuestions.map((question) => question.id);
+  if (questionIds.length !== 10 || new Set(questionIds).size !== 10) {
+    throw new HttpError(503, 'trial_pool_unavailable', 'The trial is temporarily unavailable. Please try again later.');
+  }
 
   const sessionId = randomUUID();
-  const sessionToken = signTrialSession({
-    sid: sessionId,
-    qids: questionIds,
-    answers: [],
-    startedAt: Date.now(),
-  });
+  await query(
+    `insert into public.anonymous_trial_sessions (id, question_ids, answers, started_at, expires_at)
+     values ($1::uuid, $2::jsonb, '[]'::jsonb, now(), now() + interval '2 hours')`,
+    [sessionId, JSON.stringify(questionIds)],
+  );
 
-  res.json({
-    sessionToken,
-    totalQuestions: questionIds.length,
+  // Opportunistic bounded cleanup; expired sessions are not retained indefinitely.
+  await query(
+    `delete from public.anonymous_trial_sessions
+      where id in (select id from public.anonymous_trial_sessions where expires_at < now() - interval '1 day' limit 100)`,
+    [],
+  );
+
+  res.status(201).json({
+    sessionToken: signTrialSession(sessionId),
+    totalQuestions: 10,
     message: 'Trial session started. You have 10 questions to solve.',
   });
 });
 
-/**
- * GET /trial/question/:sessionToken/:index
- * Returns the question details for the requested index (0-9) WITHOUT correct answer keys.
- */
-router.get('/question/:sessionToken/:index', (req, res) => {
-  const { sessionToken, index: indexStr } = req.params;
-  const claims = verifyTrialSession(sessionToken);
-
-  if (!claims || !Array.isArray(claims.qids)) {
-    throw new HttpError(401, 'invalid_session', 'Your trial session has expired or is invalid. Please restart.');
-  }
-
-  const index = parseInt(indexStr, 10);
-  if (isNaN(index) || index < 0 || index >= claims.qids.length) {
+/** Return only the requested question fields. Correct answers stay on the server. */
+router.post('/question', limitByIp('trial:question', 3600, 200), async (req, res) => {
+  const { sessionToken, index: indexString } = req.body ?? {};
+  if (typeof sessionToken !== 'string' || sessionToken.length > 8192) throw badRequest('A valid trial session token is required.');
+  const { session } = await loadTrialSession(sessionToken);
+  const index = Number(indexString);
+  if (!Number.isInteger(index) || index < 0 || index >= 10) {
     throw new HttpError(400, 'index_out_of_bounds', 'Question index is out of bounds.');
   }
-
-  const questionId = claims.qids[index];
-  const q = TRIAL_QUESTION_POOL.find((item) => item.id === questionId);
-
-  if (!q) {
-    throw new HttpError(404, 'question_not_found', 'Requested trial question could not be found.');
+  if (index > session.answers.length) {
+    throw new HttpError(409, 'answer_out_of_order', 'Complete the current question before moving forward.');
   }
 
-  // Security: Strip correctOptionId and explanation before sending to client
+  const questionId = session.question_ids[index];
+  const question = TRIAL_QUESTION_POOL.find((item) => item.id === questionId);
+  if (!question) throw new HttpError(404, 'question_not_found', 'Requested trial question could not be found.');
+
+  res.set('Cache-Control', 'no-store');
   res.json({
     question: {
-      id: q.id,
-      stem: q.stem,
-      difficulty: q.difficulty,
-      est_seconds: q.est_seconds,
-      section: q.section,
-      topic: q.topic,
-      subtopic: q.subtopic,
+      id: question.id,
+      stem: question.stem,
+      difficulty: question.difficulty,
+      est_seconds: question.est_seconds,
+      section: question.section,
+      topic: question.topic,
+      subtopic: question.subtopic,
       has_hint: false,
-      options: q.options,
+      options: question.options,
     },
     index,
-    totalQuestions: claims.qids.length,
+    totalQuestions: 10,
+    answeredCount: session.answers.length,
   });
 });
 
-/**
- * POST /trial/submit
- * Validates the player's answer server-side, updates progress in signed token, and returns reveal.
- */
-router.post('/submit', limitByIp('trial:submit', 3600, 100), (req, res) => {
-  const { sessionToken, index, optionId, timeMs } = req.body;
-  const claims = verifyTrialSession(sessionToken);
-
-  if (!claims || !Array.isArray(claims.qids)) {
-    throw new HttpError(401, 'invalid_session', 'Trial session expired or invalid.');
+/** Grades once, atomically. A repeated or out-of-order submission cannot change a saved answer. */
+router.post('/submit', limitByIp('trial:submit', 3600, 100), async (req, res) => {
+  const { sessionToken, index, optionId, timeMs } = req.body ?? {};
+  if (typeof sessionToken !== 'string' || sessionToken.length > 8192) throw badRequest('A valid trial session token is required.');
+  if (typeof optionId !== 'string' || optionId.length > 32) throw badRequest('Choose one of the available answer options.');
+  if (timeMs !== undefined && (!Number.isFinite(timeMs) || timeMs < 0 || timeMs > 3_600_000)) {
+    throw badRequest('Answer time must be between 0 and 60 minutes.');
   }
-
-  const qIndex = parseInt(index, 10);
-  if (isNaN(qIndex) || qIndex < 0 || qIndex >= claims.qids.length) {
+  const { claims, session } = await loadTrialSession(sessionToken);
+  const questionIndex = Number(index);
+  if (!Number.isInteger(questionIndex) || questionIndex < 0 || questionIndex >= 10) {
     throw new HttpError(400, 'invalid_index', 'Invalid question index.');
   }
-
-  const questionId = claims.qids[qIndex];
-  const q = TRIAL_QUESTION_POOL.find((item) => item.id === questionId);
-
-  if (!q) {
-    throw new HttpError(404, 'question_not_found', 'Question not found.');
+  if (session.completed_at) throw new HttpError(409, 'trial_completed', 'This trial session is already complete.');
+  if (questionIndex !== session.answers.length) {
+    throw new HttpError(409, questionIndex < session.answers.length ? 'already_answered' : 'answer_out_of_order',
+      questionIndex < session.answers.length ? 'This question has already been submitted in this session.' : 'Answer the current question before moving forward.');
   }
 
-  const isCorrect = optionId === q.correctOptionId;
-  const existingAnswers = Array.isArray(claims.answers) ? [...claims.answers] : [];
+  const questionId = session.question_ids[questionIndex];
+  const question = TRIAL_QUESTION_POOL.find((item) => item.id === questionId);
+  if (!question) throw new HttpError(404, 'question_not_found', 'Question not found.');
+  if (!question.options.some((option) => option.id === optionId)) throw badRequest('Choose one of the available answer options.');
 
-  // Update or append answer record
-  existingAnswers[qIndex] = {
-    questionId: q.id,
+  const isCorrect = optionId === question.correctOptionId;
+  const answerRecord = {
+    questionId: question.id,
     selectedOptionId: optionId,
     isCorrect,
-    timeMs: typeof timeMs === 'number' ? timeMs : 0,
-    section: q.section,
+    timeMs: typeof timeMs === 'number' ? Math.floor(timeMs) : 0,
+    section: question.section,
   };
+  const update = await query(
+    `update public.anonymous_trial_sessions
+        set answers = answers || jsonb_build_array($2::jsonb),
+            completed_at = case when jsonb_array_length(answers) + 1 = 10 then now() else null end
+      where id = $1::uuid and expires_at > now() and completed_at is null
+        and jsonb_array_length(answers) = $3::integer
+      returning answers`,
+    [claims.sid, JSON.stringify(answerRecord), questionIndex],
+  );
+  if (!update.rows.length) {
+    throw new HttpError(409, 'answer_conflict', 'This answer was already recorded. Reload the current trial state.');
+  }
 
-  const updatedToken = signTrialSession({
-    ...claims,
-    answers: existingAnswers,
-  });
-
+  res.set('Cache-Control', 'no-store');
   res.json({
     reveal: {
       isCorrect,
       selectedOptionId: optionId,
       gaveUp: false,
-      correctOptionId: q.correctOptionId,
-      explanation: q.explanation,
+      correctOptionId: question.correctOptionId,
+      explanation: question.explanation,
       usedHint: false,
       reward: isCorrect ? '+20 XP (Trial)' : null,
-      timeMs: timeMs ?? null,
+      timeMs: answerRecord.timeMs,
     },
-    sessionToken: updatedToken,
+    sessionToken,
   });
 });
 
-/**
- * GET /trial/summary/:sessionToken
- * Returns final trial metrics, score breakdown, and signup conversion info.
- */
-router.get('/summary/:sessionToken', (req, res) => {
-  const { sessionToken } = req.params;
-  const claims = verifyTrialSession(sessionToken);
+/** Summary data comes from persisted server-side answers, not client-calculated score. */
+router.post('/summary', limitByIp('trial:summary', 3600, 120), async (req, res) => {
+  const { sessionToken } = req.body ?? {};
+  if (typeof sessionToken !== 'string' || sessionToken.length > 8192) throw badRequest('A valid trial session token is required.');
+  const { session } = await loadTrialSession(sessionToken);
+  const answers = session.answers;
+  const correctCount = answers.filter((answer) => answer?.isCorrect).length;
+  const totalTimeMs = answers.reduce((total, answer) => total + (Number(answer?.timeMs) || 0), 0);
+  const sectionStats = {};
 
-  if (!claims || !Array.isArray(claims.qids)) {
-    throw new HttpError(401, 'invalid_session', 'Trial session expired or invalid.');
+  for (const questionId of session.question_ids) {
+    const question = TRIAL_QUESTION_POOL.find((item) => item.id === questionId);
+    if (!question) continue;
+    if (!sectionStats[question.section]) sectionStats[question.section] = { correct: 0, total: 0 };
+    sectionStats[question.section].total += 1;
+  }
+  for (const answer of answers) {
+    if (answer?.isCorrect && sectionStats[answer.section]) sectionStats[answer.section].correct += 1;
   }
 
-  const answers = Array.isArray(claims.answers) ? claims.answers : [];
-  const correctCount = answers.filter((a: any) => a?.isCorrect).length;
-  const attemptedCount = answers.filter((a: any) => a !== undefined).length;
-  const totalTimeMs = answers.reduce((acc: number, a: any) => acc + (a?.timeMs || 0), 0);
-
-  const sectionStats: Record<string, { correct: number; total: number }> = {};
-  for (let i = 0; i < claims.qids.length; i++) {
-    const qid = claims.qids[i];
-    const q = TRIAL_QUESTION_POOL.find((item) => item.id === qid);
-    if (q) {
-      if (!sectionStats[q.section]) sectionStats[q.section] = { correct: 0, total: 0 };
-      sectionStats[q.section].total++;
-      if (answers[i]?.isCorrect) {
-        sectionStats[q.section].correct++;
-      }
-    }
-  }
-
+  res.set('Cache-Control', 'no-store');
   res.json({
     summary: {
-      totalQuestions: claims.qids.length,
-      attemptedCount,
+      totalQuestions: 10,
+      attemptedCount: answers.length,
       correctCount,
-      accuracyPercent: attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0,
+      accuracyPercent: answers.length > 0 ? Math.round((correctCount / answers.length) * 100) : 0,
       totalTimeMs,
       sectionStats,
-      isComplete: attemptedCount >= 10,
+      isComplete: answers.length === 10 && Boolean(session.completed_at),
     },
   });
 });

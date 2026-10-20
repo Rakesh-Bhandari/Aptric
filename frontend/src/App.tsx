@@ -1,5 +1,11 @@
-import { lazy } from 'react';
-import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
+import { lazy, useEffect } from 'react';
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+  useLocation,
+} from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppShell, FocusLayout } from '@/components/layout/AppShell';
 import { NotFound, RouteError } from '@/components/layout/ErrorBoundary';
@@ -40,6 +46,9 @@ const PlacementRetake = lazy(() => import('@/pages/Onboarding').then((m) => ({ d
 const AuthCallback = lazy(() => import('@/pages/AuthCallback'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const Terms = lazy(() => import('@/pages/Terms'));
+const AboutPage = lazy(() => import('@/pages/TrustPages').then((m) => ({ default: m.AboutPage })));
+const PrivacyPage = lazy(() => import('@/pages/TrustPages').then((m) => ({ default: m.PrivacyPage })));
+const ContactPage = lazy(() => import('@/pages/TrustPages').then((m) => ({ default: m.ContactPage })));
 const ResourceHub = lazy(() => import('@/pages/resources/ResourceHub').then((m) => ({ default: m.ResourceHub })));
 const SectionPage = lazy(() => import('@/pages/resources/SectionPage').then((m) => ({ default: m.SectionPage })));
 const TopicPage = lazy(() => import('@/pages/resources/TopicPage').then((m) => ({ default: m.TopicPage })));
@@ -64,11 +73,26 @@ const AdminHostedContests = lazy(() => import('@/admin/HostedContests'));
 const AdminJobs = lazy(() => import('@/admin/Jobs'));
 const AdminAuditLog = lazy(() => import('@/admin/AuditLog'));
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'instant',
+    });
+  }, [pathname]);
+
+  return null;
+};
+
 /** Providers that need the router (navigation on auth events) or the signed-in profile (server-side preferences). */
 const Root = () => (
   <SessionProvider>
     <PreferencesProvider>
       <AuthDialogProvider>
+        <ScrollToTop />
         <Outlet />
       </AuthDialogProvider>
     </PreferencesProvider>
@@ -98,6 +122,9 @@ const router = createBrowserRouter([
             children: [{ element: <RequireAuth />, children: [{ index: true, element: <Today /> }] }],
           },
           { path: 'terms', element: <Terms /> },
+          { path: 'about', element: <AboutPage /> },
+          { path: 'privacy', element: <PrivacyPage /> },
+          { path: 'contact', element: <ContactPage /> },
           { path: 'resources', element: <ResourceHub /> },
           { path: 'resources/:sectionSlug', element: <SectionPage /> },
           { path: 'resources/:sectionSlug/:subtopicSlug', element: <TopicPage /> },

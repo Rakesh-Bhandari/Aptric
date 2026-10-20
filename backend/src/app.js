@@ -15,6 +15,7 @@ import meRoutes from './routes/me.js';
 import pushRoutes from './routes/push.js';
 import rpcRoutes from './routes/rpc.js';
 import trialRoutes from './routes/trial.js';
+import feedbackRoutes from './routes/feedback.js';
 import tutorRoutes from './routes/tutor.js';
 
 const DEV_ORIGINS = ['http://localhost:6969', 'http://localhost:5173', 'http://127.0.0.1:6969', 'http://127.0.0.1:5173'];
@@ -101,6 +102,8 @@ export function createApp() {
         `select to_regclass('private.accounts') is not null as auth,
                 to_regprocedure('public.gen_rate_limit(uuid,text,integer,integer)') is not null as rate_limit,
                 to_regclass('public.levels') is not null as levels,
+                to_regclass('public.anonymous_trial_sessions') is not null as trial_sessions,
+                to_regclass('public.resource_feedback') is not null as resource_feedback,
                 to_regprocedure('private.tutor_context(uuid,uuid,public.attempt_context)') is not null as tutor`,
       ));
     } catch (err) {
@@ -144,6 +147,7 @@ export function createApp() {
   app.use('/push', pushRoutes);
   app.use('/cron', cronRoutes);
   app.use('/trial', trialRoutes);
+  app.use('/feedback', feedbackRoutes);
   app.use('/', meRoutes);
 
   app.use(notFoundHandler);

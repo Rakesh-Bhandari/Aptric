@@ -212,6 +212,10 @@ export const SYLLOGISM_CONTENT: EducationalTopicContent = {
       answer:
         'In formal logic, two contrary statements can both be false at the same time. For example, if "Some A are B and Some A are not B" is true, then both "All A are B" is false and "No A is B" is false. Since both can be simultaneously false, they do not exhaust all possibilities and cannot form an Either-Or pair.',
     },
+    {
+      question: 'Should real-world knowledge affect a syllogism answer?',
+      answer: 'No. Treat the premises as the complete logical universe and select only conclusions that necessarily follow from them, even if the premises describe an unusual situation.',
+    },
   ],
   relatedTopics: [
     {
@@ -227,6 +231,5 @@ export const SYLLOGISM_CONTENT: EducationalTopicContent = {
       description: 'Extends formal deductive rigor to qualitative verbal arguments and policies.',
     },
   ],
-  lastUpdated: 'October 2026',
-  editorialReview: 'Independently verified by Aptric Logical Reasoning Editorial Team for placement and banking standards.',
+  editorialReview: 'Editorial review pending; this material has not been independently certified.',
 };

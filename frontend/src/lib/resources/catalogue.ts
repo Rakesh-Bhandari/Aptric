@@ -1,4 +1,4 @@
-import type { SectionMeta, SectionSlug, SubtopicMeta, TopicMeta } from './types';
+import type { SectionMeta, SubtopicMeta, TopicMeta } from './types';
 
 export const RESOURCE_SECTIONS: SectionMeta[] = [
   {
@@ -25,7 +25,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'arithmetic',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: true,
           },
           {
             id: 'sub-qa-02',
@@ -35,7 +35,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'arithmetic',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: true,
           },
           {
             id: 'sub-qa-03',
@@ -45,7 +45,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'arithmetic',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-04',
@@ -55,7 +55,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 4,
             topicSlug: 'arithmetic',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-05',
@@ -65,7 +65,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 5,
             topicSlug: 'arithmetic',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-06',
@@ -75,7 +75,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 6,
             topicSlug: 'arithmetic',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-07',
@@ -85,7 +85,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 7,
             topicSlug: 'arithmetic',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-08',
@@ -95,7 +95,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 8,
             topicSlug: 'arithmetic',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -115,7 +115,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'time-work-distance',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-10',
@@ -125,7 +125,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'time-work-distance',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-11',
@@ -135,7 +135,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'time-work-distance',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-12',
@@ -145,7 +145,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 4,
             topicSlug: 'time-work-distance',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-13',
@@ -155,7 +155,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 5,
             topicSlug: 'time-work-distance',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -175,7 +175,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'counting-and-probability',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-15',
@@ -185,7 +185,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'counting-and-probability',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -205,7 +205,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'geometry-and-mensuration',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-17',
@@ -215,7 +215,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'geometry-and-mensuration',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -235,7 +235,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'algebra',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-19',
@@ -245,7 +245,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'algebra',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-qa-20',
@@ -255,7 +255,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'algebra',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -275,7 +275,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'data-sufficiency',
             sectionSlug: 'quantitative-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -305,7 +305,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'verbal-reasoning',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-lr-23',
@@ -315,7 +315,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'verbal-reasoning',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-lr-24',
@@ -325,7 +325,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'verbal-reasoning',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-lr-25',
@@ -335,7 +335,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 4,
             topicSlug: 'verbal-reasoning',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -355,7 +355,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'arrangements-and-puzzles',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-lr-27',
@@ -365,7 +365,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'arrangements-and-puzzles',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-lr-28',
@@ -375,7 +375,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'arrangements-and-puzzles',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -395,7 +395,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'deductive-reasoning',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: true,
           },
           {
             id: 'sub-lr-30',
@@ -405,7 +405,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'deductive-reasoning',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -425,7 +425,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'clocks-and-calendars',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-lr-32',
@@ -435,7 +435,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'clocks-and-calendars',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -455,7 +455,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'non-verbal-reasoning',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-lr-34',
@@ -465,7 +465,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'non-verbal-reasoning',
             sectionSlug: 'logical-reasoning',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -495,7 +495,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'reading',
             sectionSlug: 'verbal-ability',
-            hasPublishedContent: true,
+            hasAuthoredContent: true,
           },
           {
             id: 'sub-va-36',
@@ -505,7 +505,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'reading',
             sectionSlug: 'verbal-ability',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-va-37',
@@ -515,7 +515,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'reading',
             sectionSlug: 'verbal-ability',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -535,7 +535,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'grammar',
             sectionSlug: 'verbal-ability',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-va-39',
@@ -545,7 +545,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'grammar',
             sectionSlug: 'verbal-ability',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -565,7 +565,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'vocabulary',
             sectionSlug: 'verbal-ability',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-va-41',
@@ -575,7 +575,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'vocabulary',
             sectionSlug: 'verbal-ability',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -605,7 +605,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'tables-and-caselets',
             sectionSlug: 'data-interpretation',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-di-43',
@@ -615,7 +615,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'tables-and-caselets',
             sectionSlug: 'data-interpretation',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -635,7 +635,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'charts',
             sectionSlug: 'data-interpretation',
-            hasPublishedContent: true,
+            hasAuthoredContent: true,
           },
           {
             id: 'sub-di-45',
@@ -645,7 +645,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'charts',
             sectionSlug: 'data-interpretation',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-di-46',
@@ -655,7 +655,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'charts',
             sectionSlug: 'data-interpretation',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -675,7 +675,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'mixed-di',
             sectionSlug: 'data-interpretation',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -705,7 +705,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'programming',
             sectionSlug: 'technical-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-ta-49',
@@ -715,7 +715,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'programming',
             sectionSlug: 'technical-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: true,
           },
           {
             id: 'sub-ta-50',
@@ -725,7 +725,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'programming',
             sectionSlug: 'technical-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -745,7 +745,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 1,
             topicSlug: 'cs-fundamentals',
             sectionSlug: 'technical-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-ta-52',
@@ -755,7 +755,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 2,
             topicSlug: 'cs-fundamentals',
             sectionSlug: 'technical-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
           {
             id: 'sub-ta-53',
@@ -765,7 +765,7 @@ export const RESOURCE_SECTIONS: SectionMeta[] = [
             sortOrder: 3,
             topicSlug: 'cs-fundamentals',
             sectionSlug: 'technical-aptitude',
-            hasPublishedContent: true,
+            hasAuthoredContent: false,
           },
         ],
       },
@@ -779,11 +779,17 @@ export const ALL_SUBTOPICS: SubtopicMeta[] = RESOURCE_SECTIONS.flatMap((sec) =>
 );
 
 export function getAllSections(): SectionMeta[] {
-  return RESOURCE_SECTIONS;
+  return RESOURCE_SECTIONS.map((section) => ({
+    ...section,
+    topics: section.topics.map((topic) => ({
+      ...topic,
+      subtopics: topic.subtopics.filter((subtopic) => subtopic.hasAuthoredContent),
+    })).filter((topic) => topic.subtopics.length > 0),
+  })).filter((section) => section.topics.length > 0);
 }
 
 export function getSectionBySlug(slug: string): SectionMeta | undefined {
-  return RESOURCE_SECTIONS.find((s) => s.slug === slug);
+  return getAllSections().find((s) => s.slug === slug);
 }
 
 export function getTopicBySlug(sectionSlug: string, topicSlug: string): TopicMeta | undefined {
@@ -845,7 +851,7 @@ export function searchCatalogue(query: string): SearchResult[] {
 
   const results: SearchResult[] = [];
 
-  for (const sec of RESOURCE_SECTIONS) {
+  for (const sec of getAllSections()) {
     if (sec.name.toLowerCase().includes(q) || sec.description.toLowerCase().includes(q)) {
       results.push({
         kind: 'section',

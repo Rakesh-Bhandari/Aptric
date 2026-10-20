@@ -74,6 +74,15 @@ export const BAR_CHARTS_CONTENT: EducationalTopicContent = {
       verification: 'Notice that while Operations gained the largest absolute increase (₹60 Cr vs ₹55 Cr for R&D), R&D\'s lower starting base (₹125 Cr) gives it a substantially higher percentage jump (44% vs 30%). Verified.',
       answer: 'R&D (44% growth)',
     },
+    {
+      title: 'Example 3: Comparing Growth Rates Across Different Bases',
+      difficulty: 'hard',
+      examContext: 'Original data interpretation practice',
+      question: "A department's output rises from 240 units to 300 units. Another rises from 150 units to 195 units. Which department has the greater percentage growth?",
+      solution: '1. First department: increase = 300 − 240 = 60; growth = 60 / 240 × 100% = 25%.\n2. Second department: increase = 195 − 150 = 45; growth = 45 / 150 × 100% = 30%.\n3. Compare rates, not raw increases: 30% is greater than 25%.',
+      verification: 'The first department grows by 60 units from a base of 240; the second grows by 45 from a smaller base of 150. The calculated relative changes are 25% and 30%, respectively.',
+      answer: 'The second department, at 30%.',
+    },
   ],
   alternativeMethods: [
     {
@@ -138,6 +147,30 @@ export const BAR_CHARTS_CONTENT: EducationalTopicContent = {
       explanation:
         'Total = $120 + 150 + 180 + 210 = 660$ Cr. Average = $660 / 4 = ₹165$ Cr. (Notice the values form an AP with common difference 30; the mean is $(150 + 180)/2 = 165$).',
     },
+    {
+      id: 'bar-pq-3',
+      stem: 'A bar chart shows visits increasing from 8,000 in April to 10,000 in May. What is the percentage increase?',
+      options: ['20%', '25%', '2,000%', '125%'],
+      correctIndex: 1,
+      difficulty: 'easy',
+      explanation: 'Increase = 10,000 − 8,000 = 2,000. Divide by the initial value: 2,000 / 8,000 × 100% = 25%.',
+    },
+    {
+      id: 'bar-pq-4',
+      stem: 'A grouped bar chart shows Product A sales of 80, 100, and 120 units over three months. What is its average monthly sales?',
+      options: ['90 units', '95 units', '100 units', '110 units'],
+      correctIndex: 2,
+      difficulty: 'easy',
+      explanation: 'Average = (80 + 100 + 120) / 3 = 300 / 3 = 100 units.',
+    },
+    {
+      id: 'bar-pq-5',
+      stem: 'Revenue rises from ₹240 lakh to ₹300 lakh, while costs rise from ₹160 lakh to ₹200 lakh. Which has the higher percentage increase?',
+      options: ['Revenue by 25%', 'Costs by 25%', 'Both by 25%', 'Both by 40%'],
+      correctIndex: 2,
+      difficulty: 'medium',
+      explanation: 'Revenue growth = 60 / 240 × 100% = 25%. Cost growth = 40 / 160 × 100% = 25%. The absolute increases differ, but the relative increases are equal.',
+    },
   ],
   revisionSummary: [
     'Percentage Growth = $(\\text{Final} - \\text{Initial}) / \\text{Initial} \\times 100\\%$.',
@@ -150,6 +183,14 @@ export const BAR_CHARTS_CONTENT: EducationalTopicContent = {
       question: 'How do I quickly compute percentage growth without a calculator in tests?',
       answer:
         'Find 10% and 1% of the baseline denominator. For $\\frac{46}{180}$: $10\\%$ of 180 is 18. Twice that is 36 ($20\\%$). Remaining is $46 - 36 = 10$. Since $1\\%$ is 1.8, 10 is roughly $5.5\\%$. Total growth is approximately $25.5\\%$.',
+    },
+    {
+      question: 'Why should I calculate percentage growth from the starting value?',
+      answer: 'Percentage change is defined relative to the initial value. Dividing by the final value answers a different question and can reverse comparisons when starting values differ.',
+    },
+    {
+      question: 'What should I check before reading a bar chart?',
+      answer: 'Read the title, axis labels, units, legend, and scale first. For stacked bars, subtract the lower segment boundary from the upper boundary to get an individual segment.',
     },
   ],
   relatedTopics: [
@@ -166,6 +207,5 @@ export const BAR_CHARTS_CONTENT: EducationalTopicContent = {
       description: 'Extends percentage distribution to circular 360-degree sector proportions.',
     },
   ],
-  lastUpdated: 'October 2026',
-  editorialReview: 'Independently verified by Aptric Data Interpretation Editorial Team for placement and competitive standards.',
+  editorialReview: 'Editorial review pending; this material has not been independently certified.',
 };

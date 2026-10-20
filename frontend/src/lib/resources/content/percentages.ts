@@ -246,6 +246,5 @@ export const PERCENTAGES_CONTENT: EducationalTopicContent = {
       description: 'Provides the fractional foundational mechanics required for percentage ratio conversions.',
     },
   ],
-  lastUpdated: 'October 2026',
-  editorialReview: 'Independently verified by Aptric Quantitative Editorial Team for placement exam standards.',
+  editorialReview: 'Editorial review pending; this material has not been independently certified.',
 };

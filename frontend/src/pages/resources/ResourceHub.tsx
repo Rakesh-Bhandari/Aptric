@@ -68,8 +68,8 @@ export const ResourceHub: React.FC = () => {
         <h1 className="text-3xl sm:text-5xl font-extrabold text-[var(--foreground)] tracking-tight mb-4">
           Master Aptitude for Placements and Exams
         </h1>
-        <p className="text-base sm:text-lg text-[var(--muted)] leading-relaxed mb-6">
-          Original, rigorously verified study notes, step-by-step worked examples, and mental math shortcuts.
+        <p className="text-base sm:text-lg text-[var(--muted-foreground)] leading-relaxed mb-6">
+          Original study notes, worked examples, formulas, and practice checkpoints. Editorial review is ongoing.
           Completely free without requiring an account.
         </p>
 
@@ -87,7 +87,7 @@ export const ResourceHub: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary)] transition-colors text-[var(--foreground)]"
           >
             <span>Browse All Subjects</span>
-            <ArrowRight className="w-4 h-4 text-[var(--muted)]" />
+            <ArrowRight className="w-4 h-4 text-[var(--muted-foreground)]" />
           </a>
         </div>
       </header>
@@ -95,13 +95,13 @@ export const ResourceHub: React.FC = () => {
       {/* Global Search Bar */}
       <div className="max-w-2xl mx-auto mb-12">
         <div className="relative">
-          <Search className="w-5 h-5 text-[var(--muted)] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-5 h-5 text-[var(--muted-foreground)] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search topics (e.g., percentages, syllogism, time and work, bar charts)..."
-            className="w-full pl-11 pr-4 py-3.5 text-sm sm:text-base rounded-2xl bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] shadow-xs focus:outline-hidden focus:ring-2 focus:ring-[var(--primary)] transition-all"
+            className="w-full pl-11 pr-4 py-3.5 text-sm sm:text-base rounded-2xl bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] shadow-xs focus:outline-hidden focus:ring-2 focus:ring-[var(--primary)] transition-all"
           />
         </div>
 
@@ -123,11 +123,11 @@ export const ResourceHub: React.FC = () => {
                       {item.badgeText}
                     </span>
                   </div>
-                  <p className="text-xs text-[var(--muted)] line-clamp-1">{item.description}</p>
+                  <p className="text-xs text-[var(--muted-foreground)] line-clamp-1">{item.description}</p>
                 </Link>
               ))
             ) : (
-              <div className="p-6 text-center text-sm text-[var(--muted)]">
+              <div className="p-6 text-center text-sm text-[var(--muted-foreground)]">
                 No matching topics found for "{searchQuery}". Try searching for concepts like "percentages", "syllogisms", or "OOP".
               </div>
             )}
@@ -141,7 +141,7 @@ export const ResourceHub: React.FC = () => {
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">
             Explore by Subject Area
           </h2>
-          <span className="text-xs text-[var(--muted)] font-medium">5 Canonical Tracks</span>
+          <span className="text-xs text-[var(--muted-foreground)] font-medium">5 Canonical Tracks</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -168,13 +168,13 @@ export const ResourceHub: React.FC = () => {
                   {sec.name}
                 </Link>
               </h3>
-              <p className="text-xs sm:text-sm text-[var(--muted)] mb-5 leading-relaxed">
+              <p className="text-xs sm:text-sm text-[var(--muted-foreground)] mb-5 leading-relaxed">
                 {sec.description}
               </p>
 
               {/* Subtopics snippet */}
               <div className="mt-auto pt-4 border-t border-[var(--border)]">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] block mb-2">
                   Featured Topics:
                 </span>
                 <ul className="space-y-1.5">
@@ -185,7 +185,7 @@ export const ResourceHub: React.FC = () => {
                         className="text-xs text-[var(--foreground)] hover:text-[var(--accent)] flex items-center justify-between py-1 group/item"
                       >
                         <span className="truncate pr-2">{st.name}</span>
-                        <ArrowRight className="w-3 h-3 text-[var(--muted)] group-hover/item:translate-x-0.5 group-hover/item:text-[var(--accent)] transition-all shrink-0" />
+                        <ArrowRight className="w-3 h-3 text-[var(--muted-foreground)] group-hover/item:translate-x-0.5 group-hover/item:text-[var(--accent)] transition-all shrink-0" />
                       </Link>
                     </li>
                   ))}
@@ -200,20 +200,20 @@ export const ResourceHub: React.FC = () => {
       <section className="mt-16 p-6 sm:p-8 rounded-3xl bg-[var(--secondary)]/30 border border-[var(--border)]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
           <div className="space-y-1.5">
-            <h4 className="text-sm font-bold text-[var(--foreground)]">Independently Checked</h4>
-            <p className="text-xs text-[var(--muted)] leading-relaxed">
-              Every formula, worked example, and option key is mathematically verified by educational editors.
+            <h4 className="text-sm font-bold text-[var(--foreground)]">Editorial transparency</h4>
+            <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              Content is being expanded and reviewed. Please report any suspected error using the feedback form on each article.
             </p>
           </div>
           <div className="space-y-1.5">
             <h4 className="text-sm font-bold text-[var(--foreground)]">First-Principles Teaching</h4>
-            <p className="text-xs text-[var(--muted)] leading-relaxed">
+            <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
               We teach why formulas work and explain the exact conditions where shortcuts succeed or fail.
             </p>
           </div>
           <div className="space-y-1.5">
             <h4 className="text-sm font-bold text-[var(--foreground)]">Practice Real Questions</h4>
-            <p className="text-xs text-[var(--muted)] leading-relaxed">
+            <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
               Test your knowledge immediately in the interactive solver without creating an account.
             </p>
           </div>
@@ -225,8 +225,8 @@ export const ResourceHub: React.FC = () => {
         <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--foreground)] mb-3">
           Test Your Skills with 10 Free Questions
         </h2>
-        <p className="text-sm sm:text-base text-[var(--muted)] max-w-xl mx-auto mb-6">
-          Experience Aptric's actual solving engine with full timer controls, instant feedback, and verified explanations.
+        <p className="text-sm sm:text-base text-[var(--muted-foreground)] max-w-xl mx-auto mb-6">
+          Experience Aptric's actual solving engine with full timer controls, instant feedback, and stored explanations.
         </p>
         <Link
           to="/free-trial"

@@ -1,5 +1,6 @@
 import { Check, Flag, Send, X } from 'lucide-react';
 import React, { useState } from 'react';
+import { publicApi } from '@/lib/http';
 
 interface FeedbackAffordanceProps {
   topicTitle: string;
@@ -10,31 +11,29 @@ export const FeedbackAffordance: React.FC<FeedbackAffordanceProps> = ({ topicTit
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'typo' | 'solution' | 'clarity' | 'suggestion'>('typo');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!feedback.trim()) return;
+    const message = feedback.trim();
+    if (message.length < 8 || submitting) return;
 
-    // Save locally or dispatch anonymous telemetry safely without PII
+    setSubmitting(true);
+    setErrorMessage(null);
     try {
-      const stored = JSON.parse(localStorage.getItem('aptric.feedback') || '[]');
-      stored.push({
+      await publicApi<{ received: boolean }>('POST', '/feedback', {
         topic: topicTitle,
         type: feedbackType,
-        text: feedback.trim(),
-        timestamp: new Date().toISOString(),
+        message,
       });
-      localStorage.setItem('aptric.feedback', JSON.stringify(stored.slice(-20)));
-    } catch {
-      // Ignore local storage error
-    }
-
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setIsOpen(false);
+      setSubmitted(true);
       setFeedback('');
-    }, 2000);
+    } catch {
+      setErrorMessage('We could not send your report. Please try again in a moment.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -42,8 +41,8 @@ export const FeedbackAffordance: React.FC<FeedbackAffordanceProps> = ({ topicTit
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h4 className="text-sm font-semibold text-[var(--foreground)]">Find an error or have feedback?</h4>
-          <p className="text-xs text-[var(--muted)]">
-            Help us maintain flawless educational accuracy for campus placements.
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Help us improve the accuracy and clarity of these learning resources.
           </p>
         </div>
         <button
@@ -62,7 +61,7 @@ export const FeedbackAffordance: React.FC<FeedbackAffordanceProps> = ({ topicTit
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--foreground)]"
+              className="absolute top-4 right-4 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -71,8 +70,8 @@ export const FeedbackAffordance: React.FC<FeedbackAffordanceProps> = ({ topicTit
             <h3 className="text-base font-semibold text-[var(--foreground)] mb-1">
               Suggest Correction: {topicTitle}
             </h3>
-            <p className="text-xs text-[var(--muted)] mb-4">
-              Your report will be reviewed by our subject matter editors. No account required.
+            <p className="text-xs text-[var(--muted-foreground)] mb-4">
+              Reports are sent for moderation and are not published automatically. No account required.
             </p>
 
             {submitted ? (
@@ -83,7 +82,7 @@ export const FeedbackAffordance: React.FC<FeedbackAffordanceProps> = ({ topicTit
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-[var(--muted)] mb-1">
+                  <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">
                     Issue Category
                   </label>
                   <select
@@ -99,7 +98,7 @@ export const FeedbackAffordance: React.FC<FeedbackAffordanceProps> = ({ topicTit
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[var(--muted)] mb-1">
+                  <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">
                     Description
                   </label>
                   <textarea
@@ -111,25 +110,27 @@ export const FeedbackAffordance: React.FC<FeedbackAffordanceProps> = ({ topicTit
                     placeholder="Describe the issue or correction with specific section or question reference..."
                     className="w-full text-xs sm:text-sm p-3 rounded-xl bg-[var(--secondary)]/50 border border-[var(--border)] text-[var(--foreground)] resize-none focus:outline-hidden focus:ring-2 focus:ring-[var(--primary)]"
                   />
-                  <div className="text-right text-[10px] text-[var(--muted)] mt-1">
+                  <div className="text-right text-[10px] text-[var(--muted-foreground)] mt-1">
                     {feedback.length}/500
                   </div>
                 </div>
 
+                {errorMessage && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{errorMessage}</p>}
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--muted)] hover:bg-[var(--secondary)]"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
+                    disabled={submitting || feedback.trim().length < 8}
                     className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium bg-[var(--primary)] text-white hover:opacity-90 transition-opacity"
                   >
                     <Send className="w-3 h-3" />
-                    Submit Feedback
+                    {submitting ? 'Sending…' : 'Submit Feedback'}
                   </button>
                 </div>
               </form>

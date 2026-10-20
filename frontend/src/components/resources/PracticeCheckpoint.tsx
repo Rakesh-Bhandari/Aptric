@@ -56,7 +56,7 @@ export const PracticeCheckpoint: React.FC<PracticeCheckpointProps> = ({ question
             </div>
 
             <div className="text-[var(--foreground)] text-sm sm:text-base mb-4 font-medium leading-relaxed">
-              <Markdown content={q.stem} />
+              <Markdown text={q.stem} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
@@ -75,7 +75,7 @@ export const PracticeCheckpoint: React.FC<PracticeCheckpointProps> = ({ question
                     btnStyles =
                       'border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300';
                   } else {
-                    btnStyles = 'border-[var(--border)] opacity-60 text-[var(--muted)]';
+                    btnStyles = 'border-[var(--border)] opacity-60 text-[var(--muted-foreground)]';
                   }
                 }
 
@@ -92,13 +92,13 @@ export const PracticeCheckpoint: React.FC<PracticeCheckpointProps> = ({ question
                           ? 'bg-emerald-500 text-white'
                           : isAnswered && isThisSelected
                           ? 'bg-rose-500 text-white'
-                          : 'bg-[var(--secondary)] text-[var(--muted)]'
+                          : 'bg-[var(--secondary)] text-[var(--muted-foreground)]'
                       }`}
                     >
                       {String.fromCharCode(65 + optIndex)}
                     </span>
                     <span className="flex-1 leading-snug">
-                      <Markdown content={opt} />
+                      <Markdown text={opt} />
                     </span>
                     {isAnswered && isThisCorrect && (
                       <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
@@ -125,7 +125,7 @@ export const PracticeCheckpoint: React.FC<PracticeCheckpointProps> = ({ question
                   )}
                 </div>
               ) : (
-                <span className="text-xs text-[var(--muted)] flex items-center gap-1">
+                <span className="text-xs text-[var(--muted-foreground)] flex items-center gap-1">
                   <HelpCircle className="w-3.5 h-3.5" /> Select an option to test yourself
                 </span>
               )}
@@ -144,7 +144,7 @@ export const PracticeCheckpoint: React.FC<PracticeCheckpointProps> = ({ question
                 <p className="font-semibold text-[var(--accent)] mb-1">
                   Solution (Option {String.fromCharCode(65 + q.correctIndex)}):
                 </p>
-                <Markdown content={q.explanation} />
+                <Markdown text={q.explanation} />
               </div>
             )}
           </div>

@@ -69,6 +69,15 @@
           "value": "noindex, nofollow"
         }
       ]
+    },
+    {
+      "source": "/free-trial/solve(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ]
 }

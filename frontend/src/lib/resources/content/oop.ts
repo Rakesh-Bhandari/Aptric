@@ -74,6 +74,15 @@ export const OOP_CONTENT: EducationalTopicContent = {
       verification: 'In C++, without `virtual public A`, attempting to access `d.display()` generates compile error "request for member is ambiguous". In Java, `class D extends B, C` fails to compile immediately. Verified.',
       answer: 'C++ uses Virtual Base Classes (virtual inheritance); Java disallows multiple class inheritance and uses Interfaces.',
     },
+    {
+      title: 'Example 3: Distinguishing Overloading from Overriding',
+      difficulty: 'easy',
+      examContext: 'Original programming fundamentals example',
+      question: 'A Java class declares `print(int value)` and `print(String value)`. A subclass declares `print(int value)` with the same signature as the parent method. Which mechanism applies to each change?',
+      solution: '1. The two methods in the same class have different parameter types, so they are overloaded. The compiler selects an overload from the declared argument types.\n2. The subclass method has the same signature as the inherited method, so it overrides the parent method. For an overridable instance method, runtime dispatch selects the implementation for the actual object type.',
+      verification: 'Calling `print(4)` resolves to the integer overload at compile time; if that method is overridden and the receiver is a subclass instance, the subclass implementation executes at runtime.',
+      answer: 'Different parameter lists: overloading. Same inherited signature in a subclass: overriding.',
+    },
   ],
   alternativeMethods: [
     {
@@ -148,6 +157,30 @@ export const OOP_CONTENT: EducationalTopicContent = {
       explanation:
         'The compiler embeds an invisible hidden pointer called `vptr` inside the object instance. This pointer points to the class\'s shared `vtable` containing addresses of the virtual methods.',
     },
+    {
+      id: 'oop-pq-3',
+      stem: "Which principle means keeping an object's internal state behind a controlled public interface?",
+      options: ['Encapsulation', 'Recursion', 'Compilation', 'Iteration'],
+      correctIndex: 0,
+      difficulty: 'easy',
+      explanation: 'Encapsulation groups state and behavior and controls access through a public interface, reducing unintended direct modification.',
+    },
+    {
+      id: 'oop-pq-4',
+      stem: 'In Java, a subclass method with the same signature as an accessible, non-final instance method in its superclass is an example of what?',
+      options: ['Overloading', 'Overriding', 'Constructor chaining only', 'Primitive conversion'],
+      correctIndex: 1,
+      difficulty: 'easy',
+      explanation: 'A matching inherited instance-method signature is overriding. Overloading instead uses different parameter lists.',
+    },
+    {
+      id: 'oop-pq-5',
+      stem: 'Why should a polymorphic C++ base class generally have a virtual destructor when objects may be deleted through base pointers?',
+      options: ['To make every method virtual', 'To ensure the derived destructor is called', 'To prevent inheritance', 'To allocate the vtable on the stack'],
+      correctIndex: 1,
+      difficulty: 'medium',
+      explanation: 'Deleting a derived object through a base pointer requires a virtual base destructor for defined polymorphic destruction and the proper derived-to-base destructor sequence.',
+    },
   ],
   revisionSummary: [
     '4 Pillars: Encapsulation (data hiding), Abstraction (interface contract), Inheritance (code reuse), Polymorphism (multiple forms).',
@@ -166,6 +199,10 @@ export const OOP_CONTENT: EducationalTopicContent = {
       answer:
         'LSP states that objects of a derived class must be able to replace objects of the base class without breaking the correctness or expectations of the program.',
     },
+    {
+      question: 'Can a subclass override a private Java method?',
+      answer: 'No. A private method is not inherited as an accessible method by the subclass, so a same-named method in the subclass is a separate declaration rather than an override.',
+    },
   ],
   relatedTopics: [
     {
@@ -181,6 +218,5 @@ export const OOP_CONTENT: EducationalTopicContent = {
       description: 'Builds complex custom data structures utilizing OOP class representations.',
     },
   ],
-  lastUpdated: 'October 2026',
-  editorialReview: 'Independently verified by Aptric Technical Aptitude Editorial Team for campus and software engineering standards.',
+  editorialReview: 'Editorial review pending; this material has not been independently certified.',
 };

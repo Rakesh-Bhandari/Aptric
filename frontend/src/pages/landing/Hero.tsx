@@ -1,10 +1,9 @@
-import type { MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthDialog } from '@/context/AuthDialogContext';
 import { HeroMountain } from './HeroMountain';
-import { outlinePill, scrollToSection } from './shared';
+import { outlinePill } from './shared';
 
 const EXAMS = ['TCS NQT', 'Infosys', 'AMCAT', 'CAT', 'GATE', 'Bank PO', 'SSC'];
 
@@ -16,12 +15,6 @@ const EXAMS = ['TCS NQT', 'Infosys', 'AMCAT', 'CAT', 'GATE', 'Bank PO', 'SSC'];
  */
 export const Hero = () => {
   const { openAuth } = useAuthDialog();
-  const learnMore = (e: MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    scrollToSection('features');
-    history.replaceState(history.state, '', '#features');
-  };
-
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-background bg-gradient-hero">
       {/* Fade the hero's foot into the page colour, under the stat strip. Decorative. */}

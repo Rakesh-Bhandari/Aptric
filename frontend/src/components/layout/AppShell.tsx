@@ -116,13 +116,13 @@ export const AppShell = () => {
   const transparent = overlay !== null && !scrolled;
 
   const footerLinks: FooterLink[] = signedIn
-    ? [{ label: 'Practice', to: '/practice' }, { label: 'Compete', to: '/compete' }, { label: 'Resources', to: '/resources' }, { label: 'Terms & privacy', to: '/terms' }]
+    ? [{ label: 'Practice', to: '/practice' }, { label: 'Compete', to: '/compete' }, { label: 'Resources', to: '/resources' }, { label: 'Terms', to: '/terms' }, { label: 'Privacy', to: '/privacy' }, { label: 'About', to: '/about' }, { label: 'Contact', to: '/contact' }]
     : [
       { label: 'Sign in', onClick: () => openAuth({ mode: 'signin', next: '/' }) },
       { label: 'Create account', onClick: () => openAuth({ mode: 'signup', next: '/' }) },
       { label: 'Free Resources', to: '/resources' },
       { label: '10-Q Trial', to: '/free-trial' },
-      { label: 'Terms & privacy', to: '/terms' },
+      { label: 'Terms', to: '/terms' }, { label: 'Privacy', to: '/privacy' }, { label: 'About', to: '/about' }, { label: 'Contact', to: '/contact' },
     ];
   // Visitors get the rich footer: anchors into the landing page, resources, account actions, legal.
   const footerColumns: FooterColumn[] | undefined = signedIn ? undefined : [
@@ -138,7 +138,7 @@ export const AppShell = () => {
       ],
     },
     { title: 'Account', links: footerLinks.slice(0, 2) },
-    { title: 'Company', links: [{ label: 'Terms & privacy', to: '/terms' }, { label: 'Contact us', href: 'mailto:aptricofficials@gmail.com' }] },
+    { title: 'Company', links: [{ label: 'Terms', to: '/terms' }, { label: 'Privacy', to: '/privacy' }, { label: 'About', to: '/about' }, { label: 'Contact', to: '/contact' }] },
   ];
 
   return (

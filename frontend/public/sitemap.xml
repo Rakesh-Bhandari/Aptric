@@ -1,23 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://aptric.app/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aptric.app/practice</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://aptric.app/compete</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://aptric.app/terms</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
+  <url><loc>https://aptric.app/</loc><priority>1.0</priority></url>
+  <url><loc>https://aptric.app/terms</loc><priority>0.3</priority></url>
+  <url><loc>https://aptric.app/about</loc><priority>0.4</priority></url>
+  <url><loc>https://aptric.app/privacy</loc><priority>0.3</priority></url>
+  <url><loc>https://aptric.app/contact</loc><priority>0.4</priority></url>
+  <url><loc>https://aptric.app/free-trial</loc><priority>0.5</priority></url>
+  <url><loc>https://aptric.app/resources</loc><priority>0.9</priority></url>
+  <url><loc>https://aptric.app/resources/quantitative-aptitude</loc><priority>0.8</priority></url>
+  <url><loc>https://aptric.app/resources/logical-reasoning</loc><priority>0.8</priority></url>
+  <url><loc>https://aptric.app/resources/verbal-ability</loc><priority>0.8</priority></url>
+  <url><loc>https://aptric.app/resources/data-interpretation</loc><priority>0.8</priority></url>
+  <url><loc>https://aptric.app/resources/technical-aptitude</loc><priority>0.8</priority></url>
 </urlset>

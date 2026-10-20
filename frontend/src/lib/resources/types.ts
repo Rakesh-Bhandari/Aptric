@@ -14,7 +14,7 @@ export interface SubtopicMeta {
   topicSlug: string;
   sectionSlug: SectionSlug;
   targetWords?: string;
-  hasPublishedContent?: boolean;
+  hasAuthoredContent?: boolean;
 }
 
 export interface TopicMeta {
@@ -136,6 +136,6 @@ export interface EducationalTopicContent {
   relatedTopics: RelatedTopicRef[];
   previousSubtopic?: NavReference;
   nextSubtopic?: NavReference;
-  lastUpdated: string;
-  editorialReview: string;
+  lastUpdated?: string;
+  editorialReview?: string;
 }

@@ -74,6 +74,15 @@ export const READING_COMPREHENSION_CONTENT: EducationalTopicContent = {
       verification: 'Option C is directly grounded in lines 2–3 with no unsupported leaps.',
       answer: 'C) They run the risk of incentivizing rapid code output at the expense of long-term maintainability.',
     },
+    {
+      title: 'Example 3: Separating Evidence from an Unsupported Inference',
+      difficulty: 'medium',
+      examContext: 'Original reading-comprehension passage',
+      question: 'Passage: “A pilot program reduced average bus delays on two routes during the first month. The transport agency said it would collect a full quarter of data before deciding whether to expand the program.” Which conclusion is best supported?',
+      solution: '1. The passage reports an early improvement on two routes.\n2. The agency has not made a final expansion decision; it plans to collect more data first.\n3. It is therefore supported that the agency is evaluating the pilot further. It is not supported that the program will definitely expand or that the result will hold across the whole network.',
+      verification: 'The answer follows directly from the stated plan to collect a full quarter of data. It avoids turning a limited early result into a universal claim.',
+      answer: 'The agency is gathering additional evidence before deciding whether to expand the program.',
+    },
   ],
   alternativeMethods: [
     {
@@ -143,6 +152,30 @@ export const READING_COMPREHENSION_CONTENT: EducationalTopicContent = {
       explanation:
         'The text states councils deprioritize maintenance "due to budgetary shortfalls". This directly demonstrates that financial constraints override the recognized ecological benefit (reducing temperatures). Other options are extreme or unstated.',
     },
+    {
+      id: 'rc-pq-3',
+      stem: 'Passage: “The library extended its opening hours during exam week. Attendance rose, but the report did not compare the period with a non-exam week.” Which statement is justified?',
+      options: ['Longer hours alone caused the rise', 'Attendance rose during the extended-hours period', 'Attendance will rise every month', 'Students prefer libraries to online study'],
+      correctIndex: 1,
+      difficulty: 'easy',
+      explanation: 'The passage directly reports a rise during the period. It does not establish causation or support claims about other months or study preferences.',
+    },
+    {
+      id: 'rc-pq-4',
+      stem: 'A passage presents a claim, then introduces a study with mixed results and ends by recommending more research. Which tone is most likely?',
+      options: ['Cautiously analytical', 'Triumphant', 'Mocking', 'Unconditionally certain'],
+      correctIndex: 0,
+      difficulty: 'medium',
+      explanation: 'Mixed evidence and a call for further research signal qualification and analysis rather than certainty, celebration, or ridicule.',
+    },
+    {
+      id: 'rc-pq-5',
+      stem: 'Passage: “Several small schools adopted the reading program. Teachers reported stronger participation, although standardized reading scores were not measured.” What cannot be concluded from this evidence alone?',
+      options: ['Teachers reported stronger participation', 'The program was used in several small schools', 'The program improved standardized reading scores', 'The passage describes an adoption of the program'],
+      correctIndex: 2,
+      difficulty: 'medium',
+      explanation: 'The passage explicitly says standardized reading scores were not measured, so improvement in those scores cannot be inferred.',
+    },
   ],
   revisionSummary: [
     'Main Idea = What the author wants the reader to conclude across the ENTIRE text.',
@@ -161,6 +194,10 @@ export const READING_COMPREHENSION_CONTENT: EducationalTopicContent = {
       answer:
         'A lack of domain knowledge can actually be an advantage because you won\'t bring outside biases into your deductions. Treat the terms like abstract variables and focus purely on the relationships and logical links the author constructs between them.',
     },
+    {
+      question: 'What is the difference between a plausible idea and a valid inference?',
+      answer: 'A valid inference must follow from the passage. A plausible idea may be reasonable in the real world but still be unsupported by the text.',
+    },
   ],
   relatedTopics: [
     {
@@ -176,6 +213,5 @@ export const READING_COMPREHENSION_CONTENT: EducationalTopicContent = {
       description: 'Strengthens syntactic comprehension of modifiers and clause relationships in complex sentences.',
     },
   ],
-  lastUpdated: 'October 2026',
-  editorialReview: 'Independently verified by Aptric Verbal Ability Editorial Team for placement and competitive standards.',
+  editorialReview: 'Editorial review pending; this material has not been independently certified.',
 };

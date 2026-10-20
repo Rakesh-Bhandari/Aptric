@@ -67,7 +67,7 @@ export const ResourceTableOfContents: React.FC<ResourceTableOfContentsProps> = (
                 className={`block py-1 px-2 rounded-lg transition-colors ${
                   isActive
                     ? 'font-medium text-[var(--accent)] bg-[var(--primary)]/10'
-                    : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]/50'
+                    : 'text-[var(--foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]/50'
                 }`}
               >
                 {sec.label}
